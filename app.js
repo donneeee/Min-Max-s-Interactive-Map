@@ -1,5 +1,5 @@
-const DATA_URL = "./data/map_site_data.json?v=20260713-map-region-v010";
-const APP_VERSION = "v0.3.11";
+const DATA_URL = "./data/map_site_data.json?v=20260713-scene-split-v012";
+const APP_VERSION = "v0.3.12";
 const MIN_SCALE = 0.03;
 const MAX_SCALE = 16;
 const MAP_EDGE_MARGIN = 48;
