@@ -529,6 +529,7 @@ button[aria-pressed="true"] {
   width: 1024px;
   height: 1024px;
   contain: layout paint;
+  --pin-inverse-scale: 1;
   transform-origin: 0 0;
   will-change: transform;
 }
@@ -544,6 +545,7 @@ button[aria-pressed="true"] {
 .map-tiles {
   overflow: hidden;
   background: #111619;
+  z-index: 1;
 }
 
 .map-tiles[hidden] {
@@ -558,7 +560,8 @@ button[aria-pressed="true"] {
 }
 
 .map-image {
-  object-fit: cover;
+  object-fit: fill;
+  z-index: 0;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -574,30 +577,69 @@ button[aria-pressed="true"] {
   height: 100%;
   pointer-events: none;
   z-index: 2;
+  overflow: visible;
+}
+
+.pin-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pin-canvas[hidden],
+.pin-tooltip[hidden] {
+  display: none;
+}
+
+.pin-tooltip {
+  position: absolute;
+  z-index: 4;
+  max-width: 210px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(18, 23, 25, 0.94);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.25;
+  padding: 5px 7px;
+  pointer-events: none;
 }
 
 .pin {
   position: absolute;
   --pin-hover-scale: 1;
+  --pin-size: 32px;
   --pin-x: 0;
   --pin-y: 0;
   left: 0;
   top: 0;
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
+  width: 0;
+  height: 0;
   min-height: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
   transform:
     translate(calc(var(--pin-x) * 1px), calc(var(--pin-y) * 1px))
-    translate(-50%, -50%)
-    scale(var(--pin-hover-scale));
+    scale(var(--pin-inverse-scale));
   transform-origin: center;
   pointer-events: auto;
   padding: 0;
+}
+
+.pin-body {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  width: var(--pin-size);
+  height: var(--pin-size);
+  place-items: center;
+  transform: translate(-50%, -50%) scale(var(--pin-hover-scale));
+  transform-origin: center;
 }
 
 .pin:hover,
@@ -607,18 +649,15 @@ button[aria-pressed="true"] {
 }
 
 .pin.pin-elite-egg {
-  width: 34px;
-  height: 34px;
+  --pin-size: 34px;
 }
 
 .pin.pin-underground {
-  width: 28px;
-  height: 28px;
+  --pin-size: 28px;
 }
 
 .pin.pin-underground-marker {
-  width: 32px;
-  height: 32px;
+  --pin-size: 32px;
 }
 
 .pin-icon {

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MinMax's Map</title>
-    <link rel="stylesheet" href="./styles.css?v=20260713-spawn-cleanup-v004">
+    <link rel="stylesheet" href="./styles.css?v=20260713-streamed-maps-v020">
   </head>
   <body>
     <main class="app-shell">
@@ -55,12 +55,14 @@
           <div id="mapWorld" class="map-world">
             <div id="mapTiles" class="map-tiles" aria-hidden="true"></div>
             <img id="mapImage" class="map-image" alt="">
+            <div id="pinLayer" class="pin-layer"></div>
           </div>
-          <div id="pinLayer" class="pin-layer"></div>
+          <canvas id="pinCanvas" class="pin-canvas" aria-hidden="true"></canvas>
+          <div id="pinTooltip" class="pin-tooltip" hidden></div>
         </div>
       </section>
     </main>
 
-    <script src="./app.js?v=20260713-spawn-cleanup-v004"></script>
+    <script src="./app.js?v=20260713-streamed-maps-v020"></script>
   </body>
 </html>

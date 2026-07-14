@@ -2,13 +2,14 @@
 
 Interactive static map for Aniimo world markers.
 
-Version: `v0.3.12`
+Version: `v0.3.20`
 
 ## What Is Included
 
 - Separate map scenes for Idyll, Whisperwake Isles, Astra, and The Lost Islets.
 - Filterable marker layers for items, Aniimo, eggs, teleports, ambers, and misc markers.
-- Generated marker database at `data/map_site_data.json`.
+- A small startup manifest at `data/map_site_data.json`, with marker data loaded per map from `data/maps/`.
+- WebP map previews for first paint and GPU-safe detail tiles for zoomed-in views.
 - Static assets under `assets/`, so the site can be hosted without a build step.
 
 ## Run Locally

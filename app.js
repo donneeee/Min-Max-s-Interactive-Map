@@ -1,8 +1,11 @@
-const DATA_URL = "./data/map_site_data.json?v=20260713-scene-split-v012";
-const APP_VERSION = "v0.3.12";
+const DATA_URL = "./data/map_site_data.json?v=20260713-streamed-maps-v020";
+const APP_VERSION = "v0.3.20";
 const MIN_SCALE = 0.03;
 const MAX_SCALE = 16;
 const MAP_EDGE_MARGIN = 48;
+const MAP_TILE_DETAIL_SCALE = 0.55;
+const PIN_CANVAS_THRESHOLD = 450;
+const CANVAS_HIT_CELL_SIZE = 128;
 const REQUESTED_MAP_ID = new URLSearchParams(window.location.search).get("map");
 const COLORS = [
   "#7fc6b2",
@@ -21,6 +24,23 @@ const COLORS = [
 
 const state = {
   data: null,
+  bootstrap: null,
+  legacyDataset: null,
+  mapDataCache: new Map(),
+  mapLoadToken: 0,
+  loadingMapId: null,
+  mapLoadError: null,
+  tileMapId: null,
+  tileFrame: 0,
+  visibleEntries: [],
+  canvasEntries: [],
+  canvasHitGrid: new Map(),
+  iconImages: new Map(),
+  canvasMode: false,
+  hoveredCanvasIndex: null,
+  canvasPointerHit: null,
+  canvasFrame: 0,
+  canvasIconLoadTimer: 0,
   enabled: new Set(),
   activeMapId: REQUESTED_MAP_ID || "country-of-time",
   activeLayer: "items",
@@ -49,6 +69,8 @@ const els = {
   mapTiles: document.querySelector("#mapTiles"),
   mapImage: document.querySelector("#mapImage"),
   pinLayer: document.querySelector("#pinLayer"),
+  pinCanvas: document.querySelector("#pinCanvas"),
+  pinTooltip: document.querySelector("#pinTooltip"),
   coordinateReadout: document.querySelector("#coordinateReadout"),
   selectAllButton: document.querySelector("#selectAllButton"),
   selectNoneButton: document.querySelector("#selectNoneButton"),
@@ -98,6 +120,7 @@ function markerTypeLabel(type) {
   if (type === "underground_entrance") return "Underground Entrance";
   if (type === "morphling_memory") return "Morphling Memory";
   if (type === "lighthouse_book") return "Book";
+  if (type === "research_note") return "Research Note";
   if (type === "astra_transit") return "Astra Transit";
   if (type === "astra_district") return "Astra District";
   if (type === "astra_shop") return "Shop";
@@ -272,28 +295,67 @@ async function copyDetailValue(element, value) {
 
 function renderMapBase() {
   const map = currentMap();
-  const tiles = map.tiles || [];
+  if (!map) return;
   els.mapTiles.textContent = "";
-  if (!tiles.length) {
+  els.mapTiles.hidden = true;
+  els.mapTiles.dataset.signature = "";
+  state.tileMapId = map.id;
+  els.mapImage.hidden = false;
+  els.mapImage.alt = `${map.label} map`;
+  delete els.mapImage.dataset.usedFallback;
+  els.mapImage.src = map.image;
+  els.mapImage.onerror = () => {
+    if (currentMap()?.id !== map.id) return;
+    if (!map.fallback_image || els.mapImage.dataset.usedFallback === map.id) return;
+    els.mapImage.dataset.usedFallback = map.id;
+    els.mapImage.src = map.fallback_image;
+  };
+  scheduleMapTileDetail();
+}
+
+function scheduleMapTileDetail() {
+  if (state.tileFrame) return;
+  state.tileFrame = window.requestAnimationFrame(() => {
+    state.tileFrame = 0;
+    renderMapTileDetail();
+  });
+}
+
+function renderMapTileDetail() {
+  const map = currentMap();
+  if (!map || state.tileMapId !== map.id) return;
+  const tiles = map.tiles || [];
+  if (!tiles.length || state.scale < MAP_TILE_DETAIL_SCALE) {
     els.mapTiles.hidden = true;
-    els.mapImage.hidden = false;
-    els.mapImage.alt = `${map.label} map`;
-    els.mapImage.src = map.image;
     return;
   }
 
-  els.mapTiles.hidden = false;
-  els.mapImage.hidden = true;
-  els.mapImage.alt = "";
-  els.mapImage.removeAttribute("src");
+  const viewport = els.mapViewport.getBoundingClientRect();
+  const margin = 384;
+  const left = (-state.panX) / state.scale - margin;
+  const top = (-state.panY) / state.scale - margin;
+  const right = (viewport.width - state.panX) / state.scale + margin;
+  const bottom = (viewport.height - state.panY) / state.scale + margin;
+  const visibleTiles = tiles.filter((tile) => (
+    tile.left < right
+    && tile.left + tile.width > left
+    && tile.top < bottom
+    && tile.top + tile.height > top
+  ));
+  const signature = `${map.id}:${visibleTiles.map((tile) => `${tile.left},${tile.top}`).join("|")}`;
+  if (els.mapTiles.dataset.signature === signature) {
+    els.mapTiles.hidden = false;
+    return;
+  }
+
   const fragment = document.createDocumentFragment();
-  tiles.forEach((tile) => {
+  visibleTiles.forEach((tile) => {
     const image = document.createElement("img");
     image.className = "map-tile";
     image.alt = "";
     image.decoding = "async";
     image.draggable = false;
-    image.loading = "lazy";
+    image.loading = "eager";
     image.src = tile.image;
     image.style.left = `${tile.left}px`;
     image.style.top = `${tile.top}px`;
@@ -302,6 +364,8 @@ function renderMapBase() {
     fragment.append(image);
   });
   els.mapTiles.replaceChildren(fragment);
+  els.mapTiles.dataset.signature = signature;
+  els.mapTiles.hidden = false;
 }
 
 function resetMapScroll() {
@@ -328,26 +392,19 @@ function restoreMapView(view) {
   applyTransform();
 }
 
-function setPinScreenPosition(pin, spawn) {
-  if (!state.data || !spawn?.normalized) return;
+function setPinMapPosition(pin, spawn) {
+  if (!spawn?.normalized) return;
   const map = currentMap();
-  pin.style.setProperty("--pin-x", String(spawn.normalized.x * map.width * state.scale + state.panX));
-  pin.style.setProperty("--pin-y", String(spawn.normalized.y * map.height * state.scale + state.panY));
-}
-
-function positionPins() {
-  if (!state.data) return;
-  for (const pin of els.pinLayer.querySelectorAll(".pin")) {
-    const index = Number.parseInt(pin.dataset.spawnIndex || "", 10);
-    const spawn = state.data.spawns[index];
-    if (spawn) setPinScreenPosition(pin, spawn);
-  }
+  pin.style.setProperty("--pin-x", String(spawn.normalized.x * map.width));
+  pin.style.setProperty("--pin-y", String(spawn.normalized.y * map.height));
 }
 
 function applyTransform() {
   stabilizeViewport();
   els.mapWorld.style.transform = `matrix(${state.scale}, 0, 0, ${state.scale}, ${state.panX}, ${state.panY})`;
-  positionPins();
+  els.mapWorld.style.setProperty("--pin-inverse-scale", String(1 / state.scale));
+  scheduleMapTileDetail();
+  if (state.canvasMode) scheduleCanvasRender();
 }
 
 function mapFitScale(rect = els.mapViewport.getBoundingClientRect()) {
@@ -580,6 +637,7 @@ function updateFilterCount() {
 
 function refreshVisibility() {
   const visibleEntries = visibleSpawnEntries();
+  state.visibleEntries = visibleEntries;
   renderPins(visibleEntries);
 
   for (const row of els.itemList.querySelectorAll(".item-row")) {
@@ -726,60 +784,255 @@ function renderItems() {
   });
 }
 
-function renderPins(entries) {
-  const fragment = document.createDocumentFragment();
-  state.selectedPin = null;
-  entries.forEach(({ spawn, index }) => {
-    const item = state.data.itemsById.get(spawn.item_id);
-    if (!item) return;
-    const pin = document.createElement("button");
-    pin.type = "button";
-    pin.className = [
-      "pin",
-      spawn.marker_type === "elite_egg" ? "pin-elite-egg" : "",
-      spawn.marker_type === "aniimo_spawn" ? "pin-aniimo-spawn" : "",
-      spawn.layer_id === "teleports" ? "pin-teleport" : "",
-      spawn.layer_id === "ambers" ? "pin-amber" : "",
-      spawn.marker_type === "underground_entrance" ? "pin-underground" : "",
-      spawn.is_underground ? "pin-underground-marker" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    pin.dataset.spawnIndex = String(index);
-    pin.style.setProperty("--pin-color", item.color);
-    setPinScreenPosition(pin, spawn);
-    pin.setAttribute(
-      "aria-label",
-      `${spawn.display_name} ${spawn.area_name || spawn.region_name || ""} ${formatCoordinate(spawn.x)} ${formatCoordinate(spawn.y)}${spawn.is_underground ? " underground" : ""}`,
-    );
+function pinClassName(spawn) {
+  return [
+    "pin",
+    spawn.marker_type === "elite_egg" ? "pin-elite-egg" : "",
+    spawn.marker_type === "aniimo_spawn" ? "pin-aniimo-spawn" : "",
+    spawn.layer_id === "teleports" ? "pin-teleport" : "",
+    spawn.layer_id === "ambers" ? "pin-amber" : "",
+    spawn.marker_type === "underground_entrance" ? "pin-underground" : "",
+    spawn.is_underground ? "pin-underground-marker" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
-    const icon = makeIcon("pin-icon", item.icon);
-    const undergroundBadge = spawn.is_underground && state.data.underground_badge_icon
-      ? makeIcon("pin-underground-badge", state.data.underground_badge_icon)
-      : null;
+function createMarkerPin(entry) {
+  const { spawn, index } = entry;
+  const item = state.data.itemsById.get(spawn.item_id);
+  if (!item) return null;
+  const pin = document.createElement("button");
+  pin.type = "button";
+  pin.className = pinClassName(spawn);
+  pin.dataset.spawnIndex = String(index);
+  pin.style.setProperty("--pin-color", item.color);
+  setPinMapPosition(pin, spawn);
+  pin.setAttribute(
+    "aria-label",
+    `${spawn.display_name} ${spawn.area_name || spawn.region_name || ""} ${formatCoordinate(spawn.x)} ${formatCoordinate(spawn.y)}${spawn.is_underground ? " underground" : ""}`,
+  );
 
-    const label = document.createElement("span");
-    label.className = "pin-label";
-    const areaLabel = spawn.area_name || spawn.region_name;
-    const labelName = areaLabel ? `${spawn.display_name} (${areaLabel})` : spawn.display_name;
-    label.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}`;
-    pin.append(icon);
-    if (undergroundBadge) pin.append(undergroundBadge);
-    pin.append(label);
-    pin.tabIndex = -1;
-    pin.addEventListener("mousedown", preventControlFocus);
-    pin.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const view = currentMapView();
-      selectSpawn(index);
-      restoreMapView(view);
-    });
-    if (state.selectedSpawnIndex === index) {
-      pin.classList.add("selected");
-      state.selectedPin = pin;
+  const icon = makeIcon("pin-icon", item.icon);
+  const undergroundBadge = spawn.is_underground && state.data.underground_badge_icon
+    ? makeIcon("pin-underground-badge", state.data.underground_badge_icon)
+    : null;
+  const pinBody = document.createElement("span");
+  pinBody.className = "pin-body";
+  const label = document.createElement("span");
+  label.className = "pin-label";
+  const areaLabel = spawn.area_name || spawn.region_name;
+  const labelName = areaLabel ? `${spawn.display_name} (${areaLabel})` : spawn.display_name;
+  label.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}`;
+  pinBody.append(icon);
+  if (undergroundBadge) pinBody.append(undergroundBadge);
+  pinBody.append(label);
+  pin.append(pinBody);
+  pin.tabIndex = -1;
+  pin.addEventListener("mousedown", preventControlFocus);
+  pin.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const view = currentMapView();
+    selectSpawn(index);
+    restoreMapView(view);
+  });
+  if (state.selectedSpawnIndex === index) {
+    pin.classList.add("selected");
+    state.selectedPin = pin;
+  }
+  return pin;
+}
+
+function pinSizeFor(spawn) {
+  if (spawn.marker_type === "elite_egg") return 34;
+  if (spawn.marker_type === "underground_entrance") return 28;
+  return 32;
+}
+
+function canvasIcon(source) {
+  if (!source) return null;
+  let image = state.iconImages.get(source);
+  if (!image) {
+    image = new Image();
+    image.decoding = "async";
+    image.addEventListener("load", scheduleCanvasIconRefresh);
+    image.src = source;
+    state.iconImages.set(source, image);
+  }
+  return image.complete && image.naturalWidth ? image : null;
+}
+
+function scheduleCanvasIconRefresh() {
+  if (state.canvasIconLoadTimer) return;
+  state.canvasIconLoadTimer = window.setTimeout(() => {
+    state.canvasIconLoadTimer = 0;
+    scheduleCanvasRender();
+  }, 120);
+}
+
+function buildCanvasHitGrid(entries) {
+  const map = currentMap();
+  const grid = new Map();
+  entries.forEach((entry) => {
+    const { spawn } = entry;
+    if (!spawn.normalized) return;
+    const x = spawn.normalized.x * map.width;
+    const y = spawn.normalized.y * map.height;
+    const key = `${Math.floor(x / CANVAS_HIT_CELL_SIZE)}:${Math.floor(y / CANVAS_HIT_CELL_SIZE)}`;
+    const bucket = grid.get(key) || [];
+    bucket.push({ entry, x, y });
+    grid.set(key, bucket);
+  });
+  state.canvasHitGrid = grid;
+}
+
+function findCanvasHit(clientX, clientY) {
+  if (!state.canvasMode) return null;
+  const point = screenToImagePoint(clientX, clientY);
+  const hitRadius = 22 / state.scale;
+  const cellRadius = Math.ceil(hitRadius / CANVAS_HIT_CELL_SIZE);
+  const minCellX = Math.floor(point.x / CANVAS_HIT_CELL_SIZE) - cellRadius;
+  const maxCellX = Math.floor(point.x / CANVAS_HIT_CELL_SIZE) + cellRadius;
+  const minCellY = Math.floor(point.y / CANVAS_HIT_CELL_SIZE) - cellRadius;
+  const maxCellY = Math.floor(point.y / CANVAS_HIT_CELL_SIZE) + cellRadius;
+  const maxDistance = hitRadius * hitRadius;
+  let closest = null;
+  let closestDistance = maxDistance;
+
+  for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+    for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+      const bucket = state.canvasHitGrid.get(`${cellX}:${cellY}`) || [];
+      bucket.forEach((candidate) => {
+        const dx = point.x - candidate.x;
+        const dy = point.y - candidate.y;
+        const distance = dx * dx + dy * dy;
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = candidate.entry;
+        }
+      });
     }
-    fragment.append(pin);
+  }
+  return closest;
+}
+
+function hideCanvasTooltip() {
+  els.pinTooltip.hidden = true;
+}
+
+function updateCanvasHover(event) {
+  if (!state.canvasMode) {
+    hideCanvasTooltip();
+    return;
+  }
+  const hit = findCanvasHit(event.clientX, event.clientY);
+  const nextIndex = hit?.index ?? null;
+  if (nextIndex !== state.hoveredCanvasIndex) {
+    state.hoveredCanvasIndex = nextIndex;
+    scheduleCanvasRender();
+  }
+  if (!hit) {
+    hideCanvasTooltip();
+    return;
+  }
+
+  const rect = els.mapViewport.getBoundingClientRect();
+  const { spawn } = hit;
+  const areaLabel = spawn.area_name || spawn.region_name;
+  const labelName = areaLabel ? `${spawn.display_name} (${areaLabel})` : spawn.display_name;
+  els.pinTooltip.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}`;
+  els.pinTooltip.style.left = `${clamp(event.clientX - rect.left + 14, 4, Math.max(4, rect.width - 220))}px`;
+  els.pinTooltip.style.top = `${clamp(event.clientY - rect.top + 14, 4, Math.max(4, rect.height - 46))}px`;
+  els.pinTooltip.hidden = false;
+}
+
+function scheduleCanvasRender() {
+  if (!state.canvasMode || state.canvasFrame) return;
+  state.canvasFrame = window.requestAnimationFrame(() => {
+    state.canvasFrame = 0;
+    renderCanvasPins();
+  });
+}
+
+function renderCanvasPins() {
+  if (!state.canvasMode) return;
+  const canvas = els.pinCanvas;
+  const viewport = els.mapViewport.getBoundingClientRect();
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.max(1, Math.round(viewport.width));
+  const height = Math.max(1, Math.round(viewport.height));
+  const pixelWidth = Math.round(width * pixelRatio);
+  const pixelHeight = Math.round(height * pixelRatio);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  canvas.hidden = false;
+  const context = canvas.getContext("2d", { alpha: true });
+  if (!context) return;
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  const map = currentMap();
+  const screenPadding = 28;
+  state.canvasEntries.forEach((entry) => {
+    const { spawn, index } = entry;
+    if (!spawn.normalized) return;
+    const x = spawn.normalized.x * map.width * state.scale + state.panX;
+    const y = spawn.normalized.y * map.height * state.scale + state.panY;
+    const size = pinSizeFor(spawn);
+    if (x < -screenPadding || x > width + screenPadding || y < -screenPadding || y > height + screenPadding) return;
+
+    const item = state.data.itemsById.get(spawn.item_id);
+    const icon = canvasIcon(item?.icon);
+    if (icon) {
+      context.drawImage(icon, x - size / 2, y - size / 2, size, size);
+    } else {
+      context.beginPath();
+      context.fillStyle = item?.color || "#7fc6b2";
+      context.arc(x, y, Math.max(6, size / 3), 0, Math.PI * 2);
+      context.fill();
+    }
+
+    if (spawn.is_underground && state.data.underground_badge_icon) {
+      const badge = canvasIcon(state.data.underground_badge_icon);
+      if (badge) context.drawImage(badge, x + size / 2 - 16, y - size / 2 - 4, 18, 18);
+    }
+    if (index === state.selectedSpawnIndex || index === state.hoveredCanvasIndex) {
+      context.beginPath();
+      context.strokeStyle = index === state.selectedSpawnIndex ? "#f6f9ff" : "rgba(246, 249, 255, 0.72)";
+      context.lineWidth = index === state.selectedSpawnIndex ? 2.5 : 1.5;
+      context.arc(x, y, size / 2 + 3, 0, Math.PI * 2);
+      context.stroke();
+    }
+  });
+}
+
+function renderPins(entries) {
+  state.selectedPin = null;
+  if (entries.length > PIN_CANVAS_THRESHOLD) {
+    state.canvasMode = true;
+    state.canvasEntries = entries;
+    buildCanvasHitGrid(entries);
+    els.pinLayer.replaceChildren();
+    els.pinLayer.hidden = true;
+    els.pinCanvas.hidden = false;
+    scheduleCanvasRender();
+    return;
+  }
+
+  state.canvasMode = false;
+  state.canvasEntries = [];
+  state.canvasHitGrid = new Map();
+  state.hoveredCanvasIndex = null;
+  hideCanvasTooltip();
+  els.pinCanvas.hidden = true;
+  els.pinLayer.hidden = false;
+  const fragment = document.createDocumentFragment();
+  entries.forEach((entry) => {
+    const pin = createMarkerPin(entry);
+    if (pin) fragment.append(pin);
   });
   els.pinLayer.replaceChildren(fragment);
 }
@@ -796,6 +1049,7 @@ function selectSpawn(index) {
   const pin = els.pinLayer.querySelector(`[data-spawn-index="${index}"]`);
   if (pin) pin.classList.add("selected");
   state.selectedPin = pin;
+  if (state.canvasMode) scheduleCanvasRender();
   els.selectionDetail.className = "selection";
   els.selectionDetail.innerHTML = "";
 
@@ -897,6 +1151,8 @@ function focusSpawn(spawn) {
 }
 
 function prepareData(data) {
+  data.items = Array.isArray(data.items) ? data.items : [];
+  data.spawns = Array.isArray(data.spawns) ? data.spawns : [];
   data.maps = Array.isArray(data.maps) && data.maps.length ? data.maps : [data.map];
   data.maps.forEach((map, index) => {
     map.id = map.id || (index === 0 ? "country-of-time" : `map-${index + 1}`);
@@ -940,6 +1196,66 @@ function prepareData(data) {
   return data;
 }
 
+function datasetForMap(mapId) {
+  const cached = state.mapDataCache.get(mapId);
+  if (cached) return cached;
+  if (!state.legacyDataset) return null;
+
+  const spawns = state.legacyDataset.spawns.filter((spawn) => spawn.map_id === mapId);
+  const itemIds = new Set(spawns.map((spawn) => spawn.item_id));
+  return {
+    items: state.legacyDataset.items.filter((item) => itemIds.has(item.item_id)),
+    spawns,
+  };
+}
+
+function useMapDataset(mapId, dataset) {
+  if (!state.bootstrap || state.activeMapId !== mapId) return;
+  state.data = prepareData({
+    ...state.bootstrap,
+    items: dataset?.items || [],
+    spawns: dataset?.spawns || [],
+  });
+  renderItems();
+  refreshVisibility();
+  updateMapMeta();
+}
+
+async function loadMapData(mapId, token) {
+  const cached = datasetForMap(mapId);
+  if (cached) {
+    if (token === state.mapLoadToken && mapId === state.activeMapId) {
+      state.loadingMapId = null;
+      useMapDataset(mapId, cached);
+    }
+    return;
+  }
+
+  const map = state.data?.mapsById.get(mapId);
+  if (!map?.data_url) return;
+  state.loadingMapId = mapId;
+  state.mapLoadError = null;
+  updateMapMeta();
+
+  try {
+    const response = await fetch(map.data_url);
+    if (!response.ok) throw new Error(`Could not load marker data for ${map.label}`);
+    const dataset = await response.json();
+    state.mapDataCache.set(mapId, dataset);
+    if (token !== state.mapLoadToken || mapId !== state.activeMapId) return;
+    state.loadingMapId = null;
+    useMapDataset(mapId, dataset);
+  } catch (error) {
+    if (token !== state.mapLoadToken || mapId !== state.activeMapId) return;
+    state.loadingMapId = null;
+    state.mapLoadError = error;
+    updateMapMeta();
+    els.selectionDetail.className = "selection empty";
+    els.selectionDetail.textContent = "The map loaded, but its marker data could not be loaded.";
+    console.error(error);
+  }
+}
+
 function updateMapTabs() {
   els.mapTabs.querySelectorAll(".map-tab").forEach((tab) => {
     const selected = tab.dataset.mapId === state.activeMapId;
@@ -967,7 +1283,7 @@ function renderMapTabs() {
 function updateMapMeta() {
   const map = currentMap();
   const counts = map.counts || state.data.counts || {};
-  els.mapMeta.textContent = [
+  const parts = [
     `${counts.spawns || 0} markers`,
     `${counts.collectable_items || 0} items`,
     `${counts.aniimo || 0} Aniimo`,
@@ -975,12 +1291,53 @@ function updateMapMeta() {
     `${counts.teleports || 0} teleports`,
     `${counts.ambers || 0} ambers`,
     `${counts.misc || 0} misc`,
-  ].join(" - ");
+  ];
+  if (state.loadingMapId === map.id) parts.push("Loading markers");
+  if (state.mapLoadError) parts.push("Marker data unavailable");
+  els.mapMeta.textContent = parts.join(" - ");
+}
+
+function scheduleMapDataLoad(mapId, token) {
+  let queued = false;
+  const load = () => {
+    if (token !== state.mapLoadToken || mapId !== state.activeMapId) return;
+    void loadMapData(mapId, token);
+  };
+  const queueAfterFirstPaint = () => {
+    if (queued || token !== state.mapLoadToken || mapId !== state.activeMapId) return;
+    queued = true;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if ("requestIdleCallback" in window) {
+          window.requestIdleCallback(load, { timeout: 750 });
+        } else {
+          window.setTimeout(load, 150);
+        }
+      });
+    });
+  };
+
+  if (els.mapImage.complete && els.mapImage.naturalWidth) {
+    queueAfterFirstPaint();
+  } else {
+    els.mapImage.addEventListener("load", queueAfterFirstPaint, { once: true });
+    // Preserve marker availability if a preview fails or is unusually slow.
+    window.setTimeout(queueAfterFirstPaint, 2500);
+  }
 }
 
 function switchMap(mapId) {
   if (!state.data.mapsById.has(mapId)) return;
+  const loadToken = ++state.mapLoadToken;
   state.activeMapId = mapId;
+  state.mapLoadError = null;
+  const dataset = datasetForMap(mapId);
+  state.loadingMapId = dataset ? null : mapId;
+  state.data = prepareData({
+    ...state.bootstrap,
+    items: dataset?.items || [],
+    spawns: dataset?.spawns || [],
+  });
   updateMapTabs();
   const url = new URL(window.location.href);
   if (mapId === state.data.maps[0].id) {
@@ -1002,6 +1359,7 @@ function switchMap(mapId) {
   refreshVisibility();
   updateMapMeta();
   fitMap();
+  if (!dataset) scheduleMapDataLoad(mapId, loadToken);
 }
 
 function bindEvents() {
@@ -1051,6 +1409,16 @@ function bindEvents() {
   }, { passive: false });
   els.mapViewport.addEventListener("pointerdown", (event) => {
     if (event.target.closest(".pin")) return;
+    const canvasHit = findCanvasHit(event.clientX, event.clientY);
+    if (canvasHit) {
+      state.canvasPointerHit = {
+        index: canvasHit.index,
+        x: event.clientX,
+        y: event.clientY,
+      };
+      els.mapViewport.setPointerCapture(event.pointerId);
+      return;
+    }
     state.dragging = true;
     state.dragStart = {
       x: event.clientX,
@@ -1063,6 +1431,7 @@ function bindEvents() {
   });
   els.mapViewport.addEventListener("pointermove", (event) => {
     updateCoordinateReadout(event);
+    updateCanvasHover(event);
     if (!state.dragging) return;
     state.panX = state.dragStart.panX + event.clientX - state.dragStart.x;
     state.panY = state.dragStart.panY + event.clientY - state.dragStart.y;
@@ -1070,6 +1439,17 @@ function bindEvents() {
     applyTransform();
   });
   els.mapViewport.addEventListener("pointerup", (event) => {
+    if (state.canvasPointerHit) {
+      const candidate = state.canvasPointerHit;
+      state.canvasPointerHit = null;
+      if (els.mapViewport.hasPointerCapture(event.pointerId)) {
+        els.mapViewport.releasePointerCapture(event.pointerId);
+      }
+      if (Math.hypot(event.clientX - candidate.x, event.clientY - candidate.y) < 8) {
+        selectSpawn(candidate.index);
+      }
+      return;
+    }
     state.dragging = false;
     els.mapViewport.classList.remove("dragging");
     els.mapViewport.releasePointerCapture(event.pointerId);
@@ -1077,6 +1457,11 @@ function bindEvents() {
   els.mapViewport.addEventListener("pointerleave", () => {
     state.dragging = false;
     els.mapViewport.classList.remove("dragging");
+    if (state.hoveredCanvasIndex !== null) {
+      state.hoveredCanvasIndex = null;
+      scheduleCanvasRender();
+    }
+    hideCanvasTooltip();
   });
   window.addEventListener("resize", fitMap);
 }
@@ -1087,7 +1472,19 @@ async function init() {
   if (!response.ok) {
     throw new Error(`Could not load ${DATA_URL}`);
   }
-  state.data = prepareData(await response.json());
+  const loaded = await response.json();
+  if (Array.isArray(loaded.items) || Array.isArray(loaded.spawns)) {
+    state.legacyDataset = {
+      items: Array.isArray(loaded.items) ? loaded.items : [],
+      spawns: Array.isArray(loaded.spawns) ? loaded.spawns : [],
+    };
+  }
+  state.bootstrap = {
+    ...loaded,
+    items: [],
+    spawns: [],
+  };
+  state.data = prepareData(state.bootstrap);
   els.appVersion.textContent = APP_VERSION;
   renderMapTabs();
   switchMap(state.activeMapId);
