@@ -3,5 +3,10 @@ interactive_map_server_*.log
 dist/
 .openai/
 scripts/
+.env
+.env.*
+!.env.example
+app-config.local.js
+supabase/.temp/
 .DS_Store
 Thumbs.db

@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MinMax's Map</title>
-    <link rel="stylesheet" href="./styles.css?v=20260713-streamed-maps-v020">
+    <link rel="stylesheet" href="./styles.css?v=20260714-discord-sync-v022">
   </head>
   <body>
     <main class="app-shell">
-      <aside class="sidebar" aria-label="Map controls">
+      <aside class="sidebar" aria-label="Map and tracking controls">
         <header class="brand">
           <div>
             <h1>MinMax's Map</h1>
@@ -17,30 +17,53 @@
           </div>
         </header>
 
-        <section class="panel">
-          <div id="mapTabs" class="map-tabs" role="tablist" aria-label="Maps"></div>
-          <label class="search-label" for="searchInput">Search</label>
-          <input id="searchInput" class="search" type="search" autocomplete="off" placeholder="Name, area, coordinate">
-          <div class="toolbar" aria-label="Filters">
-            <button id="selectAllButton" type="button">All</button>
-            <button id="selectNoneButton" type="button">Reset</button>
+        <div id="workspaceTabs" class="workspace-tabs" role="tablist" aria-label="Sidebar views">
+          <button id="mapWorkspaceTab" class="workspace-tab" data-workspace-view="map" type="button" role="tab" aria-controls="mapWorkspace" aria-selected="true">Map</button>
+          <button id="trackingWorkspaceTab" class="workspace-tab" data-workspace-view="tracking" type="button" role="tab" aria-controls="trackingWorkspace" aria-selected="false">Tracking</button>
+          <button id="settingsWorkspaceTab" class="workspace-tab" data-workspace-view="settings" type="button" role="tab" aria-controls="settingsWorkspace" aria-selected="false">Settings</button>
+        </div>
+
+        <div id="mapWorkspace" class="sidebar-workspace" role="tabpanel" aria-labelledby="mapWorkspaceTab">
+          <section class="panel">
+            <div id="mapTabs" class="map-tabs" role="tablist" aria-label="Maps"></div>
+            <label class="search-label" for="searchInput">Search</label>
+            <input id="searchInput" class="search" type="search" autocomplete="off" placeholder="Name, area, coordinate">
+            <div class="toolbar" aria-label="Filters">
+              <button id="selectAllButton" type="button">All</button>
+              <button id="selectNoneButton" type="button">Reset</button>
+            </div>
+          </section>
+
+          <section class="panel item-panel">
+            <div class="panel-heading">
+              <h2>Filter</h2>
+              <span id="filterCount" class="filter-count" aria-live="polite">0 / 0</span>
+            </div>
+            <div id="layerTabs" class="layer-tabs" role="tablist" aria-label="Marker layers"></div>
+            <div id="itemList" class="item-list"></div>
+          </section>
+
+          <section class="panel detail-panel" aria-live="polite">
+            <div class="panel-heading">
+              <h2>Selection</h2>
+            </div>
+            <div id="selectionDetail" class="selection empty">No marker selected</div>
+          </section>
+        </div>
+
+        <section id="trackingWorkspace" class="tracking-workspace" role="tabpanel" aria-labelledby="trackingWorkspaceTab" hidden>
+          <div class="panel-heading">
+            <h2>Tracking</h2>
+            <span id="trackingCount" class="filter-count" aria-live="polite">0 tracked</span>
           </div>
+          <div id="trackingList" class="tracking-list"></div>
         </section>
 
-        <section class="panel item-panel">
+        <section id="settingsWorkspace" class="settings-workspace" role="tabpanel" aria-labelledby="settingsWorkspaceTab" hidden>
           <div class="panel-heading">
-            <h2>Filter</h2>
-            <span id="filterCount" class="filter-count" aria-live="polite">0 / 0</span>
+            <h2>Settings</h2>
           </div>
-          <div id="layerTabs" class="layer-tabs" role="tablist" aria-label="Marker layers"></div>
-          <div id="itemList" class="item-list"></div>
-        </section>
-
-        <section class="panel detail-panel" aria-live="polite">
-          <div class="panel-heading">
-            <h2>Selection</h2>
-          </div>
-          <div id="selectionDetail" class="selection empty">No marker selected</div>
+          <div id="settingsContent" class="settings-content"></div>
         </section>
       </aside>
 
@@ -63,6 +86,8 @@
       </section>
     </main>
 
-    <script src="./app.js?v=20260713-streamed-maps-v020"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="./app-config.js?v=20260714-discord-sync-v022"></script>
+    <script defer src="./app.js?v=20260714-discord-sync-v022"></script>
   </body>
 </html>

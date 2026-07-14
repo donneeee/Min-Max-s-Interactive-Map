@@ -1,5 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260713-streamed-maps-v020";
-const APP_VERSION = "v0.3.20";
+const DATA_URL = "./data/map_site_data.json?v=20260714-discord-sync-v022";
+const APP_VERSION = "v0.3.22";
+const SUPABASE_TRACKING_TABLE = "map_user_tracking";
+const SUPABASE_COMPLETION_TABLE = "map_user_completed_markers";
+const TRACKING_TICK_MS = 1000;
 const MIN_SCALE = 0.03;
 const MAX_SCALE = 16;
 const MAP_EDGE_MARGIN = 48;
@@ -52,11 +55,32 @@ const state = {
   dragStart: null,
   selectedPin: null,
   selectedSpawnIndex: null,
+  sidebarView: "map",
+  tracking: new Map(),
+  completed: new Map(),
+  trackingTicker: 0,
+  authClient: null,
+  authUser: null,
+  authStatus: "unconfigured",
+  authError: "",
+  authLoadToken: 0,
+  pendingTrackingIds: new Set(),
+  pendingReset: false,
 };
 
 const els = {
   mapMeta: document.querySelector("#mapMeta"),
   appVersion: document.querySelector("#appVersion"),
+  workspaceTabs: document.querySelector("#workspaceTabs"),
+  mapWorkspaceTab: document.querySelector("#mapWorkspaceTab"),
+  trackingWorkspaceTab: document.querySelector("#trackingWorkspaceTab"),
+  settingsWorkspaceTab: document.querySelector("#settingsWorkspaceTab"),
+  mapWorkspace: document.querySelector("#mapWorkspace"),
+  trackingWorkspace: document.querySelector("#trackingWorkspace"),
+  settingsWorkspace: document.querySelector("#settingsWorkspace"),
+  trackingCount: document.querySelector("#trackingCount"),
+  trackingList: document.querySelector("#trackingList"),
+  settingsContent: document.querySelector("#settingsContent"),
   mapTabs: document.querySelector("#mapTabs"),
   searchInput: document.querySelector("#searchInput"),
   filterCount: document.querySelector("#filterCount"),
@@ -94,6 +118,127 @@ function formatCoordinate(value) {
   return Number.isFinite(number) ? String(Math.round(number)) : "";
 }
 
+function positiveInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+}
+
+function formatCountdown(seconds) {
+  const total = Math.max(0, Math.ceil(Number(seconds) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remainder = total % 60;
+  return [hours, minutes, remainder]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+}
+
+function formatRespawnDuration(seconds) {
+  const total = positiveInteger(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remainder = total % 60;
+  const parts = [];
+  if (hours) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+  if (minutes) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+  if (remainder) parts.push(`${remainder} second${remainder === 1 ? "" : "s"}`);
+  return parts.join(" ") || "Unknown";
+}
+
+function formatLocalReadyTime(timestamp) {
+  const readyAt = new Date(timestamp);
+  if (Number.isNaN(readyAt.getTime())) return "Unknown";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(readyAt);
+}
+
+function trackingIdForSpawn(spawn) {
+  const x = Number(spawn?.x);
+  const y = Number(spawn?.y);
+  return [
+    spawn?.map_id,
+    spawn?.scene_id,
+    spawn?.item_id,
+    Number.isFinite(x) ? x.toFixed(2) : "",
+    Number.isFinite(y) ? y.toFixed(2) : "",
+  ].join(":");
+}
+
+function isTrackableOverworldItem(spawn) {
+  return Boolean(
+    spawn
+    && spawn.marker_type === "collect_item"
+    && spawn.respawn_verified === true
+    && positiveInteger(spawn.respawn_seconds),
+  );
+}
+
+function getSyncConfig() {
+  const config = window.MINMAX_MAP_CONFIG && typeof window.MINMAX_MAP_CONFIG === "object"
+    ? window.MINMAX_MAP_CONFIG
+    : {};
+  const url = String(config.supabaseUrl || "").trim().replace(/\/+$/, "");
+  const key = String(
+    config.supabasePublishableKey || config.supabaseAnonKey || config.supabaseKey || "",
+  ).trim();
+  return {
+    url,
+    key,
+    configured: Boolean(url && key),
+  };
+}
+
+function syncAccountName(user) {
+  const metadata = user?.user_metadata || {};
+  return String(
+    metadata.global_name
+    || metadata.full_name
+    || metadata.user_name
+    || metadata.name
+    || user?.email
+    || "Discord account",
+  ).trim();
+}
+
+function timestampFor(value) {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function normalizeTrackingEntry(value) {
+  if (!value || typeof value !== "object") return null;
+  const id = String(value.marker_id || value.id || "").trim();
+  const itemId = String(value.item_id || "").trim();
+  const mapId = String(value.map_id || "").trim();
+  const respawnSeconds = positiveInteger(value.respawn_seconds);
+  if (!id || !itemId || !mapId || !respawnSeconds) return null;
+
+  const startedAt = timestampFor(value.started_at);
+  return {
+    id,
+    map_id: mapId,
+    map_label: String(value.map_label || mapId).trim(),
+    scene_id: String(value.scene_id || "").trim(),
+    item_id: itemId,
+    display_name: String(value.display_name || itemId).trim(),
+    icon: String(value.icon || "").trim(),
+    coordinate_key: String(value.coordinate_key || "").trim(),
+    x: Number(value.x),
+    y: Number(value.y),
+    area_name: String(value.area_name || "").trim(),
+    respawn_seconds: respawnSeconds,
+    respawn_label: String(value.respawn_label || "").trim(),
+    started_at: startedAt && startedAt > 0 ? new Date(startedAt).toISOString() : null,
+  };
+}
+
 function colorForIndex(index) {
   return COLORS[index % COLORS.length];
 }
@@ -117,6 +262,7 @@ function markerTypeLabel(type) {
   if (type === "teleport_nurture") return "Nurture";
   if (type === "teleport_vein_abundance") return "Vein Abundance";
   if (type === "lumin_amber") return "Lumin Amber";
+  if (type === "lumin_marking") return "Lumin Marking";
   if (type === "underground_entrance") return "Underground Entrance";
   if (type === "morphling_memory") return "Morphling Memory";
   if (type === "lighthouse_book") return "Book";
@@ -223,6 +369,550 @@ function activeMapSpawnEntries(itemId) {
 
 function areaDetailValue(spawn) {
   return spawn.area_name || spawn.large_area_name || spawn.level_area_name || spawn.area_inferred_name || spawn.region_name || "";
+}
+
+function trackingEntryForSpawn(spawn, item) {
+  if (!isTrackableOverworldItem(spawn) || !item) return null;
+  const map = state.data?.mapsById.get(spawn.map_id);
+  return {
+    id: trackingIdForSpawn(spawn),
+    map_id: spawn.map_id,
+    map_label: map?.label || spawn.map_id,
+    scene_id: String(spawn.scene_id || ""),
+    item_id: spawn.item_id,
+    display_name: spawn.display_name || item.display_name || spawn.item_id,
+    icon: item.icon || "",
+    coordinate_key: spawn.coordinate_key || "",
+    x: Number(spawn.x),
+    y: Number(spawn.y),
+    area_name: areaDetailValue(spawn),
+    respawn_seconds: positiveInteger(spawn.respawn_seconds),
+    respawn_label: spawn.respawn_label || formatRespawnDuration(spawn.respawn_seconds),
+    started_at: null,
+  };
+}
+
+function trackingReadyAt(entry) {
+  const startedAt = timestampFor(entry?.started_at);
+  return startedAt && startedAt > 0
+    ? startedAt + positiveInteger(entry.respawn_seconds) * 1000
+    : null;
+}
+
+function trackingRowForEntry(entry) {
+  return {
+    user_id: state.authUser?.id,
+    marker_id: entry.id,
+    map_id: entry.map_id,
+    map_label: entry.map_label,
+    scene_id: entry.scene_id,
+    item_id: entry.item_id,
+    display_name: entry.display_name,
+    icon: entry.icon,
+    coordinate_key: entry.coordinate_key,
+    x: entry.x,
+    y: entry.y,
+    area_name: entry.area_name,
+    respawn_seconds: entry.respawn_seconds,
+    respawn_label: entry.respawn_label,
+    started_at: entry.started_at,
+  };
+}
+
+function isSignedIn() {
+  return Boolean(state.authClient && state.authUser);
+}
+
+function renderSyncCallout(title, message, action) {
+  const callout = document.createElement("div");
+  callout.className = "sync-callout";
+  if (action?.danger) callout.classList.add("sync-error");
+
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const description = document.createElement("p");
+  description.textContent = message;
+  callout.append(heading, description);
+
+  if (action?.label && typeof action.onClick === "function") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = action.label;
+    button.disabled = Boolean(action.disabled);
+    button.addEventListener("click", action.onClick);
+    callout.append(button);
+  }
+  return callout;
+}
+
+function refreshAccountViews() {
+  renderTracking();
+  renderSettings();
+  if (state.data && state.selectedSpawnIndex !== null) {
+    selectSpawn(state.selectedSpawnIndex);
+  }
+}
+
+function reportSyncError(error) {
+  state.authStatus = "error";
+  state.authError = error instanceof Error ? error.message : String(error || "Sync failed");
+  refreshAccountViews();
+}
+
+async function applyAuthSession(session) {
+  const loadToken = ++state.authLoadToken;
+  state.authUser = session?.user || null;
+  state.authError = "";
+  state.tracking = new Map();
+  state.completed = new Map();
+
+  if (!state.authUser) {
+    state.authStatus = state.authClient ? "signed_out" : "unconfigured";
+    refreshAccountViews();
+    return;
+  }
+
+  state.authStatus = "loading";
+  refreshAccountViews();
+  const userId = state.authUser.id;
+  const [trackingResult, completionResult] = await Promise.all([
+    state.authClient
+      .from(SUPABASE_TRACKING_TABLE)
+      .select("marker_id, map_id, map_label, scene_id, item_id, display_name, icon, coordinate_key, x, y, area_name, respawn_seconds, respawn_label, started_at")
+      .eq("user_id", userId),
+    state.authClient
+      .from(SUPABASE_COMPLETION_TABLE)
+      .select("marker_id, map_id, scene_id, item_id, marker_type, display_name, coordinate_key, x, y, completed_at")
+      .eq("user_id", userId),
+  ]);
+
+  if (loadToken !== state.authLoadToken) return;
+  if (trackingResult.error || completionResult.error) {
+    reportSyncError(trackingResult.error || completionResult.error);
+    return;
+  }
+
+  const trackingEntries = (trackingResult.data || [])
+    .map(normalizeTrackingEntry)
+    .filter(Boolean);
+  state.tracking = new Map(trackingEntries.map((entry) => [entry.id, entry]));
+  state.completed = new Map((completionResult.data || []).map((entry) => [entry.marker_id, entry]));
+  state.authStatus = "ready";
+  refreshAccountViews();
+}
+
+async function initializeDiscordSync() {
+  const config = getSyncConfig();
+  if (!config.configured) {
+    state.authStatus = "unconfigured";
+    refreshAccountViews();
+    return;
+  }
+  if (!window.supabase?.createClient) {
+    state.authStatus = "error";
+    state.authError = "The Discord sync client could not be loaded.";
+    refreshAccountViews();
+    return;
+  }
+
+  try {
+    state.authStatus = "loading";
+    state.authClient = window.supabase.createClient(config.url, config.key, {
+      auth: {
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        persistSession: true,
+      },
+    });
+    const { data, error } = await state.authClient.auth.getSession();
+    if (error) throw error;
+    state.authClient.auth.onAuthStateChange((_event, nextSession) => {
+      window.setTimeout(() => {
+        applyAuthSession(nextSession).catch(reportSyncError);
+      }, 0);
+    });
+    await applyAuthSession(data.session);
+  } catch (error) {
+    reportSyncError(error);
+  }
+}
+
+async function signInWithDiscord() {
+  if (!state.authClient) {
+    setSidebarView("settings");
+    return;
+  }
+  try {
+    state.authStatus = "redirecting";
+    state.authError = "";
+    refreshAccountViews();
+    const redirectUrl = new URL(window.location.href);
+    redirectUrl.searchParams.delete("code");
+    redirectUrl.searchParams.delete("error");
+    redirectUrl.searchParams.delete("error_code");
+    const { error } = await state.authClient.auth.signInWithOAuth({
+      provider: "discord",
+      options: { redirectTo: redirectUrl.toString() },
+    });
+    if (error) throw error;
+  } catch (error) {
+    reportSyncError(error);
+  }
+}
+
+async function signOutDiscord() {
+  if (!state.authClient) return;
+  try {
+    const { error } = await state.authClient.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    reportSyncError(error);
+  }
+}
+
+async function saveTrackingEntry(entry) {
+  if (!isSignedIn() || !entry) return;
+  state.pendingTrackingIds.add(entry.id);
+  renderTracking();
+  try {
+    const { data, error } = await state.authClient
+      .from(SUPABASE_TRACKING_TABLE)
+      .upsert(trackingRowForEntry(entry), { onConflict: "user_id,marker_id" })
+      .select("marker_id, map_id, map_label, scene_id, item_id, display_name, icon, coordinate_key, x, y, area_name, respawn_seconds, respawn_label, started_at")
+      .single();
+    if (error) throw error;
+    const saved = normalizeTrackingEntry(data);
+    if (saved) state.tracking.set(saved.id, saved);
+  } catch (error) {
+    reportSyncError(error);
+  } finally {
+    state.pendingTrackingIds.delete(entry.id);
+    refreshAccountViews();
+  }
+}
+
+async function addTrackingForSpawn(spawn, item) {
+  if (!isSignedIn()) {
+    await signInWithDiscord();
+    return;
+  }
+  const entry = trackingEntryForSpawn(spawn, item);
+  if (!entry) return;
+  const existing = state.tracking.get(entry.id);
+  if (existing) entry.started_at = existing.started_at;
+  await saveTrackingEntry(entry);
+}
+
+async function updateTrackingStarted(id, startedAt) {
+  const entry = state.tracking.get(id);
+  if (!entry || !isSignedIn()) return;
+  await saveTrackingEntry({ ...entry, started_at: startedAt });
+}
+
+async function removeTracking(id) {
+  if (!isSignedIn() || !state.tracking.has(id)) return;
+  state.pendingTrackingIds.add(id);
+  renderTracking();
+  try {
+    const { error } = await state.authClient
+      .from(SUPABASE_TRACKING_TABLE)
+      .delete()
+      .eq("user_id", state.authUser.id)
+      .eq("marker_id", id);
+    if (error) throw error;
+    state.tracking.delete(id);
+  } catch (error) {
+    reportSyncError(error);
+  } finally {
+    state.pendingTrackingIds.delete(id);
+    refreshAccountViews();
+  }
+}
+
+async function resetSyncedData() {
+  if (!isSignedIn() || state.pendingReset) return;
+  if (!window.confirm("Reset all synced timers and completed markers for this Discord account?")) return;
+  state.pendingReset = true;
+  renderSettings();
+  try {
+    const [trackingResult, completionResult] = await Promise.all([
+      state.authClient.from(SUPABASE_TRACKING_TABLE).delete().eq("user_id", state.authUser.id),
+      state.authClient.from(SUPABASE_COMPLETION_TABLE).delete().eq("user_id", state.authUser.id),
+    ]);
+    if (trackingResult.error || completionResult.error) {
+      throw trackingResult.error || completionResult.error;
+    }
+    state.tracking = new Map();
+    state.completed = new Map();
+  } catch (error) {
+    reportSyncError(error);
+  } finally {
+    state.pendingReset = false;
+    refreshAccountViews();
+  }
+}
+
+function compareTrackingEntries(a, b) {
+  const aReadyAt = trackingReadyAt(a);
+  const bReadyAt = trackingReadyAt(b);
+  if (Boolean(aReadyAt) !== Boolean(bReadyAt)) return aReadyAt ? -1 : 1;
+  if (aReadyAt && bReadyAt && aReadyAt !== bReadyAt) return aReadyAt - bReadyAt;
+  const nameCompare = compareText(a.display_name, b.display_name);
+  if (nameCompare !== 0) return nameCompare;
+  return compareText(a.id, b.id);
+}
+
+function updateTrackingCountdowns() {
+  if (state.sidebarView !== "tracking") return;
+  const now = Date.now();
+  els.trackingList.querySelectorAll("[data-tracking-id]").forEach((card) => {
+    const entry = state.tracking.get(card.dataset.trackingId);
+    const countdown = card.querySelector("[data-tracking-countdown]");
+    if (!entry || !countdown || !entry.started_at) return;
+    const remaining = Math.max(0, trackingReadyAt(entry) - now);
+    card.classList.toggle("is-ready", remaining === 0);
+    countdown.textContent = remaining ? `Respawns in ${formatCountdown(remaining / 1000)}` : "Ready now";
+  });
+}
+
+function stopTrackingTicker() {
+  if (!state.trackingTicker) return;
+  window.clearInterval(state.trackingTicker);
+  state.trackingTicker = 0;
+}
+
+function startTrackingTicker() {
+  stopTrackingTicker();
+  if (state.sidebarView !== "tracking") return;
+  state.trackingTicker = window.setInterval(updateTrackingCountdowns, TRACKING_TICK_MS);
+}
+
+function renderTracking() {
+  const entries = [...state.tracking.values()].sort(compareTrackingEntries);
+  els.trackingCount.textContent = `${entries.length} tracked`;
+  els.trackingList.textContent = "";
+
+  const config = getSyncConfig();
+  if (!config.configured) {
+    els.trackingList.append(renderSyncCallout(
+      "Discord sync is not configured",
+      "Add the Supabase URL and publishable key in app-config.js to enable synced tracking.",
+    ));
+    return;
+  }
+  if (!state.authClient || state.authStatus === "loading" || state.authStatus === "redirecting") {
+    const message = state.authStatus === "redirecting"
+      ? "Opening Discord sign-in..."
+      : "Connecting to Discord sync...";
+    els.trackingList.append(renderSyncCallout("Tracking", message));
+    return;
+  }
+  if (!state.authUser) {
+    els.trackingList.append(renderSyncCallout(
+      "Track across devices",
+      "Sign in with Discord to save verified overworld item timers to your account.",
+      { label: "Sign in with Discord", onClick: signInWithDiscord },
+    ));
+    return;
+  }
+  if (state.authStatus === "error") {
+    els.trackingList.append(renderSyncCallout(
+      "Discord sync needs attention",
+      state.authError || "The saved tracking data could not be loaded.",
+      { label: "Retry sync", onClick: () => applyAuthSession({ user: state.authUser }), danger: true },
+    ));
+    return;
+  }
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "tracking-empty";
+    empty.textContent = "No items tracked";
+    els.trackingList.append(empty);
+    return;
+  }
+
+  const now = Date.now();
+  const fragment = document.createDocumentFragment();
+  entries.forEach((entry) => {
+    const card = document.createElement("article");
+    card.className = "tracking-card";
+    card.dataset.trackingId = entry.id;
+    const pending = state.pendingTrackingIds.has(entry.id);
+
+    const header = document.createElement("div");
+    header.className = "tracking-card-header";
+    header.append(makeIcon("tracking-icon", entry.icon));
+
+    const title = document.createElement("div");
+    title.className = "tracking-card-title";
+    const name = document.createElement("strong");
+    name.textContent = entry.display_name;
+    name.title = entry.display_name;
+    const location = document.createElement("small");
+    location.textContent = [
+      entry.map_label,
+      entry.area_name,
+      `X ${formatCoordinate(entry.x)}, Y ${formatCoordinate(entry.y)}`,
+    ].filter(Boolean).join(" - ");
+    location.title = location.textContent;
+    title.append(name, location);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "tracking-remove";
+    remove.textContent = "Remove";
+    remove.title = "Remove from tracking";
+    remove.disabled = pending;
+    remove.addEventListener("click", () => removeTracking(entry.id));
+    header.append(title, remove);
+
+    const status = document.createElement("div");
+    status.className = "tracking-status";
+    const statusLabel = document.createElement("span");
+    statusLabel.className = "tracking-status-label";
+    const countdown = document.createElement("strong");
+    countdown.className = "tracking-countdown";
+    countdown.dataset.trackingCountdown = "";
+    const readyAt = trackingReadyAt(entry);
+    if (readyAt) {
+      const readyDate = new Date(readyAt);
+      const remaining = Math.max(0, readyAt - now);
+      card.classList.toggle("is-ready", remaining === 0);
+      statusLabel.textContent = `Ready at ${formatLocalReadyTime(readyAt)}`;
+      statusLabel.title = readyDate.toLocaleString();
+      countdown.textContent = remaining ? `Respawns in ${formatCountdown(remaining / 1000)}` : "Ready now";
+    } else {
+      statusLabel.textContent = `Respawn: ${entry.respawn_label || formatRespawnDuration(entry.respawn_seconds)}`;
+      countdown.textContent = "Not tracking";
+    }
+    status.append(statusLabel, countdown);
+
+    const actions = document.createElement("div");
+    actions.className = "tracking-actions";
+    const action = document.createElement("button");
+    action.type = "button";
+    action.textContent = readyAt ? "Reset" : "Start Tracking";
+    action.disabled = pending;
+    action.addEventListener("click", () => {
+      updateTrackingStarted(entry.id, readyAt ? null : new Date().toISOString());
+    });
+    actions.append(action);
+
+    card.append(header, status, actions);
+    fragment.append(card);
+  });
+  els.trackingList.append(fragment);
+  updateTrackingCountdowns();
+}
+
+function renderSettings() {
+  els.settingsContent.textContent = "";
+  const config = getSyncConfig();
+  if (!config.configured) {
+    els.settingsContent.append(renderSyncCallout(
+      "Discord sync setup",
+      "Add your Supabase project URL and publishable key to app-config.js, then enable Discord in Supabase Authentication.",
+    ));
+    return;
+  }
+  if (!state.authClient || state.authStatus === "loading" || state.authStatus === "redirecting") {
+    els.settingsContent.append(renderSyncCallout(
+      "Discord sync",
+      state.authStatus === "redirecting" ? "Opening Discord sign-in..." : "Connecting to the sync service...",
+    ));
+    return;
+  }
+  if (!state.authUser) {
+    const message = state.authStatus === "error"
+      ? state.authError || "Discord sync could not be initialized."
+      : "Sign in with Discord to sync timers and future completed-marker progress across devices.";
+    els.settingsContent.append(renderSyncCallout(
+      "Discord sync",
+      message,
+      { label: "Sign in with Discord", onClick: signInWithDiscord, danger: state.authStatus === "error" },
+    ));
+    return;
+  }
+
+  const account = document.createElement("div");
+  account.className = "settings-card";
+  const identity = document.createElement("div");
+  identity.className = "settings-account";
+  const name = document.createElement("strong");
+  name.textContent = syncAccountName(state.authUser);
+  const detail = document.createElement("small");
+  detail.textContent = "Signed in with Discord";
+  identity.append(name, detail);
+
+  const stats = document.createElement("div");
+  stats.className = "settings-stats";
+  const timerStat = document.createElement("div");
+  timerStat.className = "settings-stat";
+  const timerValue = document.createElement("strong");
+  timerValue.textContent = String(state.tracking.size);
+  const timerLabel = document.createElement("span");
+  timerLabel.textContent = "Tracked items";
+  timerStat.append(timerValue, timerLabel);
+  const completeStat = document.createElement("div");
+  completeStat.className = "settings-stat";
+  const completeValue = document.createElement("strong");
+  completeValue.textContent = String(state.completed.size);
+  const completeLabel = document.createElement("span");
+  completeLabel.textContent = "Completed markers";
+  completeStat.append(completeValue, completeLabel);
+  stats.append(timerStat, completeStat);
+
+  const actions = document.createElement("div");
+  actions.className = "settings-actions";
+  const signOut = document.createElement("button");
+  signOut.type = "button";
+  signOut.textContent = "Sign out";
+  signOut.addEventListener("click", signOutDiscord);
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "settings-danger";
+  reset.textContent = state.pendingReset ? "Resetting..." : "Reset synced data";
+  reset.disabled = state.pendingReset;
+  reset.addEventListener("click", resetSyncedData);
+  actions.append(signOut, reset);
+  account.append(identity, stats, actions);
+  els.settingsContent.append(account);
+
+  if (state.authStatus === "error") {
+    els.settingsContent.append(renderSyncCallout(
+      "Sync warning",
+      state.authError || "Some synced data could not be loaded.",
+      { label: "Retry sync", onClick: () => applyAuthSession({ user: state.authUser }), danger: true },
+    ));
+  }
+}
+
+function updateWorkspaceTabs() {
+  const workspaces = {
+    map: { tab: els.mapWorkspaceTab, panel: els.mapWorkspace },
+    tracking: { tab: els.trackingWorkspaceTab, panel: els.trackingWorkspace },
+    settings: { tab: els.settingsWorkspaceTab, panel: els.settingsWorkspace },
+  };
+  Object.entries(workspaces).forEach(([view, workspace]) => {
+    const selected = state.sidebarView === view;
+    workspace.tab.setAttribute("aria-selected", String(selected));
+    workspace.tab.tabIndex = selected ? 0 : -1;
+    workspace.panel.hidden = !selected;
+  });
+}
+
+function setSidebarView(view) {
+  const nextView = ["map", "tracking", "settings"].includes(view) ? view : "map";
+  state.sidebarView = nextView;
+  updateWorkspaceTabs();
+  if (nextView === "tracking") {
+    renderTracking();
+    startTrackingTicker();
+  } else {
+    stopTrackingTicker();
+    if (nextView === "settings") renderSettings();
+  }
+  stabilizeViewport();
 }
 
 function fallbackCopyText(text) {
@@ -552,6 +1242,7 @@ function itemSearchText(item) {
     item.display_name,
     item.subtitle,
     item.book_names,
+    item.marker_names,
     item.layer_id,
     item.inventory_label,
     item.display_type_label,
@@ -1097,12 +1788,14 @@ function selectSpawn(index) {
   const grid = document.createElement("div");
   grid.className = "detail-grid";
   const typeLabel = spawn.display_type_label || item.display_type_label || markerTypeLabel(spawn.marker_type);
+  const trackable = isTrackableOverworldItem(spawn);
   const rows = [
     ["Type", typeLabel],
     ["X", formatCoordinate(spawn.x), formatCoordinate(spawn.x)],
     ["Y", formatCoordinate(spawn.y), formatCoordinate(spawn.y)],
     ["Height", formatNumber(spawn.height_y, 2)],
   ];
+  if (trackable) rows.push(["Respawn", spawn.respawn_label || formatRespawnDuration(spawn.respawn_seconds)]);
   const areaValue = areaDetailValue(spawn);
   if (areaValue) rows.push(["Area", areaValue]);
   if (spawn.form_label || item.form_label) rows.push(["Form", spawn.form_label || item.form_label]);
@@ -1137,6 +1830,32 @@ function selectSpawn(index) {
   locate.textContent = "Locate";
   locate.addEventListener("click", () => focusSpawn(spawn));
   els.selectionDetail.append(title, grid, locate);
+
+  if (trackable) {
+    const trackingId = trackingIdForSpawn(spawn);
+    const track = document.createElement("button");
+    track.type = "button";
+    track.className = "track-selection-button";
+    if (isSignedIn() && state.tracking.has(trackingId)) {
+      track.textContent = "Open Tracking";
+      track.addEventListener("click", () => setSidebarView("tracking"));
+    } else if (isSignedIn()) {
+      track.textContent = "Add to Tracking";
+      track.addEventListener("click", () => {
+        addTrackingForSpawn(spawn, item);
+      });
+    } else {
+      const configured = getSyncConfig().configured;
+      track.textContent = state.authClient
+        ? "Sign in to Track"
+        : configured
+          ? "Tracking is loading"
+          : "Tracking needs setup";
+      track.disabled = !state.authClient;
+      if (state.authClient) track.addEventListener("click", signInWithDiscord);
+    }
+    els.selectionDetail.append(track);
+  }
 }
 
 function focusSpawn(spawn) {
@@ -1365,6 +2084,25 @@ function switchMap(mapId) {
 function bindEvents() {
   window.addEventListener("scroll", resetDocumentScroll, { passive: true });
   els.mapViewport.addEventListener("scroll", resetMapScroll, { passive: true });
+  els.mapWorkspaceTab.addEventListener("click", () => setSidebarView("map"));
+  els.trackingWorkspaceTab.addEventListener("click", () => setSidebarView("tracking"));
+  els.settingsWorkspaceTab.addEventListener("click", () => setSidebarView("settings"));
+  els.workspaceTabs.addEventListener("keydown", (event) => {
+    if (!new Set(["ArrowLeft", "ArrowRight", "Home", "End"]).has(event.key)) return;
+    const tabs = [els.mapWorkspaceTab, els.trackingWorkspaceTab, els.settingsWorkspaceTab];
+    const currentIndex = Math.max(0, tabs.findIndex((tab) => tab.dataset.workspaceView === state.sidebarView));
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = tabs.length - 1;
+    event.preventDefault();
+    setSidebarView(tabs[nextIndex].dataset.workspaceView);
+    tabs[nextIndex].focus();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) updateTrackingCountdowns();
+  });
   els.searchInput.addEventListener("input", () => {
     state.search = normalizedSearch(els.searchInput.value);
     refreshVisibility();
@@ -1486,8 +2224,12 @@ async function init() {
   };
   state.data = prepareData(state.bootstrap);
   els.appVersion.textContent = APP_VERSION;
+  updateWorkspaceTabs();
+  renderTracking();
+  renderSettings();
   renderMapTabs();
   switchMap(state.activeMapId);
+  void initializeDiscordSync();
 }
 
 init().catch((error) => {
