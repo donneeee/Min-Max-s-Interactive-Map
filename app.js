@@ -1,8 +1,9 @@
-const DATA_URL = "./data/map_site_data.json?v=20260714-discord-sync-v022";
-const APP_VERSION = "v0.3.23";
-const SUPABASE_TRACKING_TABLE = "map_user_tracking";
-const SUPABASE_COMPLETION_TABLE = "map_user_completed_markers";
+const DATA_URL = "./data/map_site_data.json?v=20260715-quest-lumen-seeds-v037";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260715-quest-lumen-seeds-v037";
+const APP_VERSION = "v0.3.36";
 const TRACKING_TICK_MS = 1000;
+const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
+const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
 const MIN_SCALE = 0.03;
 const MAX_SCALE = 16;
 const MAP_EDGE_MARGIN = 48;
@@ -11,7 +12,9 @@ const PIN_CANVAS_THRESHOLD = 450;
 const CANVAS_HIT_CELL_SIZE = 128;
 const REQUESTED_MAP_ID = new URLSearchParams(window.location.search).get("map");
 const MOBILE_LAYOUT_QUERY = window.matchMedia("(max-width: 820px)");
-const DISCORD_SYNC_SETUP_URL = "https://github.com/donneeee/Min-Max-s-Interactive-Map/blob/main/DISCORD_SYNC_SETUP.md";
+// Keep incomplete physical reward sources out of the public map without
+// removing their extracted data or assets.
+const TEMPORARILY_HIDDEN_ITEM_IDS = new Set(["source:hollow_stump"]);
 const COLORS = [
   "#7fc6b2",
   "#e8bf63",
@@ -37,6 +40,10 @@ const state = {
   mapLoadError: null,
   tileMapId: null,
   tileFrame: 0,
+  viewportFitFrame: 0,
+  viewportWidth: 0,
+  viewportHeight: 0,
+  viewportResizeObserver: null,
   visibleEntries: [],
   canvasEntries: [],
   canvasHitGrid: new Map(),
@@ -57,18 +64,20 @@ const state = {
   dragStart: null,
   selectedPin: null,
   selectedSpawnIndex: null,
+  locatedSpawnIndex: null,
   mobileSelectionMinimized: true,
   sidebarView: "map",
   tracking: new Map(),
-  completed: new Map(),
+  completed: new Set(),
+  checklistData: null,
+  checklistLoadError: "",
+  checklistCategory: "aniimo",
+  luminChecklistTab: "ambers",
+  checklistSearch: "",
   trackingTicker: 0,
-  authClient: null,
-  authUser: null,
-  authStatus: "unconfigured",
-  authError: "",
-  authLoadToken: 0,
   pendingTrackingIds: new Set(),
   pendingReset: false,
+  localStorageError: "",
 };
 
 const els = {
@@ -77,12 +86,19 @@ const els = {
   workspaceTabs: document.querySelector("#workspaceTabs"),
   mapWorkspaceTab: document.querySelector("#mapWorkspaceTab"),
   trackingWorkspaceTab: document.querySelector("#trackingWorkspaceTab"),
+  checklistWorkspaceTab: document.querySelector("#checklistWorkspaceTab"),
   settingsWorkspaceTab: document.querySelector("#settingsWorkspaceTab"),
   mapWorkspace: document.querySelector("#mapWorkspace"),
   trackingWorkspace: document.querySelector("#trackingWorkspace"),
+  checklistWorkspace: document.querySelector("#checklistWorkspace"),
   settingsWorkspace: document.querySelector("#settingsWorkspace"),
   trackingCount: document.querySelector("#trackingCount"),
   trackingList: document.querySelector("#trackingList"),
+  checklistCount: document.querySelector("#checklistCount"),
+  checklistCategoryTabs: document.querySelector("#checklistCategoryTabs"),
+  luminChecklistTabs: document.querySelector("#luminChecklistTabs"),
+  checklistSearchInput: document.querySelector("#checklistSearchInput"),
+  checklistList: document.querySelector("#checklistList"),
   settingsContent: document.querySelector("#settingsContent"),
   mapTabs: document.querySelector("#mapTabs"),
   searchInput: document.querySelector("#searchInput"),
@@ -174,40 +190,21 @@ function trackingIdForSpawn(spawn) {
   ].join(":");
 }
 
-function isTrackableOverworldItem(spawn) {
+function respawnSecondsForSpawn(spawn, item) {
+  return positiveInteger(spawn?.respawn_seconds) || positiveInteger(item?.respawn_seconds);
+}
+
+function respawnLabelForSpawn(spawn, item) {
+  return String(spawn?.respawn_label || item?.respawn_label || "").trim()
+    || formatRespawnDuration(respawnSecondsForSpawn(spawn, item));
+}
+
+function isTrackableOverworldItem(spawn, item) {
   return Boolean(
     spawn
     && spawn.marker_type === "collect_item"
-    && spawn.respawn_verified === true
-    && positiveInteger(spawn.respawn_seconds),
+    && respawnSecondsForSpawn(spawn, item),
   );
-}
-
-function getSyncConfig() {
-  const config = window.MINMAX_MAP_CONFIG && typeof window.MINMAX_MAP_CONFIG === "object"
-    ? window.MINMAX_MAP_CONFIG
-    : {};
-  const url = String(config.supabaseUrl || "").trim().replace(/\/+$/, "");
-  const key = String(
-    config.supabasePublishableKey || config.supabaseAnonKey || config.supabaseKey || "",
-  ).trim();
-  return {
-    url,
-    key,
-    configured: Boolean(url && key),
-  };
-}
-
-function syncAccountName(user) {
-  const metadata = user?.user_metadata || {};
-  return String(
-    metadata.global_name
-    || metadata.full_name
-    || metadata.user_name
-    || metadata.name
-    || user?.email
-    || "Discord account",
-  ).trim();
 }
 
 function timestampFor(value) {
@@ -269,6 +266,7 @@ function markerTypeLabel(type) {
   if (type === "teleport_vein_abundance") return "Vein Abundance";
   if (type === "lumin_amber") return "Lumin Amber";
   if (type === "lumin_marking") return "Lumin Marking";
+  if (type === "quest_lumen_seed") return "Quest Lumen Seed";
   if (type === "underground_entrance") return "Underground Entrance";
   if (type === "morphling_memory") return "Morphling Memory";
   if (type === "lighthouse_book") return "Book";
@@ -278,6 +276,7 @@ function markerTypeLabel(type) {
   if (type === "astra_shop") return "Shop";
   if (type === "pathfinder_challenger") return "Pathfinder Challenge";
   if (type === "elite_pathfinder_challenger") return "Elite Pathfinder Challenge";
+  if (type === "physical_reward_source") return "Overworld Reward";
   return "Collectable";
 }
 
@@ -378,7 +377,7 @@ function areaDetailValue(spawn) {
 }
 
 function trackingEntryForSpawn(spawn, item) {
-  if (!isTrackableOverworldItem(spawn) || !item) return null;
+  if (!isTrackableOverworldItem(spawn, item) || !item) return null;
   const map = state.data?.mapsById.get(spawn.map_id);
   return {
     id: trackingIdForSpawn(spawn),
@@ -392,8 +391,8 @@ function trackingEntryForSpawn(spawn, item) {
     x: Number(spawn.x),
     y: Number(spawn.y),
     area_name: areaDetailValue(spawn),
-    respawn_seconds: positiveInteger(spawn.respawn_seconds),
-    respawn_label: spawn.respawn_label || formatRespawnDuration(spawn.respawn_seconds),
+    respawn_seconds: respawnSecondsForSpawn(spawn, item),
+    respawn_label: respawnLabelForSpawn(spawn, item),
     started_at: null,
   };
 }
@@ -403,30 +402,6 @@ function trackingReadyAt(entry) {
   return startedAt && startedAt > 0
     ? startedAt + positiveInteger(entry.respawn_seconds) * 1000
     : null;
-}
-
-function trackingRowForEntry(entry) {
-  return {
-    user_id: state.authUser?.id,
-    marker_id: entry.id,
-    map_id: entry.map_id,
-    map_label: entry.map_label,
-    scene_id: entry.scene_id,
-    item_id: entry.item_id,
-    display_name: entry.display_name,
-    icon: entry.icon,
-    coordinate_key: entry.coordinate_key,
-    x: entry.x,
-    y: entry.y,
-    area_name: entry.area_name,
-    respawn_seconds: entry.respawn_seconds,
-    respawn_label: entry.respawn_label,
-    started_at: entry.started_at,
-  };
-}
-
-function isSignedIn() {
-  return Boolean(state.authClient && state.authUser);
 }
 
 function renderSyncCallout(title, message, action) {
@@ -451,156 +426,85 @@ function renderSyncCallout(title, message, action) {
   return callout;
 }
 
-function addSyncSetupLink(callout) {
-  const guide = document.createElement("a");
-  guide.className = "sync-guide-link";
-  guide.href = DISCORD_SYNC_SETUP_URL;
-  guide.target = "_blank";
-  guide.rel = "noreferrer";
-  guide.textContent = "Open setup guide";
-  callout.append(guide);
-}
-
 function refreshAccountViews() {
   renderTracking();
+  renderChecklist();
   renderSettings();
   if (state.data && state.selectedSpawnIndex !== null) {
     selectSpawn(state.selectedSpawnIndex);
   }
 }
 
-function reportSyncError(error) {
-  state.authStatus = "error";
-  state.authError = error instanceof Error ? error.message : String(error || "Sync failed");
-  refreshAccountViews();
+function updateLocalStorageError(error) {
+  state.localStorageError = error instanceof Error
+    ? error.message
+    : String(error || "Browser storage is unavailable.");
 }
 
-async function applyAuthSession(session) {
-  const loadToken = ++state.authLoadToken;
-  state.authUser = session?.user || null;
-  state.authError = "";
-  state.tracking = new Map();
-  state.completed = new Map();
-
-  if (!state.authUser) {
-    state.authStatus = state.authClient ? "signed_out" : "unconfigured";
-    refreshAccountViews();
-    return;
-  }
-
-  state.authStatus = "loading";
-  refreshAccountViews();
-  const userId = state.authUser.id;
-  const [trackingResult, completionResult] = await Promise.all([
-    state.authClient
-      .from(SUPABASE_TRACKING_TABLE)
-      .select("marker_id, map_id, map_label, scene_id, item_id, display_name, icon, coordinate_key, x, y, area_name, respawn_seconds, respawn_label, started_at")
-      .eq("user_id", userId),
-    state.authClient
-      .from(SUPABASE_COMPLETION_TABLE)
-      .select("marker_id, map_id, scene_id, item_id, marker_type, display_name, coordinate_key, x, y, completed_at")
-      .eq("user_id", userId),
-  ]);
-
-  if (loadToken !== state.authLoadToken) return;
-  if (trackingResult.error || completionResult.error) {
-    reportSyncError(trackingResult.error || completionResult.error);
-    return;
-  }
-
-  const trackingEntries = (trackingResult.data || [])
-    .map(normalizeTrackingEntry)
-    .filter(Boolean);
-  state.tracking = new Map(trackingEntries.map((entry) => [entry.id, entry]));
-  state.completed = new Map((completionResult.data || []).map((entry) => [entry.marker_id, entry]));
-  state.authStatus = "ready";
-  refreshAccountViews();
-}
-
-async function initializeDiscordSync() {
-  const config = getSyncConfig();
-  if (!config.configured) {
-    state.authStatus = "unconfigured";
-    refreshAccountViews();
-    return;
-  }
-  if (!window.supabase?.createClient) {
-    state.authStatus = "error";
-    state.authError = "The Discord sync client could not be loaded.";
-    refreshAccountViews();
-    return;
-  }
-
+function loadLocalTracking() {
+  state.localStorageError = "";
   try {
-    state.authStatus = "loading";
-    state.authClient = window.supabase.createClient(config.url, config.key, {
-      auth: {
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        persistSession: true,
-      },
-    });
-    const { data, error } = await state.authClient.auth.getSession();
-    if (error) throw error;
-    state.authClient.auth.onAuthStateChange((_event, nextSession) => {
-      window.setTimeout(() => {
-        applyAuthSession(nextSession).catch(reportSyncError);
-      }, 0);
-    });
-    await applyAuthSession(data.session);
+    const rawTracking = window.localStorage.getItem(LOCAL_TRACKING_STORAGE_KEY);
+    const rawCompleted = window.localStorage.getItem(LOCAL_COMPLETION_STORAGE_KEY);
+    const trackingEntries = rawTracking ? JSON.parse(rawTracking) : [];
+    const completedEntries = rawCompleted ? JSON.parse(rawCompleted) : [];
+    const normalizedTracking = Array.isArray(trackingEntries)
+      ? trackingEntries.map(normalizeTrackingEntry).filter(Boolean)
+      : [];
+    state.tracking = new Map(normalizedTracking.map((entry) => [entry.id, entry]));
+    state.completed = new Set(Array.isArray(completedEntries)
+      ? completedEntries.map((entry) => String(entry || "").trim()).filter(Boolean)
+      : []);
   } catch (error) {
-    reportSyncError(error);
+    state.tracking = new Map();
+    state.completed = new Set();
+    updateLocalStorageError(error);
   }
 }
 
-async function signInWithDiscord() {
-  if (!state.authClient) {
-    setSidebarView("settings");
-    return;
-  }
+function persistLocalTracking() {
   try {
-    state.authStatus = "redirecting";
-    state.authError = "";
-    refreshAccountViews();
-    const redirectUrl = new URL(window.location.href);
-    redirectUrl.searchParams.delete("code");
-    redirectUrl.searchParams.delete("error");
-    redirectUrl.searchParams.delete("error_code");
-    const { error } = await state.authClient.auth.signInWithOAuth({
-      provider: "discord",
-      options: { redirectTo: redirectUrl.toString() },
-    });
-    if (error) throw error;
+    window.localStorage.setItem(
+      LOCAL_TRACKING_STORAGE_KEY,
+      JSON.stringify([...state.tracking.values()]),
+    );
+    window.localStorage.setItem(
+      LOCAL_COMPLETION_STORAGE_KEY,
+      JSON.stringify([...state.completed]),
+    );
+    state.localStorageError = "";
+    return true;
   } catch (error) {
-    reportSyncError(error);
+    updateLocalStorageError(error);
+    return false;
   }
 }
 
-async function signOutDiscord() {
-  if (!state.authClient) return;
+function clearLocalTracking() {
   try {
-    const { error } = await state.authClient.auth.signOut();
-    if (error) throw error;
+    window.localStorage.removeItem(LOCAL_TRACKING_STORAGE_KEY);
+    window.localStorage.removeItem(LOCAL_COMPLETION_STORAGE_KEY);
+    state.localStorageError = "";
+    return true;
   } catch (error) {
-    reportSyncError(error);
+    updateLocalStorageError(error);
+    return false;
   }
+}
+
+function initializeLocalTracking() {
+  loadLocalTracking();
+  refreshAccountViews();
 }
 
 async function saveTrackingEntry(entry) {
-  if (!isSignedIn() || !entry) return;
+  if (!entry) return;
   state.pendingTrackingIds.add(entry.id);
   renderTracking();
   try {
-    const { data, error } = await state.authClient
-      .from(SUPABASE_TRACKING_TABLE)
-      .upsert(trackingRowForEntry(entry), { onConflict: "user_id,marker_id" })
-      .select("marker_id, map_id, map_label, scene_id, item_id, display_name, icon, coordinate_key, x, y, area_name, respawn_seconds, respawn_label, started_at")
-      .single();
-    if (error) throw error;
-    const saved = normalizeTrackingEntry(data);
+    const saved = normalizeTrackingEntry(entry);
     if (saved) state.tracking.set(saved.id, saved);
-  } catch (error) {
-    reportSyncError(error);
+    persistLocalTracking();
   } finally {
     state.pendingTrackingIds.delete(entry.id);
     refreshAccountViews();
@@ -608,10 +512,6 @@ async function saveTrackingEntry(entry) {
 }
 
 async function addTrackingForSpawn(spawn, item) {
-  if (!isSignedIn()) {
-    await signInWithDiscord();
-    return;
-  }
   const entry = trackingEntryForSpawn(spawn, item);
   if (!entry) return;
   const existing = state.tracking.get(entry.id);
@@ -621,47 +521,32 @@ async function addTrackingForSpawn(spawn, item) {
 
 async function updateTrackingStarted(id, startedAt) {
   const entry = state.tracking.get(id);
-  if (!entry || !isSignedIn()) return;
+  if (!entry) return;
   await saveTrackingEntry({ ...entry, started_at: startedAt });
 }
 
 async function removeTracking(id) {
-  if (!isSignedIn() || !state.tracking.has(id)) return;
+  if (!state.tracking.has(id)) return;
   state.pendingTrackingIds.add(id);
   renderTracking();
   try {
-    const { error } = await state.authClient
-      .from(SUPABASE_TRACKING_TABLE)
-      .delete()
-      .eq("user_id", state.authUser.id)
-      .eq("marker_id", id);
-    if (error) throw error;
     state.tracking.delete(id);
-  } catch (error) {
-    reportSyncError(error);
+    persistLocalTracking();
   } finally {
     state.pendingTrackingIds.delete(id);
     refreshAccountViews();
   }
 }
 
-async function resetSyncedData() {
-  if (!isSignedIn() || state.pendingReset) return;
-  if (!window.confirm("Reset all synced timers and completed markers for this Discord account?")) return;
+function resetLocalData() {
+  if (state.pendingReset) return;
+  if (!window.confirm("Reset all browser-saved timers and checklist progress on this device?")) return;
   state.pendingReset = true;
   renderSettings();
   try {
-    const [trackingResult, completionResult] = await Promise.all([
-      state.authClient.from(SUPABASE_TRACKING_TABLE).delete().eq("user_id", state.authUser.id),
-      state.authClient.from(SUPABASE_COMPLETION_TABLE).delete().eq("user_id", state.authUser.id),
-    ]);
-    if (trackingResult.error || completionResult.error) {
-      throw trackingResult.error || completionResult.error;
-    }
     state.tracking = new Map();
-    state.completed = new Map();
-  } catch (error) {
-    reportSyncError(error);
+    state.completed = new Set();
+    clearLocalTracking();
   } finally {
     state.pendingReset = false;
     refreshAccountViews();
@@ -708,36 +593,12 @@ function renderTracking() {
   els.trackingCount.textContent = `${entries.length} tracked`;
   els.trackingList.textContent = "";
 
-  const config = getSyncConfig();
-  if (!config.configured) {
+  if (state.localStorageError) {
     els.trackingList.append(renderSyncCallout(
-      "Discord sync is not configured",
-      "Add the Supabase URL and publishable key in app-config.js to enable synced tracking.",
+      "Browser storage is unavailable",
+      "Tracking changes will remain open only until this page is closed.",
+      { label: "Retry browser storage", onClick: () => { loadLocalTracking(); refreshAccountViews(); }, danger: true },
     ));
-    return;
-  }
-  if (!state.authClient || state.authStatus === "loading" || state.authStatus === "redirecting") {
-    const message = state.authStatus === "redirecting"
-      ? "Opening Discord sign-in..."
-      : "Connecting to Discord sync...";
-    els.trackingList.append(renderSyncCallout("Tracking", message));
-    return;
-  }
-  if (!state.authUser) {
-    els.trackingList.append(renderSyncCallout(
-      "Track across devices",
-      "Sign in with Discord to save verified overworld item timers to your account.",
-      { label: "Sign in with Discord", onClick: signInWithDiscord },
-    ));
-    return;
-  }
-  if (state.authStatus === "error") {
-    els.trackingList.append(renderSyncCallout(
-      "Discord sync needs attention",
-      state.authError || "The saved tracking data could not be loaded.",
-      { label: "Retry sync", onClick: () => applyAuthSession({ user: state.authUser }), danger: true },
-    ));
-    return;
   }
   if (!entries.length) {
     const empty = document.createElement("div");
@@ -823,43 +684,14 @@ function renderTracking() {
 
 function renderSettings() {
   els.settingsContent.textContent = "";
-  const config = getSyncConfig();
-  if (!config.configured) {
-    const callout = renderSyncCallout(
-      "Discord sync setup",
-      "Set up Supabase and Discord once, then add the safe browser values to app-config.js.",
-    );
-    addSyncSetupLink(callout);
-    els.settingsContent.append(callout);
-    return;
-  }
-  if (!state.authClient || state.authStatus === "loading" || state.authStatus === "redirecting") {
-    els.settingsContent.append(renderSyncCallout(
-      "Discord sync",
-      state.authStatus === "redirecting" ? "Opening Discord sign-in..." : "Connecting to the sync service...",
-    ));
-    return;
-  }
-  if (!state.authUser) {
-    const message = state.authStatus === "error"
-      ? state.authError || "Discord sync could not be initialized."
-      : "Sign in with Discord to sync timers and future completed-marker progress across devices.";
-    els.settingsContent.append(renderSyncCallout(
-      "Discord sync",
-      message,
-      { label: "Sign in with Discord", onClick: signInWithDiscord, danger: state.authStatus === "error" },
-    ));
-    return;
-  }
-
   const account = document.createElement("div");
   account.className = "settings-card";
   const identity = document.createElement("div");
   identity.className = "settings-account";
   const name = document.createElement("strong");
-  name.textContent = syncAccountName(state.authUser);
+  name.textContent = "This browser";
   const detail = document.createElement("small");
-  detail.textContent = "Signed in with Discord";
+  detail.textContent = "Local tracking and checklist data";
   identity.append(name, detail);
 
   const stats = document.createElement("div");
@@ -874,41 +706,487 @@ function renderSettings() {
   const completeStat = document.createElement("div");
   completeStat.className = "settings-stat";
   const completeValue = document.createElement("strong");
-  completeValue.textContent = String(state.completed.size);
+  completeValue.textContent = String(totalChecklistCompletions());
   const completeLabel = document.createElement("span");
-  completeLabel.textContent = "Completed markers";
+  completeLabel.textContent = "Checklist entries";
   completeStat.append(completeValue, completeLabel);
   stats.append(timerStat, completeStat);
 
   const actions = document.createElement("div");
   actions.className = "settings-actions";
-  const signOut = document.createElement("button");
-  signOut.type = "button";
-  signOut.textContent = "Sign out";
-  signOut.addEventListener("click", signOutDiscord);
   const reset = document.createElement("button");
   reset.type = "button";
   reset.className = "settings-danger";
-  reset.textContent = state.pendingReset ? "Resetting..." : "Reset synced data";
+  reset.textContent = state.pendingReset ? "Resetting..." : "Reset browser data";
   reset.disabled = state.pendingReset;
-  reset.addEventListener("click", resetSyncedData);
-  actions.append(signOut, reset);
+  reset.addEventListener("click", resetLocalData);
+  actions.append(reset);
   account.append(identity, stats, actions);
   els.settingsContent.append(account);
 
-  if (state.authStatus === "error") {
+  if (state.localStorageError) {
     els.settingsContent.append(renderSyncCallout(
-      "Sync warning",
-      state.authError || "Some synced data could not be loaded.",
-      { label: "Retry sync", onClick: () => applyAuthSession({ user: state.authUser }), danger: true },
+      "Browser storage is unavailable",
+      "The browser did not allow the map to save tracking data.",
+      { label: "Retry browser storage", onClick: () => { loadLocalTracking(); refreshAccountViews(); }, danger: true },
     ));
   }
+}
+
+function checklistEntriesForCategory(category = state.checklistCategory) {
+  if (!Array.isArray(state.checklistData?.entries)) return [];
+  return state.checklistData.entries.filter((entry) => entry?.category === category);
+}
+
+const LUMIN_CHECKLIST_TABS = Object.freeze([
+  { id: "ambers", label: "Ambers", kind: "lumin_amber", sourceType: "overworld" },
+  { id: "sanctums", label: "Sanctums", kind: "lumin_sanctum", sourceType: "sanctum" },
+  { id: "markings", label: "Markings", kind: "lumin_amber", sourceType: "lumin_marking" },
+  { id: "quests", label: "Quests", kind: "lumin_amber", sourceType: "quest" },
+]);
+
+function luminChecklistEntries(tabId = state.luminChecklistTab) {
+  const tab = LUMIN_CHECKLIST_TABS.find((candidate) => candidate.id === tabId)
+    || LUMIN_CHECKLIST_TABS[0];
+  return checklistEntriesForCategory("ambers").filter((entry) => (
+    entry?.kind === tab.kind && entry?.source_type === tab.sourceType
+  ));
+}
+
+function checklistEntriesForActiveTab() {
+  return state.checklistCategory === "ambers"
+    ? luminChecklistEntries()
+    : checklistEntriesForCategory();
+}
+
+function checklistSpecialEntries() {
+  return Array.isArray(state.checklistData?.special_entries)
+    ? state.checklistData.special_entries
+    : [];
+}
+
+function checklistCompletionStateIds(entries) {
+  const ids = new Set();
+  entries.forEach((entry) => {
+    (entry?.completion_states || []).forEach((completionState) => {
+      const id = String(completionState?.id || "").trim();
+      if (id) ids.add(id);
+    });
+  });
+  return ids;
+}
+
+function completedChecklistCount(entries = [
+  ...checklistEntriesForCategory("aniimo"),
+  ...checklistEntriesForCategory("ambers"),
+  ...checklistSpecialEntries(),
+]) {
+  const stateIds = checklistCompletionStateIds(entries);
+  return [...stateIds].filter((id) => state.completed.has(id)).length;
+}
+
+function totalChecklistCompletions() {
+  if (!state.checklistData) return state.completed.size;
+  return completedChecklistCount();
+}
+
+function checklistEntryMatches(entry) {
+  if (!state.checklistSearch) return true;
+  return searchText([
+    entry?.id,
+    entry?.name,
+    entry?.form_label,
+    entry?.aniilog_number,
+    entry?.source_label,
+    entry?.map_label,
+    entry?.area_name,
+    entry?.coordinate_key,
+    entry?.classification,
+    entry?.detail,
+    entry?.completion_states?.map((completionState) => completionState?.label),
+  ]).includes(state.checklistSearch);
+}
+
+const LUMIN_COMPLETION_MARKER_TYPES = new Set(["lumin_amber", "lumin_marking", "teleport_sanctum", "quest_lumen_seed"]);
+const LUMIN_CHECKLIST_ENTRY_KINDS = new Set(["lumin_amber", "lumin_sanctum"]);
+
+function isLuminCompletionSpawn(spawn) {
+  return Boolean(spawn) && LUMIN_COMPLETION_MARKER_TYPES.has(spawn.marker_type);
+}
+
+function isLuminChecklistEntry(entry) {
+  return LUMIN_CHECKLIST_ENTRY_KINDS.has(entry?.kind);
+}
+
+function luminSourceTypeForSpawn(spawn) {
+  if (spawn?.marker_type === "lumin_amber") return "overworld";
+  if (spawn?.marker_type === "lumin_marking") return "lumin_marking";
+  if (spawn?.marker_type === "teleport_sanctum") return "sanctum";
+  if (spawn?.marker_type === "quest_lumen_seed") return "quest";
+  return "";
+}
+
+function luminCompletionIdForSpawn(spawn) {
+  if (!isLuminCompletionSpawn(spawn)) return "";
+  const explicitCompletionId = String(spawn?.completion_id || "").trim();
+  if (explicitCompletionId) return explicitCompletionId;
+  const sourceType = luminSourceTypeForSpawn(spawn);
+  const mapId = String(spawn.map_id || "").trim();
+  const sceneId = String(spawn.scene_id || "").trim();
+  const coordinateKey = String(spawn.coordinate_key || "").trim();
+  if (!mapId || !sceneId || !coordinateKey) return "";
+  return `amber:${sourceType}:${mapId}:${sceneId}:${coordinateKey}:collected`;
+}
+
+function luminCompletionIdForChecklistEntry(entry) {
+  const completionState = (entry?.completion_states || []).find((candidate) => (
+    String(candidate?.id || "").endsWith(":collected")
+  ));
+  return String(completionState?.id || "").trim();
+}
+
+function createPinCompletionBadge() {
+  const badge = document.createElement("span");
+  badge.className = "pin-completion-badge";
+  badge.setAttribute("aria-hidden", "true");
+  badge.textContent = "\u2713";
+  return badge;
+}
+
+function syncPinCompletionBadge(pin, spawn) {
+  const completionId = luminCompletionIdForSpawn(spawn);
+  if (!completionId) return;
+  const completed = state.completed.has(completionId);
+  pin.classList.toggle("pin-completed", completed);
+  const existingBadge = pin.querySelector(".pin-completion-badge");
+  if (completed && !existingBadge) {
+    pin.querySelector(".pin-body")?.append(createPinCompletionBadge());
+  } else if (!completed && existingBadge) {
+    existingBadge.remove();
+  }
+}
+
+function syncLuminCompletionPins() {
+  if (state.canvasMode) {
+    scheduleCanvasRender();
+    return;
+  }
+  els.pinLayer.querySelectorAll(".pin[data-spawn-index]").forEach((pin) => {
+    const index = Number(pin.dataset.spawnIndex);
+    const spawn = state.data?.spawns[index];
+    if (isLuminCompletionSpawn(spawn)) syncPinCompletionBadge(pin, spawn);
+  });
+}
+
+function refreshLuminCompletionViews() {
+  syncLuminCompletionPins();
+  renderChecklist();
+  renderSettings();
+}
+
+function waitForActiveMapDataset(mapId, timeoutMs = 6000) {
+  return new Promise((resolve, reject) => {
+    const deadline = window.performance.now() + timeoutMs;
+    const check = () => {
+      if (state.activeMapId !== mapId) {
+        reject(new Error("Map changed before the marker could be located."));
+        return;
+      }
+      if (state.mapLoadError) {
+        reject(state.mapLoadError);
+        return;
+      }
+      if (!state.loadingMapId) {
+        resolve();
+        return;
+      }
+      if (window.performance.now() >= deadline) {
+        reject(new Error("Timed out while loading map markers."));
+        return;
+      }
+      window.setTimeout(check, 40);
+    };
+    check();
+  });
+}
+
+async function locateChecklistLuminEntry(entry) {
+  const completionId = luminCompletionIdForChecklistEntry(entry);
+  const mapId = String(entry?.map_id || "").trim();
+  if (!completionId || !mapId || !state.data?.mapsById.has(mapId)) return;
+
+  if (state.activeMapId !== mapId) switchMap(mapId);
+
+  try {
+    await waitForActiveMapDataset(mapId);
+  } catch (error) {
+    console.error("Could not locate Lumen checklist entry.", error);
+    return;
+  }
+
+  const index = state.data.spawns.findIndex((spawn) => (
+    luminCompletionIdForSpawn(spawn) === completionId
+  ));
+  if (index < 0) {
+    console.warn("No map marker matched the Lumen checklist entry.", entry.id);
+    return;
+  }
+
+  const spawn = state.data.spawns[index];
+  state.locatedSpawnIndex = index;
+  refreshVisibility();
+  selectSpawn(index);
+  focusSpawn(spawn);
+}
+
+function updateChecklistCompletion(entry, completionState, checked) {
+  const completionId = String(completionState?.id || "").trim();
+  if (!completionId) return;
+
+  if (checked && entry?.choice_group) {
+    checklistSpecialEntries().forEach((candidate) => {
+      if (candidate?.id === entry.id || candidate?.choice_group !== entry.choice_group) return;
+      (candidate.completion_states || []).forEach((candidateState) => {
+        const candidateId = String(candidateState?.id || "").trim();
+        if (candidateId) state.completed.delete(candidateId);
+      });
+    });
+  }
+
+  if (checked) {
+    state.completed.add(completionId);
+  } else {
+    state.completed.delete(completionId);
+  }
+  persistLocalTracking();
+  if (isLuminChecklistEntry(entry)) {
+    refreshLuminCompletionViews();
+  } else {
+    renderChecklist();
+    renderSettings();
+  }
+}
+
+function checklistMetaText(entry) {
+  if (entry?.kind === "aniimo_form") {
+    return [entry.aniilog_number, entry.form_label].filter(Boolean).join(" - ");
+  }
+  if (entry?.kind === "aniimo_special") {
+    const label = entry.classification === "starter_choice" ? "Starter choice" : "Temporary evolution";
+    return [label, entry.detail].filter(Boolean).join(" - ");
+  }
+  if (entry?.source_type === "overworld") {
+    return [
+      entry?.source_label,
+      entry?.map_label,
+      entry?.coordinate_key,
+    ].filter(Boolean).join(" - ");
+  }
+  if (entry?.source_type === "quest_reward") {
+    return [entry?.source_label, entry?.quest_name].filter(Boolean).join(" - ");
+  }
+  if (entry?.source_type === "quest") {
+    return [
+      entry?.source_label,
+      entry?.map_label,
+      entry?.area_name,
+      entry?.coordinate_key,
+    ].filter(Boolean).join(" - ");
+  }
+  return [
+    entry?.source_label,
+    entry?.map_label,
+    entry?.area_name,
+    entry?.coordinate_key,
+  ].filter(Boolean).join(" - ");
+}
+
+function renderChecklistRow(entry) {
+  const row = document.createElement("article");
+  row.className = "checklist-row";
+  if (entry?.kind === "aniimo_special") row.classList.add("checklist-special-row");
+  row.dataset.checklistEntryId = entry.id;
+
+  row.append(makeIcon("checklist-icon", entry.icon));
+  const content = document.createElement("div");
+  content.className = "checklist-text";
+  const name = document.createElement("strong");
+  name.textContent = entry.name || "Unnamed entry";
+  name.title = name.textContent;
+  const meta = document.createElement("small");
+  meta.textContent = checklistMetaText(entry);
+  meta.title = meta.textContent;
+  content.append(name, meta);
+  row.append(content);
+
+  const states = document.createElement("div");
+  states.className = "checklist-states";
+  (entry.completion_states || []).forEach((completionState) => {
+    const control = document.createElement("label");
+    control.className = "checklist-toggle";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = state.completed.has(completionState.id);
+    input.setAttribute("aria-label", `${completionState.label} ${entry.name}`);
+    input.addEventListener("change", () => {
+      updateChecklistCompletion(entry, completionState, input.checked);
+    });
+    const label = document.createElement("span");
+    label.textContent = completionState.label;
+    control.append(input, label);
+    states.append(control);
+  });
+  if (isLuminChecklistEntry(entry) && entry?.map_id && luminCompletionIdForChecklistEntry(entry)) {
+    const locate = document.createElement("button");
+    locate.type = "button";
+    locate.className = "checklist-locate";
+    locate.textContent = "Locate";
+    locate.addEventListener("click", () => {
+      void locateChecklistLuminEntry(entry);
+    });
+    states.append(locate);
+  }
+  row.append(states);
+  return row;
+}
+
+function renderChecklistSpecialSection() {
+  const visibleEntries = checklistSpecialEntries().filter(checklistEntryMatches);
+  if (!visibleEntries.length) return null;
+
+  const allSpecialEntries = checklistSpecialEntries();
+  const starterEntries = allSpecialEntries.filter((entry) => entry.classification === "starter_choice");
+  const temporaryEntries = allSpecialEntries.filter((entry) => entry.classification === "temporary_evolution");
+  const selectedStarters = completedChecklistCount(starterEntries);
+  const seenTemporary = completedChecklistCount(temporaryEntries);
+
+  const section = document.createElement("section");
+  section.className = "checklist-special-section";
+  const heading = document.createElement("div");
+  heading.className = "checklist-section-heading";
+  const title = document.createElement("strong");
+  title.textContent = "Special statistics";
+  const total = document.createElement("span");
+  total.textContent = "Outside 414 total";
+  heading.append(title, total);
+  const detail = document.createElement("p");
+  detail.textContent = `Choose either Lunara or Helion: ${selectedStarters} / 1. Skill evolutions seen: ${seenTemporary} / ${temporaryEntries.length}.`;
+  const rows = document.createElement("div");
+  rows.className = "checklist-section-rows";
+  visibleEntries.forEach((entry) => rows.append(renderChecklistRow(entry)));
+  section.append(heading, detail, rows);
+  return section;
+}
+
+function renderLuminChecklistTabs() {
+  els.luminChecklistTabs.textContent = "";
+  const availableTabs = LUMIN_CHECKLIST_TABS.filter((tab) => luminChecklistEntries(tab.id).length);
+  if (!availableTabs.some((tab) => tab.id === state.luminChecklistTab)) {
+    state.luminChecklistTab = availableTabs[0]?.id || LUMIN_CHECKLIST_TABS[0].id;
+  }
+  availableTabs.forEach((tab) => {
+    const entries = luminChecklistEntries(tab.id);
+    const states = checklistCompletionStateIds(entries);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "lumin-checklist-tab";
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(state.luminChecklistTab === tab.id));
+    button.tabIndex = state.luminChecklistTab === tab.id ? 0 : -1;
+    button.addEventListener("click", () => {
+      state.luminChecklistTab = tab.id;
+      renderChecklist();
+    });
+    const label = document.createElement("span");
+    label.textContent = tab.label;
+    const count = document.createElement("small");
+    count.textContent = `${completedChecklistCount(entries)} / ${states.size}`;
+    button.append(label, count);
+    els.luminChecklistTabs.append(button);
+  });
+  els.luminChecklistTabs.hidden = availableTabs.length === 0;
+}
+
+function renderChecklist() {
+  els.checklistCategoryTabs.textContent = "";
+  els.luminChecklistTabs.textContent = "";
+  els.luminChecklistTabs.hidden = true;
+  els.checklistList.textContent = "";
+
+  if (!state.checklistData) {
+    els.checklistCount.textContent = state.checklistLoadError ? "Unavailable" : "Loading";
+    const message = document.createElement("div");
+    message.className = "checklist-empty";
+    message.textContent = state.checklistLoadError || "Loading checklist data...";
+    els.checklistList.append(message);
+    return;
+  }
+
+  const categories = Array.isArray(state.checklistData.categories) ? state.checklistData.categories : [];
+  if (!categories.some((category) => category?.id === state.checklistCategory)) {
+    state.checklistCategory = categories[0]?.id || "aniimo";
+  }
+
+  categories.forEach((category) => {
+    const entries = checklistEntriesForCategory(category.id);
+    const states = checklistCompletionStateIds(entries);
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "checklist-category-tab";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(state.checklistCategory === category.id));
+    tab.tabIndex = state.checklistCategory === category.id ? 0 : -1;
+    tab.addEventListener("click", () => {
+      state.checklistCategory = category.id;
+      renderChecklist();
+    });
+    const label = document.createElement("span");
+    label.textContent = category.label || category.id;
+    const count = document.createElement("small");
+    count.textContent = `${completedChecklistCount(entries)} / ${states.size}`;
+    tab.append(label, count);
+    els.checklistCategoryTabs.append(tab);
+  });
+
+  if (state.checklistCategory === "ambers") renderLuminChecklistTabs();
+
+  const entries = checklistEntriesForActiveTab();
+  const totalStates = checklistCompletionStateIds(entries).size;
+  els.checklistCount.textContent = `${completedChecklistCount(entries)} / ${totalStates}`;
+  const visibleEntries = entries.filter(checklistEntryMatches);
+  const fragment = document.createDocumentFragment();
+  let renderedSections = 0;
+  if (state.checklistCategory === "aniimo") {
+    const specialSection = renderChecklistSpecialSection();
+    if (specialSection) {
+      fragment.append(specialSection);
+      renderedSections += 1;
+    }
+  }
+  if (visibleEntries.length) {
+    const section = document.createElement("section");
+    section.className = "checklist-section";
+    const rows = document.createElement("div");
+    rows.className = "checklist-section-rows";
+    visibleEntries.forEach((entry) => rows.append(renderChecklistRow(entry)));
+    section.append(rows);
+    fragment.append(section);
+    renderedSections += 1;
+  }
+  if (!renderedSections) {
+    const empty = document.createElement("div");
+    empty.className = "checklist-empty";
+    empty.textContent = state.checklistSearch ? "No matching checklist entries" : "No checklist entries available";
+    fragment.append(empty);
+  }
+  els.checklistList.append(fragment);
 }
 
 function updateWorkspaceTabs() {
   const workspaces = {
     map: { tab: els.mapWorkspaceTab, panel: els.mapWorkspace },
     tracking: { tab: els.trackingWorkspaceTab, panel: els.trackingWorkspace },
+    checklist: { tab: els.checklistWorkspaceTab, panel: els.checklistWorkspace },
     settings: { tab: els.settingsWorkspaceTab, panel: els.settingsWorkspace },
   };
   Object.entries(workspaces).forEach(([view, workspace]) => {
@@ -920,15 +1198,17 @@ function updateWorkspaceTabs() {
 }
 
 function setSidebarView(view) {
-  const nextView = ["map", "tracking", "settings"].includes(view) ? view : "map";
+  const nextView = ["map", "tracking", "checklist", "settings"].includes(view) ? view : "map";
   state.sidebarView = nextView;
   updateWorkspaceTabs();
+  refreshSelectionDetails();
   updateMobileSelectionPanel();
   if (nextView === "tracking") {
     renderTracking();
     startTrackingTicker();
   } else {
     stopTrackingTicker();
+    if (nextView === "checklist") renderChecklist();
     if (nextView === "settings") renderSettings();
   }
   stabilizeViewport();
@@ -969,6 +1249,22 @@ function resetDocumentScroll() {
 function stabilizeViewport() {
   resetDocumentScroll();
   resetMapScroll();
+}
+
+function mapViewportSizeChanged(rect) {
+  return Math.abs(rect.width - state.viewportWidth) > 1
+    || Math.abs(rect.height - state.viewportHeight) > 1;
+}
+
+function scheduleMapViewportFit() {
+  if (state.viewportFitFrame) return;
+  state.viewportFitFrame = window.requestAnimationFrame(() => {
+    state.viewportFitFrame = 0;
+    if (!state.data) return;
+    const rect = els.mapViewport.getBoundingClientRect();
+    if (!mapViewportSizeChanged(rect)) return;
+    fitMap();
+  });
 }
 
 function preventControlFocus(event) {
@@ -1027,7 +1323,7 @@ function updateMobileSelectionPanel() {
   const isMobile = MOBILE_LAYOUT_QUERY.matches;
   const minimized = isMobile && state.mobileSelectionMinimized;
   const hasSelection = state.selectedSpawnIndex !== null;
-  els.mobileSelectionPanel.hidden = !isMobile || state.sidebarView !== "map" || !hasSelection;
+  els.mobileSelectionPanel.hidden = !isMobile || !hasSelection;
   els.mobileSelectionPanel.classList.toggle("is-minimized", minimized);
   els.mobileSelectionToggle.textContent = minimized ? "+" : "-";
   els.mobileSelectionToggle.setAttribute("aria-expanded", String(!minimized));
@@ -1173,6 +1469,8 @@ function clampPan() {
 function fitMap() {
   if (!state.data) return;
   const rect = els.mapViewport.getBoundingClientRect();
+  state.viewportWidth = rect.width;
+  state.viewportHeight = rect.height;
   const map = currentMap();
   const width = map.width;
   const height = map.height;
@@ -1290,6 +1588,8 @@ function itemSearchText(item) {
     item.marker_names,
     item.layer_id,
     item.inventory_label,
+    item.reward_label,
+    item.respawn_status,
     item.display_type_label,
     item.teleport_type,
     item.region_name,
@@ -1321,6 +1621,8 @@ function spawnSearchText(spawn) {
     spawn.display_name,
     spawn.marker_type,
     spawn.layer_id,
+    spawn.reward_label,
+    spawn.respawn_status,
     spawn.teleport_type,
     spawn.region_name,
     spawn.area_uid,
@@ -1347,6 +1649,20 @@ function spawnMatches(spawn) {
   return item.search_text.includes(state.search) || spawn.search_text.includes(state.search);
 }
 
+function clearLocatedSpawn() {
+  state.locatedSpawnIndex = null;
+}
+
+function locatedSpawnEntry() {
+  if (!Number.isInteger(state.locatedSpawnIndex)) return null;
+  const spawn = state.data?.spawns[state.locatedSpawnIndex];
+  if (!spawn || !spawnOnActiveMap(spawn)) {
+    clearLocatedSpawn();
+    return null;
+  }
+  return { spawn, index: state.locatedSpawnIndex };
+}
+
 function visibleSpawnEntries() {
   const entries = [];
   for (const itemId of state.enabled) {
@@ -1359,6 +1675,10 @@ function visibleSpawnEntries() {
         entries.push(entry);
       }
     });
+  }
+  const locatedEntry = locatedSpawnEntry();
+  if (locatedEntry && !entries.some((entry) => entry.index === locatedEntry.index)) {
+    entries.push(locatedEntry);
   }
   entries.sort((a, b) => a.index - b.index);
   return entries;
@@ -1434,11 +1754,13 @@ function renderItems() {
     tab.setAttribute("aria-selected", String(layer.id === state.activeLayer));
     tab.tabIndex = layer.id === state.activeLayer ? 0 : -1;
     tab.addEventListener("click", () => {
+      clearLocatedSpawn();
       state.activeLayer = layer.id;
       refreshVisibility();
     });
     tab.addEventListener("dblclick", (event) => {
       event.preventDefault();
+      clearLocatedSpawn();
       state.activeLayer = layer.id;
       const selectableItems = layerItems.filter((item) => itemPassesFilters(item));
       const allSelected = selectableItems.length > 0
@@ -1480,6 +1802,7 @@ function renderItems() {
     row.addEventListener("mousedown", preventControlFocus);
     row.addEventListener("click", (event) => {
       event.preventDefault();
+      clearLocatedSpawn();
       if (state.enabled.has(item.item_id)) {
         state.enabled.delete(item.item_id);
       } else {
@@ -1528,7 +1851,9 @@ function pinClassName(spawn) {
     spawn.layer_id === "teleports" ? "pin-teleport" : "",
     spawn.layer_id === "ambers" ? "pin-amber" : "",
     spawn.marker_type === "underground_entrance" ? "pin-underground" : "",
+    spawn.marker_type === "physical_reward_source" ? "pin-physical-reward-source" : "",
     spawn.is_underground ? "pin-underground-marker" : "",
+    state.completed.has(luminCompletionIdForSpawn(spawn)) ? "pin-completed" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -1562,6 +1887,9 @@ function createMarkerPin(entry) {
   label.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}`;
   pinBody.append(icon);
   if (undergroundBadge) pinBody.append(undergroundBadge);
+  if (state.completed.has(luminCompletionIdForSpawn(spawn))) {
+    pinBody.append(createPinCompletionBadge());
+  }
   pinBody.append(label);
   pin.append(pinBody);
   pin.tabIndex = -1;
@@ -1583,6 +1911,7 @@ function createMarkerPin(entry) {
 function pinSizeFor(spawn) {
   if (spawn.marker_type === "elite_egg") return 34;
   if (spawn.marker_type === "underground_entrance") return 28;
+  if (spawn.marker_type === "physical_reward_source") return 36;
   return 32;
 }
 
@@ -1735,6 +2064,29 @@ function renderCanvasPins() {
       const badge = canvasIcon(state.data.underground_badge_icon);
       if (badge) context.drawImage(badge, x + size / 2 - 16, y - size / 2 - 4, 18, 18);
     }
+    if (state.completed.has(luminCompletionIdForSpawn(spawn))) {
+      const badgeRadius = Math.max(5, Math.min(6.5, size * 0.2));
+      const badgeX = x + size * 0.34;
+      const badgeY = y + size * 0.34;
+      context.save();
+      context.beginPath();
+      context.fillStyle = "#2c8c75";
+      context.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
+      context.fill();
+      context.strokeStyle = "rgba(224, 255, 246, 0.95)";
+      context.lineWidth = 1;
+      context.stroke();
+      context.beginPath();
+      context.strokeStyle = "#ffffff";
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.lineWidth = 1.6;
+      context.moveTo(badgeX - badgeRadius * 0.45, badgeY);
+      context.lineTo(badgeX - badgeRadius * 0.1, badgeY + badgeRadius * 0.32);
+      context.lineTo(badgeX + badgeRadius * 0.48, badgeY - badgeRadius * 0.36);
+      context.stroke();
+      context.restore();
+    }
     if (index === state.selectedSpawnIndex || index === state.hoveredCanvasIndex) {
       context.beginPath();
       context.strokeStyle = index === state.selectedSpawnIndex ? "#f6f9ff" : "rgba(246, 249, 255, 0.72)";
@@ -1791,6 +2143,15 @@ function selectSpawn(index) {
   setMobileSelectionMinimized(false);
 }
 
+function refreshSelectionDetails() {
+  if (!Number.isInteger(state.selectedSpawnIndex)) return;
+  const spawn = state.data?.spawns[state.selectedSpawnIndex];
+  const item = spawn ? state.data.itemsById.get(spawn.item_id) : null;
+  if (!spawn || !item) return;
+  renderSelectionDetail(els.selectionDetail, spawn, item);
+  renderSelectionDetail(els.mobileSelectionDetail, spawn, item);
+}
+
 function renderSelectionDetail(detail, spawn, item) {
   detail.className = "selection";
   detail.replaceChildren();
@@ -1839,14 +2200,14 @@ function renderSelectionDetail(detail, spawn, item) {
   const grid = document.createElement("div");
   grid.className = "detail-grid";
   const typeLabel = spawn.display_type_label || item.display_type_label || markerTypeLabel(spawn.marker_type);
-  const trackable = isTrackableOverworldItem(spawn);
+  const trackable = isTrackableOverworldItem(spawn, item);
   const rows = [
     ["Type", typeLabel],
+    ["Reward", spawn.reward_label || item.reward_label],
     ["X", formatCoordinate(spawn.x), formatCoordinate(spawn.x)],
     ["Y", formatCoordinate(spawn.y), formatCoordinate(spawn.y)],
     ["Height", formatNumber(spawn.height_y, 2)],
-  ];
-  if (trackable) rows.push(["Respawn", spawn.respawn_label || formatRespawnDuration(spawn.respawn_seconds)]);
+  ].filter(([, value]) => value);
   const areaValue = areaDetailValue(spawn);
   if (areaValue) rows.push(["Area", areaValue]);
   if (spawn.form_label || item.form_label) rows.push(["Form", spawn.form_label || item.form_label]);
@@ -1876,34 +2237,28 @@ function renderSelectionDetail(detail, spawn, item) {
     grid.append(left, right);
   });
 
-  const locate = document.createElement("button");
-  locate.type = "button";
-  locate.textContent = "Locate";
-  locate.addEventListener("click", () => focusSpawn(spawn));
-  detail.append(title, grid, locate);
+  detail.append(title, grid);
+  if (state.sidebarView !== "map") {
+    const locate = document.createElement("button");
+    locate.type = "button";
+    locate.textContent = "Locate";
+    locate.addEventListener("click", () => focusSpawn(spawn));
+    detail.append(locate);
+  }
 
   if (trackable) {
     const trackingId = trackingIdForSpawn(spawn);
     const track = document.createElement("button");
     track.type = "button";
     track.className = "track-selection-button";
-    if (isSignedIn() && state.tracking.has(trackingId)) {
+    if (state.tracking.has(trackingId)) {
       track.textContent = "Open Tracking";
       track.addEventListener("click", () => setSidebarView("tracking"));
-    } else if (isSignedIn()) {
-      track.textContent = "Add to Tracking";
+    } else {
+      track.textContent = "Track Respawn";
       track.addEventListener("click", () => {
         addTrackingForSpawn(spawn, item);
       });
-    } else {
-      const configured = getSyncConfig().configured;
-      track.textContent = state.authClient
-        ? "Sign in to Track"
-        : configured
-          ? "Tracking is loading"
-          : "Tracking needs setup";
-      track.disabled = !state.authClient;
-      if (state.authClient) track.addEventListener("click", signInWithDiscord);
     }
     detail.append(track);
   }
@@ -1921,8 +2276,14 @@ function focusSpawn(spawn) {
 }
 
 function prepareData(data) {
-  data.items = Array.isArray(data.items) ? data.items : [];
-  data.spawns = Array.isArray(data.spawns) ? data.spawns : [];
+  const sourceItems = Array.isArray(data.items) ? data.items : [];
+  const sourceSpawns = Array.isArray(data.spawns) ? data.spawns : [];
+  data.hiddenCounts = {
+    items: sourceItems.filter((item) => TEMPORARILY_HIDDEN_ITEM_IDS.has(item.item_id)).length,
+    spawns: sourceSpawns.filter((spawn) => TEMPORARILY_HIDDEN_ITEM_IDS.has(spawn.item_id)).length,
+  };
+  data.items = sourceItems.filter((item) => !TEMPORARILY_HIDDEN_ITEM_IDS.has(item.item_id));
+  data.spawns = sourceSpawns.filter((spawn) => !TEMPORARILY_HIDDEN_ITEM_IDS.has(spawn.item_id));
   data.maps = Array.isArray(data.maps) && data.maps.length ? data.maps : [data.map];
   data.maps.forEach((map, index) => {
     map.id = map.id || (index === 0 ? "country-of-time" : `map-${index + 1}`);
@@ -2052,13 +2413,14 @@ function renderMapTabs() {
 function updateMapMeta() {
   const map = currentMap();
   const counts = map.counts || state.data.counts || {};
+  const hiddenCounts = state.data?.hiddenCounts || { items: 0, spawns: 0 };
   const parts = [
-    `${counts.spawns || 0} markers`,
-    `${counts.collectable_items || 0} items`,
+    `${Math.max(0, (counts.spawns || 0) - hiddenCounts.spawns)} markers`,
+    `${Math.max(0, (counts.collectable_items || 0) - hiddenCounts.items)} items`,
     `${counts.aniimo || 0} Aniimo`,
     `${counts.elite_eggs || 0} eggs`,
     `${counts.teleports || 0} teleports`,
-    `${counts.ambers || 0} ambers`,
+    `${counts.ambers || 0} Lumens`,
     `${counts.misc || 0} misc`,
   ];
   if (state.loadingMapId === map.id) parts.push("Loading markers");
@@ -2117,6 +2479,7 @@ function switchMap(mapId) {
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
   state.selectedPin = null;
   state.selectedSpawnIndex = null;
+  clearLocatedSpawn();
   clearSelectionDetails("No marker selected");
   setMobileSelectionMinimized(true);
   els.coordinateReadout.textContent = "X 0, Y 0";
@@ -2144,10 +2507,16 @@ function bindEvents() {
   });
   els.mapWorkspaceTab.addEventListener("click", () => setSidebarView("map"));
   els.trackingWorkspaceTab.addEventListener("click", () => setSidebarView("tracking"));
+  els.checklistWorkspaceTab.addEventListener("click", () => setSidebarView("checklist"));
   els.settingsWorkspaceTab.addEventListener("click", () => setSidebarView("settings"));
   els.workspaceTabs.addEventListener("keydown", (event) => {
     if (!new Set(["ArrowLeft", "ArrowRight", "Home", "End"]).has(event.key)) return;
-    const tabs = [els.mapWorkspaceTab, els.trackingWorkspaceTab, els.settingsWorkspaceTab];
+    const tabs = [
+      els.mapWorkspaceTab,
+      els.trackingWorkspaceTab,
+      els.checklistWorkspaceTab,
+      els.settingsWorkspaceTab,
+    ];
     const currentIndex = Math.max(0, tabs.findIndex((tab) => tab.dataset.workspaceView === state.sidebarView));
     let nextIndex = currentIndex;
     if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
@@ -2162,8 +2531,13 @@ function bindEvents() {
     if (!document.hidden) updateTrackingCountdowns();
   });
   els.searchInput.addEventListener("input", () => {
+    clearLocatedSpawn();
     state.search = normalizedSearch(els.searchInput.value);
     refreshVisibility();
+  });
+  els.checklistSearchInput.addEventListener("input", () => {
+    state.checklistSearch = normalizedSearch(els.checklistSearchInput.value);
+    renderChecklist();
   });
   els.mapTabs.addEventListener("keydown", (event) => {
     if (!new Set(["ArrowLeft", "ArrowRight", "Home", "End"]).has(event.key)) return;
@@ -2182,10 +2556,12 @@ function bindEvents() {
     }
   });
   els.selectAllButton.addEventListener("click", () => {
+    clearLocatedSpawn();
     activeMapItems().forEach((item) => state.enabled.add(item.item_id));
     refreshVisibility();
   });
   els.selectNoneButton.addEventListener("click", () => {
+    clearLocatedSpawn();
     state.enabled.clear();
     refreshVisibility();
   });
@@ -2259,11 +2635,29 @@ function bindEvents() {
     }
     hideCanvasTooltip();
   });
-  window.addEventListener("resize", fitMap);
+  if ("ResizeObserver" in window) {
+    state.viewportResizeObserver = new ResizeObserver(scheduleMapViewportFit);
+    state.viewportResizeObserver.observe(els.mapViewport);
+  }
+  window.addEventListener("resize", scheduleMapViewportFit, { passive: true });
 }
 
 async function init() {
   bindEvents();
+  const checklistRequest = fetch(CHECKLIST_URL)
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`Could not load ${CHECKLIST_URL}`);
+      const checklist = await response.json();
+      if (!Array.isArray(checklist?.entries) || !Array.isArray(checklist?.categories)) {
+        throw new Error("Checklist data has an invalid format");
+      }
+      state.checklistData = checklist;
+      state.checklistLoadError = "";
+    })
+    .catch((error) => {
+      state.checklistData = null;
+      state.checklistLoadError = error instanceof Error ? error.message : String(error);
+    });
   const response = await fetch(DATA_URL);
   if (!response.ok) {
     throw new Error(`Could not load ${DATA_URL}`);
@@ -2281,14 +2675,16 @@ async function init() {
     spawns: [],
   };
   state.data = prepareData(state.bootstrap);
+  await checklistRequest;
   els.appVersion.textContent = APP_VERSION;
   updateWorkspaceTabs();
   updateMobileSelectionPanel();
   renderTracking();
+  renderChecklist();
   renderSettings();
   renderMapTabs();
   switchMap(state.activeMapId);
-  void initializeDiscordSync();
+  initializeLocalTracking();
 }
 
 init().catch((error) => {

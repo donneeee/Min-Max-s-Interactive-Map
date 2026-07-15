@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MinMax's Map</title>
-    <link rel="stylesheet" href="./styles.css?v=20260714-mobile-layout-v023">
+    <link rel="stylesheet" href="./styles.css?v=20260715-reward-sources-v035">
   </head>
   <body>
     <main class="app-shell">
@@ -20,6 +20,7 @@
         <div id="workspaceTabs" class="workspace-tabs" role="tablist" aria-label="Sidebar views">
           <button id="mapWorkspaceTab" class="workspace-tab" data-workspace-view="map" type="button" role="tab" aria-controls="mapWorkspace" aria-selected="true">Map</button>
           <button id="trackingWorkspaceTab" class="workspace-tab" data-workspace-view="tracking" type="button" role="tab" aria-controls="trackingWorkspace" aria-selected="false">Tracking</button>
+          <button id="checklistWorkspaceTab" class="workspace-tab" data-workspace-view="checklist" type="button" role="tab" aria-controls="checklistWorkspace" aria-selected="false">Checklist</button>
           <button id="settingsWorkspaceTab" class="workspace-tab" data-workspace-view="settings" type="button" role="tab" aria-controls="settingsWorkspace" aria-selected="false">Settings</button>
         </div>
 
@@ -42,13 +43,6 @@
             <div id="layerTabs" class="layer-tabs" role="tablist" aria-label="Marker layers"></div>
             <div id="itemList" class="item-list"></div>
           </section>
-
-          <section class="panel detail-panel" aria-live="polite">
-            <div class="panel-heading">
-              <h2>Selection</h2>
-            </div>
-            <div id="selectionDetail" class="selection empty">No marker selected</div>
-          </section>
         </div>
 
         <section id="trackingWorkspace" class="tracking-workspace" role="tabpanel" aria-labelledby="trackingWorkspaceTab" hidden>
@@ -59,11 +53,30 @@
           <div id="trackingList" class="tracking-list"></div>
         </section>
 
+        <section id="checklistWorkspace" class="checklist-workspace" role="tabpanel" aria-labelledby="checklistWorkspaceTab" hidden>
+          <div class="panel-heading">
+            <h2>Checklist</h2>
+            <span id="checklistCount" class="filter-count" aria-live="polite">Loading</span>
+          </div>
+          <div id="checklistCategoryTabs" class="checklist-category-tabs" role="tablist" aria-label="Checklist categories"></div>
+          <div id="luminChecklistTabs" class="lumin-checklist-tabs" role="tablist" aria-label="Lumin checklist sources" hidden></div>
+          <label class="search-label" for="checklistSearchInput">Search</label>
+          <input id="checklistSearchInput" class="search" type="search" autocomplete="off" placeholder="Aniimo, form, or location">
+          <div id="checklistList" class="checklist-list" aria-live="polite"></div>
+        </section>
+
         <section id="settingsWorkspace" class="settings-workspace" role="tabpanel" aria-labelledby="settingsWorkspaceTab" hidden>
           <div class="panel-heading">
             <h2>Settings</h2>
           </div>
           <div id="settingsContent" class="settings-content"></div>
+        </section>
+
+        <section class="panel detail-panel" aria-live="polite">
+          <div class="panel-heading">
+            <h2>Selection</h2>
+          </div>
+          <div id="selectionDetail" class="selection empty">No marker selected</div>
         </section>
       </aside>
 
@@ -93,8 +106,6 @@
       </section>
     </main>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="./app-config.js?v=20260714-mobile-layout-v023"></script>
-    <script defer src="./app.js?v=20260714-mobile-layout-v023"></script>
+  <script defer src="./app.js?v=20260715-reward-sources-v035"></script>
   </body>
 </html>

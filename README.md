@@ -2,7 +2,7 @@
 
 Interactive static map for Aniimo world markers.
 
-Version: `v0.3.23`
+Version: `v0.3.24`
 
 ## What Is Included
 
@@ -11,7 +11,7 @@ Version: `v0.3.23`
 - A small startup manifest at `data/map_site_data.json`, with marker data loaded per map from `data/maps/`.
 - WebP map previews for first paint and GPU-safe detail tiles for zoomed-in views.
 - Static assets under `assets/`, so the site can be hosted without a build step.
-- Discord-synced respawn tracking for verified overworld collectible nodes.
+- Browser-saved respawn tracking for verified overworld collectible nodes.
 
 ## Run Locally
 
@@ -35,14 +35,12 @@ This folder is ready to be used as its own GitHub repository.
 2. In the GitHub repository settings, enable Pages with `GitHub Actions` as the source.
 3. Pushes to `main` will publish through `.github/workflows/deploy-pages.yml`.
 
-## Discord Sync Setup
+## Tracking Data
 
-The map and filters work without a backend. Tracking is disabled until Discord
-sync is configured through Supabase. Follow the click-by-click
-[Discord sync setup guide](./DISCORD_SYNC_SETUP.md) when you are ready.
-
-`app-config.local.js` and `.env` files are ignored so local credentials and
-development settings cannot be committed accidentally.
+Tracking data is stored locally in the visitor's browser. It survives page
+refreshes on the same browser and device, but is not yet shared between
+devices. The local data format is deliberately kept stable so it can be
+imported into Discord-backed sync later.
 
 ## Coordinate Convention
 
