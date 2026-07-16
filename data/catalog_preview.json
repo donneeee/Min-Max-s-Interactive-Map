@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "aniilog": [
+    {
+      "id": "emberpup",
+      "aniilog_number": "#001",
+      "name": "Emberpup",
+      "icon": "assets/icons/aniimo_10051_basic__10051_Emberpup_UI_PetHead_10051_Sprite_1694520572941008294.png",
+      "description": "The lively creatures like to follow Flameruffs around. Once the smoldering fur starts to burn, they thrive.",
+      "overworld_spawn_count": 500,
+      "evolves_to": "Flameruff",
+      "forms": [
+        {
+          "name": "Basic",
+          "icon": "assets/icons/aniimo_10051_basic__10051_Emberpup_UI_PetHead_10051_Sprite_1694520572941008294.png",
+          "description": "The lively creatures like to follow Flameruffs around. Once the smoldering fur starts to burn, they thrive.",
+          "overworld_spawn_count": 323
+        },
+        {
+          "name": "Highland",
+          "icon": "assets/icons/aniimo_10051_highland__1005101_Emberpup_UI_PetHead_1005101_Sprite_-1878340555740456484.png",
+          "description": "Emberpups living in the mountains have rock-like fur colors and a shaggy coat created by the mountain winds.",
+          "overworld_spawn_count": 118
+        },
+        {
+          "name": "Mountain Woods",
+          "icon": "assets/icons/aniimo_10051_mountainforests__1005104_Emberpup_UI_PetHead_1005104_Sprite_3209005986001657794.png",
+          "description": "Emberpup living in sunny mountain forests have warm golden-yellow fur tips that seem to leave traces of sunshine as they run.",
+          "overworld_spawn_count": 59
+        }
+      ]
+    },
+    {
+      "id": "glacy",
+      "aniilog_number": "#043",
+      "name": "Glacy",
+      "icon": "assets/icons/aniimo_10043_basic__10043_Glacy_UI_PetHead_10043_Sprite_-1141064021113386808.png",
+      "description": "They are elegant and kind aniimo that always take care of weaker ones, and freeze anyone who crosses them in ice.",
+      "forms": [
+        {
+          "name": "Basic",
+          "icon": "assets/icons/aniimo_10043_basic__10043_Glacy_UI_PetHead_10043_Sprite_-1141064021113386808.png",
+          "description": "They are elegant and kind aniimo that always take care of weaker ones, and freeze anyone who crosses them in ice."
+        },
+        {
+          "name": "Snowfield",
+          "icon": "assets/icons/aniimo_10043_snow__1004302_Glacy_UI_PetHead_1004302_Sprite_5395575911568402029.png",
+          "description": "Glacies living in cold regions have their gills and tail fins covered in solid ice shells. The biting cold proclaims the majesty of the Lord of Ice and Snow."
+        },
+        {
+          "name": "Prismana",
+          "icon": "assets/icons/aniimo_10043_rainbow__1004303_Glacy_UI_PetHead_1004303_Sprite_5303169377606347952.png",
+          "description": "Prismana power flows softly through Glacy, like sunlight passing through its body and scattering across its scales in radiant color."
+        }
+      ]
+    },
+    {
+      "id": "scorchhowl",
+      "aniilog_number": "#003",
+      "name": "Scorchhowl",
+      "icon": "assets/icons/aniimo_10053_basic__10053_Fire_Wolf_UI_PetHead_10053_Sprite_-4126760312447788569.png",
+      "description": "They enjoy the thrill of the fight since flame and burning mark their growth.",
+      "forms": [
+        {
+          "name": "Basic",
+          "icon": "assets/icons/aniimo_10053_basic__10053_Fire_Wolf_UI_PetHead_10053_Sprite_-4126760312447788569.png",
+          "description": "They enjoy the thrill of the fight since flame and burning mark their growth."
+        },
+        {
+          "name": "Thunderstorm",
+          "icon": "assets/icons/aniimo_10053_thunderstorm__1005302_Fire_Wolf_UI_PetHead_1005302_Sprite_3293170248862069926.png",
+          "description": "Struck by thunder, their muscles are enhanced, and the flames all over them turn blue as they burn hotter."
+        },
+        {
+          "name": "Prismana",
+          "icon": "assets/icons/aniimo_10053_rainbow__1005303_Fire_Wolf_UI_PetHead_1005303_Sprite_-5667400523633095694.png",
+          "description": "Unstable Prismana energy sets Scorchhowl's spirit ablaze. One glare from it, and weaker hearts start to crumble."
+        }
+      ]
+    }
+  ],
+  "itemlog": [
+    {
+      "id": "chroma-ore",
+      "name": "Chroma Ore",
+      "icon": "assets/icons/4010132__4010132_ui_item_4010132_Sprite_-8862465982169174899.png",
+      "description": "A vibrantly colored mineral that gleams with a unique luster in sunlight.",
+      "type": "Home materials",
+      "inventory": "Home materials",
+      "quality": "Legendary",
+      "source": "Overworld collectible",
+      "overworld_spawn_count": 6,
+      "respawn_label": "8 hours"
+    },
+    {
+      "id": "azur-grass",
+      "name": "Azur Grass",
+      "icon": "assets/icons/14003__400003_ui_item_400003_Sprite_778009904176603152.png",
+      "description": "Dense clusters of blue flowers forming perfect spherical blooms. Dismantle to obtain Credits.",
+      "type": "Aniimo Food",
+      "inventory": "Common Item",
+      "quality": "Normal",
+      "source": "Overworld collectible",
+      "overworld_spawn_count": 97,
+      "respawn_label": "3 minutes 20 seconds"
+    },
+    {
+      "id": "gargantuan-claw",
+      "name": "Gargantuan Claw",
+      "icon": "assets/icons/553001__ui_item_553001__Sprite_1826121032331714623.png",
+      "type": "Carried Item",
+      "inventory": "Carried Items and Runes",
+      "quality": "Rare",
+      "source": "Carried item",
+      "core_effect": "Each level of the equipped Aniimo grants an additional 0.8 BREAK."
+    }
+  ]
+}

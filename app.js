@@ -1,6 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260715-checklist-bosses-v047";
-const CHECKLIST_URL = "./data/checklist_data.json?v=20260715-checklist-bosses-v047";
-const APP_VERSION = "v0.3.47";
+const DATA_URL = "./data/map_site_data.json?v=20260716-catalog-preview-v001";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260716-catalog-preview-v001";
+const CATALOG_PREVIEW_URL = "./data/catalog_preview.json?v=20260716-catalog-preview-v002";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260716-aniilog-v002";
+const APP_VERSION = "v0.3.49";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -70,6 +72,8 @@ const state = {
   locatedSpawnIndex: null,
   mobileSelectionMinimized: true,
   sidebarView: "map",
+  settingsOpen: false,
+  settingsFocusReturn: null,
   tracking: new Map(),
   completed: new Set(),
   checklistData: null,
@@ -77,8 +81,25 @@ const state = {
   checklistCategory: "aniimo",
   luminChecklistTab: "ambers",
   checklistSearch: "",
+  catalogData: null,
+  catalogLoadError: "",
+  aniilogData: null,
+  aniilogLoadError: "",
+  aniilogLoadPromise: null,
+  catalogSearch: {
+    aniilog: "",
+    itemlog: "",
+  },
+  catalogSelection: {
+    aniilog: "aniimo:1005100",
+    itemlog: "chroma-ore",
+  },
+  catalogCategory: {
+    itemlog: "all",
+  },
   trackingTicker: 0,
   pendingTrackingIds: new Set(),
+  pendingAniilogLocate: null,
   pendingReset: false,
   localStorageError: "",
 };
@@ -90,11 +111,14 @@ const els = {
   mapWorkspaceTab: document.querySelector("#mapWorkspaceTab"),
   trackingWorkspaceTab: document.querySelector("#trackingWorkspaceTab"),
   checklistWorkspaceTab: document.querySelector("#checklistWorkspaceTab"),
-  settingsWorkspaceTab: document.querySelector("#settingsWorkspaceTab"),
+  aniilogWorkspaceTab: document.querySelector("#aniilogWorkspaceTab"),
+  itemlogWorkspaceTab: document.querySelector("#itemlogWorkspaceTab"),
+  settingsButton: document.querySelector("#settingsButton"),
+  settingsOverlay: document.querySelector("#settingsOverlay"),
+  settingsCloseButton: document.querySelector("#settingsCloseButton"),
   mapWorkspace: document.querySelector("#mapWorkspace"),
   trackingWorkspace: document.querySelector("#trackingWorkspace"),
   checklistWorkspace: document.querySelector("#checklistWorkspace"),
-  settingsWorkspace: document.querySelector("#settingsWorkspace"),
   trackingCount: document.querySelector("#trackingCount"),
   trackingList: document.querySelector("#trackingList"),
   checklistCount: document.querySelector("#checklistCount"),
@@ -113,6 +137,8 @@ const els = {
   mobileSelectionDetail: document.querySelector("#mobileSelectionDetail"),
   mobileSelectionToggle: document.querySelector("#mobileSelectionToggle"),
   mapPanel: document.querySelector(".map-panel"),
+  mapSurface: document.querySelector("#mapSurface"),
+  catalogPanel: document.querySelector("#catalogPanel"),
   mapViewport: document.querySelector("#mapViewport"),
   mapWorld: document.querySelector("#mapWorld"),
   mapTiles: document.querySelector("#mapTiles"),
@@ -433,6 +459,72 @@ function activeMapItems() {
 
 function activeMapSpawnEntries(itemId) {
   return (state.data.spawnsByItemId.get(itemId) || []).filter(({ spawn }) => spawnOnActiveMap(spawn));
+}
+
+function aniilogFormKey(value) {
+  return String(value || "basic").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function aniilogItemMatches(item, entry) {
+  return Boolean(
+    item?.is_aniimo
+    && entry
+    && String(item.aniimo_id || "") === String(entry.base_id || "")
+    && aniilogFormKey(item.form_key) === aniilogFormKey(entry.form_key),
+  );
+}
+
+function applyAniilogLocate(entry, finalAttempt = false) {
+  const mapItems = activeMapItems();
+  const matches = mapItems.filter((item) => aniilogItemMatches(item, entry));
+  if (!matches.length) {
+    if (finalAttempt) {
+      state.pendingAniilogLocate = null;
+      clearSelectionDetails("No confirmed spawn for this form is available on the selected map.");
+    }
+    return false;
+  }
+
+  mapItems.filter((item) => item.is_aniimo).forEach((item) => state.enabled.delete(item.item_id));
+  matches.forEach((item) => state.enabled.add(item.item_id));
+  state.activeLayer = "aniimo";
+  state.search = "";
+  els.searchInput.value = "";
+  renderItems();
+  refreshVisibility();
+
+  const firstMatch = matches[0];
+  const spawnEntry = activeMapSpawnEntries(firstMatch.item_id).find(({ spawn }) => spawnMatches(spawn))
+    || activeMapSpawnEntries(firstMatch.item_id)[0];
+  if (spawnEntry) {
+    state.locatedSpawnIndex = spawnEntry.index;
+    selectSpawn(spawnEntry.index);
+    focusSpawn(spawnEntry.spawn);
+  }
+  state.pendingAniilogLocate = null;
+  return true;
+}
+
+function applyPendingAniilogLocate(finalAttempt = false) {
+  if (!state.pendingAniilogLocate) return false;
+  return applyAniilogLocate(state.pendingAniilogLocate, finalAttempt);
+}
+
+function locateAniilogEntry(entry) {
+  if (!entry || !Array.isArray(entry.map_ids) || !entry.map_ids.length) return;
+  state.pendingAniilogLocate = entry;
+  const mapId = entry.map_ids.includes(state.activeMapId)
+    ? state.activeMapId
+    : entry.map_ids.find((candidate) => state.data?.mapsById.has(candidate));
+  if (!mapId) {
+    state.pendingAniilogLocate = null;
+    return;
+  }
+  setSidebarView("map");
+  if (mapId !== state.activeMapId) {
+    switchMap(mapId);
+  }
+  if (datasetForMap(mapId)) applyPendingAniilogLocate(true);
 }
 
 function areaDetailValue(spawn) {
@@ -797,6 +889,734 @@ function renderSettings() {
       { label: "Retry browser storage", onClick: () => { loadLocalTracking(); refreshAccountViews(); }, danger: true },
     ));
   }
+}
+
+function openSettings() {
+  if (state.settingsOpen) return;
+  state.settingsOpen = true;
+  state.settingsFocusReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  renderSettings();
+  els.settingsOverlay.hidden = false;
+  els.settingsButton.setAttribute("aria-expanded", "true");
+  window.requestAnimationFrame(() => els.settingsCloseButton.focus());
+}
+
+function closeSettings() {
+  if (!state.settingsOpen) return;
+  state.settingsOpen = false;
+  els.settingsOverlay.hidden = true;
+  els.settingsButton.setAttribute("aria-expanded", "false");
+  const focusTarget = state.settingsFocusReturn || els.settingsButton;
+  state.settingsFocusReturn = null;
+  focusTarget.focus();
+}
+
+function isCatalogView(view = state.sidebarView) {
+  return view === "aniilog" || view === "itemlog";
+}
+
+function ensureAniilogData() {
+  if (state.aniilogData) return Promise.resolve(state.aniilogData);
+  if (state.aniilogLoadPromise) return state.aniilogLoadPromise;
+
+  state.aniilogLoadPromise = fetch(ANIILOG_DATA_URL)
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`Could not load ${ANIILOG_DATA_URL}`);
+      const payload = await response.json();
+      if (!Array.isArray(payload?.entries) || !payload?.totals) {
+        throw new Error("Aniilog data has an invalid format");
+      }
+      state.aniilogData = payload;
+      state.aniilogLoadError = "";
+      return payload;
+    })
+    .catch((error) => {
+      state.aniilogData = null;
+      state.aniilogLoadError = error instanceof Error ? error.message : String(error);
+      return null;
+    })
+    .finally(() => {
+      state.aniilogLoadPromise = null;
+      if (state.sidebarView === "aniilog") renderCatalogPreview();
+    });
+
+  return state.aniilogLoadPromise;
+}
+
+function allCatalogEntriesForView(view = state.sidebarView) {
+  if (view === "aniilog") {
+    return Array.isArray(state.aniilogData?.entries) ? state.aniilogData.entries : [];
+  }
+  if (view === "itemlog") {
+    return Array.isArray(state.catalogData?.itemlog) ? state.catalogData.itemlog : [];
+  }
+  return [];
+}
+
+function catalogLoadErrorForView(view = state.sidebarView) {
+  return view === "aniilog" ? state.aniilogLoadError : state.catalogLoadError;
+}
+
+function catalogSearchForView(view = state.sidebarView) {
+  return String(state.catalogSearch[view] || "");
+}
+
+function catalogCategoryForEntry(entry) {
+  return String(entry?.catalog_category || entry?.type || "Other").trim() || "Other";
+}
+
+function catalogCategoriesForView(view = state.sidebarView) {
+  if (view !== "itemlog") return [];
+  const entries = allCatalogEntriesForView(view);
+  const categories = [...new Set(entries.map(catalogCategoryForEntry))].sort(compareText);
+  return ["all", ...categories];
+}
+
+function catalogEntriesForView(view = state.sidebarView) {
+  let entries = allCatalogEntriesForView(view);
+  if (view === "itemlog") {
+    const category = state.catalogCategory.itemlog || "all";
+    entries = category === "all"
+      ? entries
+      : entries.filter((entry) => catalogCategoryForEntry(entry) === category);
+  }
+  const query = catalogSearchForView(view).trim().toLowerCase();
+  if (!query) return entries;
+  return entries.filter((entry) => catalogEntrySearchText(entry).includes(query));
+}
+
+function catalogEntrySearchText(entry) {
+  return searchText([
+    entry?.name,
+    entry?.aniilog_number,
+    entry?.form_label,
+    entry?.classification,
+    entry?.role,
+    entry?.type,
+    entry?.inventory,
+    entry?.source,
+    entry?.elements?.map((element) => element?.name),
+    entry?.locations?.flatMap((location) => [location?.map_label, location?.areas]),
+    entry?.spawn_requirements,
+  ]);
+}
+
+function appendCatalogFact(grid, label, value) {
+  if (value === null || value === undefined || value === "") return;
+  const fact = document.createElement("div");
+  fact.className = "catalog-fact";
+  const term = document.createElement("dt");
+  term.textContent = label;
+  const description = document.createElement("dd");
+  description.textContent = String(value);
+  fact.append(term, description);
+  grid.append(fact);
+}
+
+function createCatalogSection(title) {
+  const section = document.createElement("section");
+  section.className = "catalog-section";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  section.append(heading);
+  return section;
+}
+
+function renderCatalogIndex(entries, selectedId, view, title) {
+  const index = document.createElement("nav");
+  index.className = "catalog-index";
+  index.setAttribute("aria-label", `${title} entries`);
+
+  entries.forEach((entry) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "catalog-index-row";
+    const selected = entry.id === selectedId;
+    button.setAttribute("aria-pressed", String(selected));
+    button.dataset.catalogEntryId = entry.id;
+
+    const icon = makeIcon("catalog-index-icon", entry.icon);
+    const copy = document.createElement("span");
+    copy.className = "catalog-index-copy";
+    const name = document.createElement("strong");
+    name.textContent = entry.name;
+    const meta = document.createElement("small");
+    meta.textContent = view === "aniilog"
+      ? `${entry.aniilog_number || "Special"} - ${entry.form_label || "Basic"}`
+      : entry.type || "Item";
+    copy.append(name, meta);
+    button.append(icon, copy);
+    button.addEventListener("click", () => {
+      state.catalogSelection[view] = entry.id;
+      renderCatalogPreview();
+    });
+    index.append(button);
+  });
+
+  return index;
+}
+
+function renderCatalogSearch(view) {
+  const label = document.createElement("label");
+  label.className = "catalog-search-label";
+  label.textContent = "Search";
+  const input = document.createElement("input");
+  input.className = "catalog-search";
+  input.type = "search";
+  input.autocomplete = "off";
+  input.value = catalogSearchForView(view);
+  input.placeholder = view === "aniilog" ? "Aniimo, form, element, location" : "Item, type, or source";
+  input.addEventListener("input", () => {
+    state.catalogSearch[view] = input.value;
+    renderCatalogPreview();
+  });
+  label.append(input);
+  return label;
+}
+
+function renderCatalogCategoryToolbar(view) {
+  if (view !== "itemlog") return null;
+  const toolbar = document.createElement("nav");
+  toolbar.className = "catalog-category-toolbar";
+  toolbar.setAttribute("aria-label", "Item categories");
+  const activeCategory = state.catalogCategory.itemlog || "all";
+
+  catalogCategoriesForView(view).forEach((category) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "catalog-category-button";
+    button.textContent = category === "all" ? "All" : category;
+    button.setAttribute("aria-pressed", String(category === activeCategory));
+    button.addEventListener("click", () => {
+      state.catalogCategory.itemlog = category;
+      const visibleEntries = catalogEntriesForView(view);
+      if (!visibleEntries.some((entry) => entry.id === state.catalogSelection.itemlog)) {
+        state.catalogSelection.itemlog = visibleEntries[0]?.id || "";
+      }
+      renderCatalogPreview();
+    });
+    toolbar.append(button);
+  });
+
+  return toolbar;
+}
+
+function elementClassName(element) {
+  return String(element?.name || "unknown").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "unknown";
+}
+
+function createCatalogTag(text, className = "") {
+  const tag = document.createElement("span");
+  tag.className = `catalog-tag ${className}`.trim();
+  tag.textContent = text;
+  return tag;
+}
+
+function renderCatalogLevels(title, entries, emptyText = "No ability data available.") {
+  const section = createCatalogSection(title);
+  if (!Array.isArray(entries) || !entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = emptyText;
+    section.append(empty);
+    return section;
+  }
+  const levels = document.createElement("div");
+  levels.className = "catalog-level-grid";
+  entries.forEach((entry) => {
+    const card = document.createElement("div");
+    card.className = "catalog-level-card";
+    const name = document.createElement("strong");
+    name.textContent = entry.name;
+    const level = document.createElement("span");
+    level.textContent = entry.level ? `Level ${entry.level}` : "Available";
+    card.append(name, level);
+    levels.append(card);
+  });
+  section.append(levels);
+  return section;
+}
+
+function renderCatalogAbilitySection(title, abilities, emptyText = "No data available.") {
+  const section = createCatalogSection(title);
+  if (!Array.isArray(abilities) || !abilities.length) {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = emptyText;
+    section.append(empty);
+    return section;
+  }
+  const grid = document.createElement("div");
+  grid.className = "catalog-ability-grid";
+  abilities.forEach((ability) => {
+    const card = document.createElement("article");
+    card.className = "catalog-ability-card";
+    const icon = makeIcon("catalog-ability-icon", ability.icon);
+    icon.alt = `${ability.name} icon`;
+    const copy = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = ability.name || "Ability";
+    copy.append(name);
+    if (ability.description) {
+      const description = document.createElement("p");
+      description.textContent = ability.description;
+      copy.append(description);
+    }
+    const meta = [];
+    if (ability.group && ability.group !== "Ultimate") meta.push(ability.group);
+    if (ability.power) meta.push(`Power ${ability.power}`);
+    if (ability.consume) meta.push(`EP ${ability.consume}`);
+    if (meta.length) {
+      const detail = document.createElement("small");
+      detail.textContent = meta.join(" - ");
+      copy.append(detail);
+    }
+    card.append(icon, copy);
+    grid.append(card);
+  });
+  section.append(grid);
+  return section;
+}
+
+function renderCatalogLocations(entry) {
+  const section = createCatalogSection("Known locations");
+  if (!Array.isArray(entry.locations) || !entry.locations.length) {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = "No overworld location is currently confirmed for this form.";
+    section.append(empty);
+    return section;
+  }
+  const grid = document.createElement("div");
+  grid.className = "catalog-location-grid";
+  entry.locations.forEach((location) => {
+    const card = document.createElement("article");
+    card.className = "catalog-location-card";
+    const name = document.createElement("strong");
+    name.textContent = location.map_label;
+    const count = document.createElement("small");
+    count.textContent = `${formatNumber(location.count)} known spawn point${location.count === 1 ? "" : "s"}`;
+    const areas = document.createElement("p");
+    areas.textContent = (location.areas || []).join(" - ");
+    card.append(name, count, areas);
+    grid.append(card);
+  });
+  section.append(grid);
+  return section;
+}
+
+function openAniilogRecord(entryId) {
+  state.catalogSelection.aniilog = entryId;
+  state.catalogSearch.aniilog = "";
+  renderCatalogPreview();
+  window.requestAnimationFrame(() => {
+    els.catalogPanel.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
+function createEvolutionNode(node, label, isCurrent = false) {
+  const card = document.createElement("article");
+  card.className = `catalog-evolution-node${isCurrent ? " is-current" : ""}`;
+  const labelNode = document.createElement("p");
+  labelNode.className = "catalog-evolution-label";
+  labelNode.textContent = label;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "catalog-evolution-link";
+  const icon = makeIcon("catalog-evolution-icon", node.icon);
+  icon.alt = `${node.name} icon`;
+  const copy = document.createElement("span");
+  const name = document.createElement("strong");
+  name.textContent = node.name;
+  const form = document.createElement("small");
+  form.textContent = node.form_label || "Basic";
+  copy.append(name, form);
+  button.append(icon, copy);
+  button.addEventListener("click", () => openAniilogRecord(node.id));
+  card.append(labelNode, button);
+  if (Array.isArray(node.requirements) && node.requirements.length) {
+    const requirements = document.createElement("ul");
+    requirements.className = "catalog-evolution-requirements";
+    node.requirements.forEach((requirement) => {
+      const row = document.createElement("li");
+      row.textContent = requirement;
+      requirements.append(row);
+    });
+    card.append(requirements);
+  }
+  return card;
+}
+
+function renderCatalogEvolution(entry) {
+  const parents = entry.evolution?.from || [];
+  const targets = entry.evolution?.to || [];
+  if (!parents.length && !targets.length) return null;
+  const section = createCatalogSection("Evolution");
+  const flow = document.createElement("div");
+  flow.className = "catalog-evolution-flow";
+  parents.forEach((parent) => flow.append(createEvolutionNode(parent, "Evolved from")));
+  if (parents.length) {
+    const arrow = document.createElement("span");
+    arrow.className = "catalog-evolution-arrow";
+    arrow.textContent = "\u2192";
+    flow.append(arrow);
+  }
+  flow.append(createEvolutionNode(entry, "Current form", true));
+  if (targets.length) {
+    const arrow = document.createElement("span");
+    arrow.className = "catalog-evolution-arrow";
+    arrow.textContent = "\u2192";
+    flow.append(arrow);
+  }
+  targets.forEach((target) => flow.append(createEvolutionNode(target, "Can evolve to")));
+  section.append(flow);
+  return section;
+}
+
+function renderBossRewardTier(tier) {
+  const block = document.createElement("section");
+  block.className = "catalog-boss-tier";
+
+  if (tier.label) {
+    const label = document.createElement("h5");
+    label.className = "catalog-boss-tier-label";
+    label.textContent = tier.label;
+    block.append(label);
+  }
+
+  const drops = Array.isArray(tier.drops) ? tier.drops : [];
+  if (!drops.length) {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = "No repeatable reward entries are configured for this tier.";
+    block.append(empty);
+    return block;
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "catalog-boss-drop-grid";
+  drops.forEach((drop) => {
+    const reward = document.createElement("article");
+    reward.className = "catalog-boss-drop";
+    const icon = makeIcon("catalog-boss-drop-icon", drop.icon);
+    icon.alt = drop.name ? `${drop.name} icon` : "Reward icon";
+    const copy = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = drop.name || "Unknown reward";
+    const quantity = document.createElement("span");
+    quantity.textContent = `x${drop.quantity ?? 1}`;
+    copy.append(name, quantity);
+    reward.append(icon, copy);
+    grid.append(reward);
+  });
+  block.append(grid);
+  return block;
+}
+
+function renderAniilogBossVariants(bossVariants) {
+  if (!Array.isArray(bossVariants) || !bossVariants.length) return null;
+
+  const section = createCatalogSection("Boss variants");
+  const note = document.createElement("p");
+  note.className = "catalog-boss-section-note";
+  note.textContent = "Repeatable encounter rewards only. First-clear rewards are intentionally excluded.";
+  const grid = document.createElement("div");
+  grid.className = "catalog-boss-grid";
+
+  bossVariants.forEach((boss) => {
+    const card = document.createElement("article");
+    card.className = "catalog-boss-variant";
+    const header = document.createElement("header");
+    header.className = "catalog-boss-header";
+    const icon = makeIcon("catalog-boss-icon", boss.icon);
+    icon.alt = `${boss.name || boss.tier || "Boss"} icon`;
+    const copy = document.createElement("div");
+    const eyebrow = document.createElement("p");
+    eyebrow.className = "catalog-boss-eyebrow";
+    eyebrow.textContent = `${boss.tier || "Boss"} encounter`;
+    const name = document.createElement("h4");
+    name.textContent = boss.name || "Boss variant";
+    const meta = document.createElement("div");
+    meta.className = "catalog-boss-meta";
+    const location = [boss.map_label, boss.area_name].filter(Boolean).join(" - ");
+    if (location) {
+      const locationItem = document.createElement("span");
+      locationItem.textContent = location;
+      meta.append(locationItem);
+    }
+    if (Number(boss.refresh_minutes) > 0) {
+      const refresh = document.createElement("span");
+      refresh.textContent = `Refresh: ${boss.refresh_minutes} min`;
+      meta.append(refresh);
+    }
+    copy.append(eyebrow, name, meta);
+    header.append(icon, copy);
+    card.append(header);
+
+    const rewardTiers = Array.isArray(boss.reward_tiers) ? boss.reward_tiers : [];
+    if (!rewardTiers.length) {
+      const empty = document.createElement("p");
+      empty.className = "catalog-empty-detail";
+      empty.textContent = "Repeatable reward data is not currently available for this encounter.";
+      card.append(empty);
+    } else {
+      const rewards = document.createElement("div");
+      rewards.className = "catalog-boss-rewards";
+      const heading = document.createElement("p");
+      heading.className = "catalog-boss-reward-heading";
+      heading.textContent = "Repeatable drops";
+      rewards.append(heading, renderBossRewardTier(rewardTiers[0]));
+      card.append(rewards);
+
+      if (rewardTiers.length > 1) {
+        const details = document.createElement("details");
+        details.className = "catalog-boss-tier-details";
+        const summary = document.createElement("summary");
+        summary.textContent = `View all ${rewardTiers.length} configured reward tiers`;
+        const tierList = document.createElement("div");
+        tierList.className = "catalog-boss-tier-list";
+        rewardTiers.slice(1).forEach((tier) => tierList.append(renderBossRewardTier(tier)));
+        details.append(summary, tierList);
+        card.append(details);
+      }
+    }
+
+    grid.append(card);
+  });
+
+  section.append(note, grid);
+  return section;
+}
+
+function renderAniilogCatalogRecord(entry) {
+  const record = document.createElement("article");
+  record.className = "catalog-record catalog-aniilog-record";
+
+  const identity = document.createElement("header");
+  identity.className = "catalog-identity";
+  const icon = makeIcon("catalog-hero-icon", entry.icon);
+  icon.alt = `${entry.name} ${entry.form_label} form icon`;
+  const copy = document.createElement("div");
+  const number = document.createElement("p");
+  number.className = "catalog-eyebrow";
+  number.textContent = `${entry.aniilog_number || "Special"} - ${entry.form_label || "Basic"}`;
+  const name = document.createElement("h2");
+  name.textContent = entry.name;
+  const tags = document.createElement("div");
+  tags.className = "catalog-tags";
+  if (entry.role) tags.append(createCatalogTag(`Class: ${entry.role}`, "catalog-role-tag"));
+  (entry.elements || []).forEach((element) => {
+    tags.append(createCatalogTag(`Type: ${element.name} ${element.level}`, `catalog-element-tag element-${elementClassName(element)}`));
+  });
+  copy.append(number, name, tags);
+  identity.append(icon, copy);
+  const actions = document.createElement("div");
+  actions.className = "catalog-identity-actions";
+  const locate = document.createElement("button");
+  locate.type = "button";
+  locate.className = "catalog-locate-button";
+  locate.textContent = "Locate on Map";
+  locate.disabled = !Array.isArray(entry.map_ids) || !entry.map_ids.length;
+  locate.addEventListener("click", () => locateAniilogEntry(entry));
+  actions.append(locate);
+  identity.append(actions);
+  record.append(identity);
+
+  if (entry.description) {
+    const description = document.createElement("p");
+    description.className = "catalog-description";
+    description.textContent = entry.description;
+    record.append(description);
+  }
+
+  const statSection = createCatalogSection("Base stats");
+  const stats = document.createElement("dl");
+  stats.className = "catalog-stat-grid";
+  (entry.stats || []).forEach((stat) => appendCatalogFact(stats, stat.label, stat.value));
+  statSection.append(stats);
+  record.append(statSection);
+
+  record.append(renderCatalogAbilitySection("Combat skills", entry.skills, "No combat skill data is currently available."));
+  record.append(renderCatalogAbilitySection("Ultimate", entry.ultimates, "No Ultimate ability is currently listed for this form."));
+  record.append(renderCatalogAbilitySection("Trait", entry.traits, "No Trait is currently listed for this form."));
+  record.append(renderCatalogAbilitySection("Mobility skills", entry.mobility_skills, "No Mobility skill is currently listed for this form."));
+  record.append(renderCatalogLevels("Exploration", entry.exploration, "No exploration ability is listed for this form."));
+  record.append(renderCatalogLevels("Homeland abilities", entry.homeland, "No Homeland ability is listed for this form."));
+
+  if (entry.spawn_requirements?.length) {
+    const requirements = createCatalogSection("Spawn requirements");
+    const list = document.createElement("ul");
+    list.className = "catalog-requirement-list";
+    entry.spawn_requirements.forEach((requirement) => {
+      const row = document.createElement("li");
+      row.textContent = requirement;
+      list.append(row);
+    });
+    requirements.append(list);
+    record.append(requirements);
+  }
+
+  record.append(renderCatalogLocations(entry));
+  const bossVariants = renderAniilogBossVariants(entry.boss_variants);
+  if (bossVariants) record.append(bossVariants);
+  const evolution = renderCatalogEvolution(entry);
+  if (evolution) record.append(evolution);
+  return record;
+}
+
+function qualityClassName(quality) {
+  return String(quality || "normal").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "normal";
+}
+
+function renderItemLogCatalogRecord(entry) {
+  const record = document.createElement("article");
+  record.className = "catalog-record";
+
+  const identity = document.createElement("header");
+  identity.className = "catalog-identity";
+  const icon = makeIcon("catalog-hero-icon", entry.icon);
+  icon.alt = `${entry.name} icon`;
+  const copy = document.createElement("div");
+  const eyebrow = document.createElement("p");
+  eyebrow.className = "catalog-eyebrow";
+  eyebrow.textContent = entry.type || "Item";
+  const name = document.createElement("h2");
+  name.textContent = entry.name;
+  const subtitle = document.createElement("p");
+  subtitle.className = "catalog-subtitle";
+  subtitle.textContent = entry.inventory || "";
+  copy.append(eyebrow, name, subtitle);
+  identity.append(icon, copy);
+  if (entry.quality) {
+    const quality = document.createElement("span");
+    quality.className = `catalog-quality catalog-quality--${qualityClassName(entry.quality)}`;
+    quality.textContent = entry.quality;
+    identity.append(quality);
+  }
+  record.append(identity);
+
+  if (entry.description) {
+    const description = document.createElement("p");
+    description.className = "catalog-description";
+    description.textContent = entry.description;
+    record.append(description);
+  }
+
+  const details = createCatalogSection("Item details");
+  const facts = document.createElement("dl");
+  facts.className = "catalog-facts";
+  appendCatalogFact(facts, "Category", entry.type);
+  appendCatalogFact(facts, "Inventory", entry.inventory);
+  appendCatalogFact(facts, "Source", entry.source);
+  appendCatalogFact(facts, "Overworld nodes", entry.overworld_spawn_count ? formatNumber(entry.overworld_spawn_count) : "");
+  appendCatalogFact(facts, "Respawn", entry.respawn_label);
+  details.append(facts);
+  record.append(details);
+
+  if (entry.core_effect) {
+    const coreEffect = createCatalogSection("Core effect");
+    const effect = document.createElement("p");
+    effect.className = "catalog-core-effect";
+    effect.textContent = entry.core_effect;
+    coreEffect.append(effect);
+    record.append(coreEffect);
+  }
+
+  if (Array.isArray(entry.set_effects)) {
+    const effects = createCatalogSection("Set effects");
+    if (entry.set_effects.length) {
+      const list = document.createElement("ul");
+      list.className = "catalog-effect-list";
+      entry.set_effects.forEach((effect) => {
+        const row = document.createElement("li");
+        row.textContent = effect;
+        list.append(row);
+      });
+      effects.append(list);
+    } else {
+      const empty = document.createElement("p");
+      empty.className = "catalog-empty-detail";
+      empty.textContent = "No set-effect lines are included in this preview.";
+      effects.append(empty);
+    }
+    record.append(effects);
+  }
+
+  return record;
+}
+
+function renderCatalogPreview() {
+  if (!isCatalogView()) return;
+  const view = state.sidebarView;
+  const title = view === "aniilog" ? "Aniilog" : "Item-log";
+  els.catalogPanel.textContent = "";
+  els.catalogPanel.setAttribute("aria-label", `${title} catalogue`);
+
+  const heading = document.createElement("header");
+  heading.className = "catalog-heading";
+  const headingCopy = document.createElement("div");
+  const name = document.createElement("h1");
+  name.textContent = title;
+  const subtitle = document.createElement("p");
+  subtitle.textContent = view === "aniilog" ? "Loading form data" : "Preview records";
+  headingCopy.append(name, subtitle);
+  const badge = document.createElement("span");
+  badge.className = "catalog-preview-badge";
+  badge.textContent = view === "aniilog" ? "Source data" : "Preview";
+  heading.append(headingCopy, badge);
+  els.catalogPanel.append(heading);
+
+  const loadError = catalogLoadErrorForView(view);
+  if (loadError) {
+    const message = document.createElement("p");
+    message.className = "catalog-empty";
+    message.textContent = view === "aniilog"
+      ? "Aniilog data could not be loaded."
+      : "Item-log preview data could not be loaded.";
+    els.catalogPanel.append(message);
+    return;
+  }
+
+  if (view === "aniilog" && !state.aniilogData) {
+    const message = document.createElement("p");
+    message.className = "catalog-empty";
+    message.textContent = "Loading Aniilog forms and source-backed abilities.";
+    els.catalogPanel.append(message);
+    void ensureAniilogData();
+    return;
+  }
+
+  const allEntries = allCatalogEntriesForView(view);
+  const entries = catalogEntriesForView(view);
+  if (view === "aniilog" && state.aniilogData?.totals) {
+    const totals = state.aniilogData.totals;
+    subtitle.textContent = `${formatNumber(totals.forms)} current forms + ${formatNumber(totals.special_forms)} special forms`;
+  } else if (view === "itemlog" && allEntries.length) {
+    subtitle.textContent = `${entries.length} of ${allEntries.length} preview items`;
+  }
+  if (!entries.length) {
+    const message = document.createElement("p");
+    message.className = "catalog-empty";
+    message.textContent = catalogSearchForView(view) ? "No catalogue entries match that search." : "No catalogue records are available.";
+    els.catalogPanel.append(message);
+    return;
+  }
+
+  const selected = entries.find((entry) => entry.id === state.catalogSelection[view]) || entries[0];
+  state.catalogSelection[view] = selected.id;
+  const layout = document.createElement("div");
+  layout.className = "catalog-layout";
+  const rail = document.createElement("aside");
+  rail.className = "catalog-rail";
+  const categoryToolbar = renderCatalogCategoryToolbar(view);
+  if (categoryToolbar) rail.append(categoryToolbar);
+  rail.append(renderCatalogSearch(view));
+  rail.append(renderCatalogIndex(entries, selected.id, view, title));
+  layout.append(
+    rail,
+    view === "aniilog" ? renderAniilogCatalogRecord(selected) : renderItemLogCatalogRecord(selected),
+  );
+  els.catalogPanel.append(layout);
 }
 
 function checklistEntriesForCategory(category = state.checklistCategory) {
@@ -1279,19 +2099,29 @@ function updateWorkspaceTabs() {
     map: { tab: els.mapWorkspaceTab, panel: els.mapWorkspace },
     tracking: { tab: els.trackingWorkspaceTab, panel: els.trackingWorkspace },
     checklist: { tab: els.checklistWorkspaceTab, panel: els.checklistWorkspace },
-    settings: { tab: els.settingsWorkspaceTab, panel: els.settingsWorkspace },
+    aniilog: { tab: els.aniilogWorkspaceTab, panel: null },
+    itemlog: { tab: els.itemlogWorkspaceTab, panel: null },
   };
   Object.entries(workspaces).forEach(([view, workspace]) => {
     const selected = state.sidebarView === view;
     workspace.tab.setAttribute("aria-selected", String(selected));
     workspace.tab.tabIndex = selected ? 0 : -1;
-    workspace.panel.hidden = !selected;
+    if (workspace.panel) workspace.panel.hidden = !selected;
   });
+
+  const catalogView = isCatalogView();
+  els.mapSurface.hidden = catalogView;
+  els.catalogPanel.hidden = !catalogView;
+  els.mapPanel.classList.toggle("catalog-active", catalogView);
+  document.body.classList.toggle("catalog-view-active", catalogView);
+  if (catalogView) renderCatalogPreview();
 }
 
 function setSidebarView(view) {
-  const nextView = ["map", "tracking", "checklist", "settings"].includes(view) ? view : "map";
+  const previousView = state.sidebarView;
+  const nextView = ["map", "tracking", "checklist", "aniilog", "itemlog"].includes(view) ? view : "map";
   state.sidebarView = nextView;
+  if (nextView === "aniilog") void ensureAniilogData();
   updateWorkspaceTabs();
   refreshSelectionDetails();
   updateMobileSelectionPanel();
@@ -1301,9 +2131,14 @@ function setSidebarView(view) {
   } else {
     stopTrackingTicker();
     if (nextView === "checklist") renderChecklist();
-    if (nextView === "settings") renderSettings();
   }
+  if (isCatalogView(nextView)) return;
   stabilizeViewport();
+  if (isCatalogView(previousView)) {
+    window.requestAnimationFrame(() => {
+      if (!isCatalogView()) fitMap();
+    });
+  }
 }
 
 function fallbackCopyText(text) {
@@ -1349,6 +2184,7 @@ function mapViewportSizeChanged(rect) {
 }
 
 function scheduleMapViewportFit() {
+  if (isCatalogView()) return;
   if (state.viewportFitFrame) return;
   state.viewportFitFrame = window.requestAnimationFrame(() => {
     state.viewportFitFrame = 0;
@@ -1577,7 +2413,7 @@ function clampPan() {
 }
 
 function fitMap() {
-  if (!state.data) return;
+  if (!state.data || isCatalogView()) return;
   const rect = els.mapViewport.getBoundingClientRect();
   state.viewportWidth = rect.width;
   state.viewportHeight = rect.height;
@@ -2626,6 +3462,7 @@ function useMapDataset(mapId, dataset) {
   renderItems();
   refreshVisibility();
   updateMapMeta();
+  applyPendingAniilogLocate(true);
 }
 
 async function loadMapData(mapId, token) {
@@ -2767,6 +3604,7 @@ function switchMap(mapId) {
   refreshVisibility();
   updateMapMeta();
   fitMap();
+  if (dataset) applyPendingAniilogLocate(true);
   if (!dataset) scheduleMapDataLoad(mapId, loadToken);
 }
 
@@ -2784,15 +3622,16 @@ function bindEvents() {
   els.mapWorkspaceTab.addEventListener("click", () => setSidebarView("map"));
   els.trackingWorkspaceTab.addEventListener("click", () => setSidebarView("tracking"));
   els.checklistWorkspaceTab.addEventListener("click", () => setSidebarView("checklist"));
-  els.settingsWorkspaceTab.addEventListener("click", () => setSidebarView("settings"));
+  els.aniilogWorkspaceTab.addEventListener("click", () => setSidebarView("aniilog"));
+  els.itemlogWorkspaceTab.addEventListener("click", () => setSidebarView("itemlog"));
+  els.settingsButton.addEventListener("click", openSettings);
+  els.settingsCloseButton.addEventListener("click", closeSettings);
+  els.settingsOverlay.addEventListener("click", (event) => {
+    if (event.target === els.settingsOverlay) closeSettings();
+  });
   els.workspaceTabs.addEventListener("keydown", (event) => {
     if (!new Set(["ArrowLeft", "ArrowRight", "Home", "End"]).has(event.key)) return;
-    const tabs = [
-      els.mapWorkspaceTab,
-      els.trackingWorkspaceTab,
-      els.checklistWorkspaceTab,
-      els.settingsWorkspaceTab,
-    ];
+    const tabs = [...els.workspaceTabs.querySelectorAll(".workspace-tab")];
     const currentIndex = Math.max(0, tabs.findIndex((tab) => tab.dataset.workspaceView === state.sidebarView));
     let nextIndex = currentIndex;
     if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
@@ -2802,6 +3641,9 @@ function bindEvents() {
     event.preventDefault();
     setSidebarView(tabs[nextIndex].dataset.workspaceView);
     tabs[nextIndex].focus();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.settingsOpen) closeSettings();
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) updateTrackingCountdowns();
@@ -2958,6 +3800,20 @@ async function init() {
       state.checklistData = null;
       state.checklistLoadError = error instanceof Error ? error.message : String(error);
     });
+  const catalogRequest = fetch(CATALOG_PREVIEW_URL)
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`Could not load ${CATALOG_PREVIEW_URL}`);
+      const catalog = await response.json();
+      if (!Array.isArray(catalog?.itemlog)) {
+        throw new Error("Catalogue preview data has an invalid format");
+      }
+      state.catalogData = catalog;
+      state.catalogLoadError = "";
+    })
+    .catch((error) => {
+      state.catalogData = null;
+      state.catalogLoadError = error instanceof Error ? error.message : String(error);
+    });
   const response = await fetch(DATA_URL);
   if (!response.ok) {
     throw new Error(`Could not load ${DATA_URL}`);
@@ -2975,7 +3831,7 @@ async function init() {
     spawns: [],
   };
   state.data = prepareData(state.bootstrap);
-  await checklistRequest;
+  await Promise.all([checklistRequest, catalogRequest]);
   els.appVersion.textContent = APP_VERSION;
   updateWorkspaceTabs();
   updateMobileSelectionPanel();

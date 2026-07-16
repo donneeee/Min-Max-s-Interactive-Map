@@ -4,24 +4,31 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MinMax's Map</title>
-    <link rel="stylesheet" href="./styles.css?v=20260715-reward-sources-v035">
+    <link rel="stylesheet" href="./styles.css?v=20260716-aniilog-v002">
   </head>
   <body>
     <main class="app-shell">
       <aside class="sidebar" aria-label="Map and tracking controls">
         <header class="brand">
-          <div>
+          <div class="brand-copy">
             <h1>MinMax's Map</h1>
             <p id="appVersion" class="app-version">Version loading</p>
             <p id="mapMeta" class="database-meta">Database loading</p>
           </div>
+          <button id="settingsButton" class="settings-gear-button" type="button" aria-haspopup="dialog" aria-controls="settingsOverlay" aria-expanded="false" aria-label="Open settings" title="Settings">
+            <svg class="settings-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
         </header>
 
         <div id="workspaceTabs" class="workspace-tabs" role="tablist" aria-label="Sidebar views">
           <button id="mapWorkspaceTab" class="workspace-tab" data-workspace-view="map" type="button" role="tab" aria-controls="mapWorkspace" aria-selected="true">Map</button>
           <button id="trackingWorkspaceTab" class="workspace-tab" data-workspace-view="tracking" type="button" role="tab" aria-controls="trackingWorkspace" aria-selected="false">Tracking</button>
           <button id="checklistWorkspaceTab" class="workspace-tab" data-workspace-view="checklist" type="button" role="tab" aria-controls="checklistWorkspace" aria-selected="false">Checklist</button>
-          <button id="settingsWorkspaceTab" class="workspace-tab" data-workspace-view="settings" type="button" role="tab" aria-controls="settingsWorkspace" aria-selected="false">Settings</button>
+          <button id="aniilogWorkspaceTab" class="workspace-tab" data-workspace-view="aniilog" type="button" role="tab" aria-controls="catalogPanel" aria-selected="false">Aniilog</button>
+          <button id="itemlogWorkspaceTab" class="workspace-tab" data-workspace-view="itemlog" type="button" role="tab" aria-controls="catalogPanel" aria-selected="false">Item-log</button>
         </div>
 
         <div id="mapWorkspace" class="sidebar-workspace" role="tabpanel" aria-labelledby="mapWorkspaceTab">
@@ -65,13 +72,6 @@
           <div id="checklistList" class="checklist-list" aria-live="polite"></div>
         </section>
 
-        <section id="settingsWorkspace" class="settings-workspace" role="tabpanel" aria-labelledby="settingsWorkspaceTab" hidden>
-          <div class="panel-heading">
-            <h2>Settings</h2>
-          </div>
-          <div id="settingsContent" class="settings-content"></div>
-        </section>
-
         <section class="panel detail-panel" aria-live="polite">
           <div class="panel-heading">
             <h2>Selection</h2>
@@ -80,32 +80,45 @@
         </section>
       </aside>
 
-      <section class="map-panel" aria-label="Interactive map">
-        <div class="map-toolbar">
-          <button id="zoomOutButton" type="button" aria-label="Zoom out">-</button>
-          <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
-          <button id="fitButton" type="button">Fit</button>
-        </div>
-        <div id="coordinateReadout" class="coordinate-readout">X 0, Y 0</div>
-        <div id="mapViewport" class="map-viewport">
-          <div id="mapWorld" class="map-world">
-            <div id="mapTiles" class="map-tiles" aria-hidden="true"></div>
-            <img id="mapImage" class="map-image" alt="">
+      <section class="map-panel" aria-label="Interactive map and catalogue">
+        <div id="mapSurface" class="map-surface">
+          <div class="map-toolbar">
+            <button id="zoomOutButton" type="button" aria-label="Zoom out">-</button>
+            <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
+            <button id="fitButton" type="button">Fit</button>
           </div>
-          <div id="pinLayer" class="pin-layer"></div>
-          <canvas id="pinCanvas" class="pin-canvas" aria-hidden="true"></canvas>
-          <div id="pinTooltip" class="pin-tooltip" hidden></div>
-        </div>
-        <section id="mobileSelectionPanel" class="panel mobile-selection-panel is-minimized" aria-live="polite" hidden>
-          <div class="panel-heading mobile-selection-heading">
-            <h2>Selection</h2>
-            <button id="mobileSelectionToggle" class="mobile-selection-toggle" type="button" aria-controls="mobileSelectionDetail" aria-expanded="false" aria-label="Expand selection" title="Expand selection">+</button>
+          <div id="coordinateReadout" class="coordinate-readout">X 0, Y 0</div>
+          <div id="mapViewport" class="map-viewport">
+            <div id="mapWorld" class="map-world">
+              <div id="mapTiles" class="map-tiles" aria-hidden="true"></div>
+              <img id="mapImage" class="map-image" alt="">
+            </div>
+            <div id="pinLayer" class="pin-layer"></div>
+            <canvas id="pinCanvas" class="pin-canvas" aria-hidden="true"></canvas>
+            <div id="pinTooltip" class="pin-tooltip" hidden></div>
           </div>
-          <div id="mobileSelectionDetail" class="selection empty">No marker selected</div>
-        </section>
+          <section id="mobileSelectionPanel" class="panel mobile-selection-panel is-minimized" aria-live="polite" hidden>
+            <div class="panel-heading mobile-selection-heading">
+              <h2>Selection</h2>
+              <button id="mobileSelectionToggle" class="mobile-selection-toggle" type="button" aria-controls="mobileSelectionDetail" aria-expanded="false" aria-label="Expand selection" title="Expand selection">+</button>
+            </div>
+            <div id="mobileSelectionDetail" class="selection empty">No marker selected</div>
+          </section>
+        </div>
+        <section id="catalogPanel" class="catalog-panel" role="region" aria-live="polite" hidden></section>
       </section>
     </main>
 
-  <script defer src="./app.js?v=20260715-checklist-bosses-v047"></script>
+    <div id="settingsOverlay" class="settings-overlay" hidden>
+      <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="settings-dialog-heading">
+          <h2 id="settingsTitle">Settings</h2>
+          <button id="settingsCloseButton" class="settings-close-button" type="button" aria-label="Close settings" title="Close settings">&times;</button>
+        </div>
+        <div id="settingsContent" class="settings-content"></div>
+      </section>
+    </div>
+
+  <script defer src="./app.js?v=20260716-aniilog-v002"></script>
   </body>
 </html>
