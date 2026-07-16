@@ -1,6 +1,6 @@
-const DATA_URL = "./data/map_site_data.json?v=20260715-quest-lumen-seeds-v037";
-const CHECKLIST_URL = "./data/checklist_data.json?v=20260715-quest-lumen-seeds-v037";
-const APP_VERSION = "v0.3.36";
+const DATA_URL = "./data/map_site_data.json?v=20260715-checklist-bosses-v047";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260715-checklist-bosses-v047";
+const APP_VERSION = "v0.3.47";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -12,9 +12,8 @@ const PIN_CANVAS_THRESHOLD = 450;
 const CANVAS_HIT_CELL_SIZE = 128;
 const REQUESTED_MAP_ID = new URLSearchParams(window.location.search).get("map");
 const MOBILE_LAYOUT_QUERY = window.matchMedia("(max-width: 820px)");
-// Keep incomplete physical reward sources out of the public map without
-// removing their extracted data or assets.
-const TEMPORARILY_HIDDEN_ITEM_IDS = new Set(["source:hollow_stump"]);
+// Reserved for temporarily suppressing incomplete physical reward sources.
+const TEMPORARILY_HIDDEN_ITEM_IDS = new Set();
 const COLORS = [
   "#7fc6b2",
   "#e8bf63",
@@ -53,6 +52,7 @@ const state = {
   canvasPointerHit: null,
   canvasFrame: 0,
   canvasIconLoadTimer: 0,
+  domPins: new Map(),
   enabled: new Set(),
   activeMapId: REQUESTED_MAP_ID || "country-of-time",
   activeLayer: "items",
@@ -62,6 +62,9 @@ const state = {
   panY: 0,
   dragging: false,
   dragStart: null,
+  activePointers: new Map(),
+  pinch: null,
+  suppressPinClickUntil: 0,
   selectedPin: null,
   selectedSpawnIndex: null,
   locatedSpawnIndex: null,
@@ -199,10 +202,33 @@ function respawnLabelForSpawn(spawn, item) {
     || formatRespawnDuration(respawnSecondsForSpawn(spawn, item));
 }
 
+function respawnSourceForSpawn(spawn) {
+  return String(spawn?.respawn_source || "").trim();
+}
+
+function respawnEvidenceLabel(value) {
+  const source = typeof value === "string" ? value : String(value?.respawn_source || "").trim();
+  if (source === "live_observation_matches_static_config") return "Live-confirmed";
+  if (source === "live_observation") return "Live-observed";
+  return "Configured";
+}
+
+function respawnEvidenceTitle(value) {
+  const source = typeof value === "string" ? value : String(value?.respawn_source || "").trim();
+  if (source === "live_observation_matches_static_config") {
+    return "A live coordinate-specific observation matched the current scene configuration.";
+  }
+  if (source === "live_observation") {
+    return "A live coordinate-specific observation supplied this timer.";
+  }
+  return "This timer comes from the current scene spawner configuration. The live server controls the active respawn timestamp.";
+}
+
 function isTrackableOverworldItem(spawn, item) {
   return Boolean(
     spawn
     && spawn.marker_type === "collect_item"
+    && respawnSourceForSpawn(spawn)
     && respawnSecondsForSpawn(spawn, item),
   );
 }
@@ -238,6 +264,8 @@ function normalizeTrackingEntry(value) {
     area_name: String(value.area_name || "").trim(),
     respawn_seconds: respawnSeconds,
     respawn_label: String(value.respawn_label || "").trim(),
+    respawn_source: String(value.respawn_source || "static_spawner_config").trim(),
+    respawn_confidence: String(value.respawn_confidence || "config_backed").trim(),
     started_at: startedAt && startedAt > 0 ? new Date(startedAt).toISOString() : null,
   };
 }
@@ -255,6 +283,40 @@ function layerColor(layerId, index = 0) {
   return colorForIndex(index);
 }
 
+const ITEM_TIER_COLORS = Object.freeze({
+  grey: "#bcc5cc",
+  blue: "#6bb8ff",
+  purple: "#c18cff",
+  gold: "#f0c765",
+});
+
+function itemTier(item) {
+  if (!item || item.layer_id !== "items" || item.is_physical_reward_source) return "";
+
+  switch (String(item.quality_label || "").trim().toLowerCase()) {
+    case "common":
+    case "gray":
+    case "grey":
+      return "grey";
+    case "rare":
+    case "blue":
+      return "blue";
+    case "epic":
+    case "purple":
+      return "purple";
+    case "legendary":
+    case "gold":
+      return "gold";
+    default:
+      // Standard gatherables have no quality label in the source data and are the grey tier.
+      return "grey";
+  }
+}
+
+function itemColor(item, index = 0) {
+  return ITEM_TIER_COLORS[itemTier(item)] || layerColor(item.layer_id, index);
+}
+
 function markerTypeLabel(type) {
   if (type === "elite_egg") return "Elite Egg";
   if (type === "aniimo_spawn") return "Aniimo";
@@ -266,7 +328,8 @@ function markerTypeLabel(type) {
   if (type === "teleport_vein_abundance") return "Vein Abundance";
   if (type === "lumin_amber") return "Lumin Amber";
   if (type === "lumin_marking") return "Lumin Marking";
-  if (type === "quest_lumen_seed") return "Quest Lumen Seed";
+  if (type === "quest_lumen_seed") return "Boss Clear";
+  if (type === "lumin_event") return "Event Ember";
   if (type === "underground_entrance") return "Underground Entrance";
   if (type === "morphling_memory") return "Morphling Memory";
   if (type === "lighthouse_book") return "Book";
@@ -393,6 +456,8 @@ function trackingEntryForSpawn(spawn, item) {
     area_name: areaDetailValue(spawn),
     respawn_seconds: respawnSecondsForSpawn(spawn, item),
     respawn_label: respawnLabelForSpawn(spawn, item),
+    respawn_source: respawnSourceForSpawn(spawn),
+    respawn_confidence: String(spawn.respawn_confidence || "").trim(),
     started_at: null,
   };
 }
@@ -655,11 +720,12 @@ function renderTracking() {
       const readyDate = new Date(readyAt);
       const remaining = Math.max(0, readyAt - now);
       card.classList.toggle("is-ready", remaining === 0);
-      statusLabel.textContent = `Ready at ${formatLocalReadyTime(readyAt)}`;
-      statusLabel.title = readyDate.toLocaleString();
+      statusLabel.textContent = `${respawnEvidenceLabel(entry)}: ready at ${formatLocalReadyTime(readyAt)}`;
+      statusLabel.title = `${respawnEvidenceTitle(entry)} ${readyDate.toLocaleString()}`;
       countdown.textContent = remaining ? `Respawns in ${formatCountdown(remaining / 1000)}` : "Ready now";
     } else {
-      statusLabel.textContent = `Respawn: ${entry.respawn_label || formatRespawnDuration(entry.respawn_seconds)}`;
+      statusLabel.textContent = `${respawnEvidenceLabel(entry)} respawn: ${entry.respawn_label || formatRespawnDuration(entry.respawn_seconds)}`;
+      statusLabel.title = respawnEvidenceTitle(entry);
       countdown.textContent = "Not tracking";
     }
     status.append(statusLabel, countdown);
@@ -742,7 +808,8 @@ const LUMIN_CHECKLIST_TABS = Object.freeze([
   { id: "ambers", label: "Ambers", kind: "lumin_amber", sourceType: "overworld" },
   { id: "sanctums", label: "Sanctums", kind: "lumin_sanctum", sourceType: "sanctum" },
   { id: "markings", label: "Markings", kind: "lumin_amber", sourceType: "lumin_marking" },
-  { id: "quests", label: "Quests", kind: "lumin_amber", sourceType: "quest" },
+  { id: "boss-clears", label: "Bosses", kind: "lumin_amber", sourceType: "quest" },
+  { id: "event-embers", label: "Events", kind: "lumin_amber", sourceType: "event" },
 ]);
 
 function luminChecklistEntries(tabId = state.luminChecklistTab) {
@@ -785,6 +852,29 @@ function completedChecklistCount(entries = [
   return [...stateIds].filter((id) => state.completed.has(id)).length;
 }
 
+function checklistCompletionStateQuantity(completionState) {
+  const value = Number(completionState?.quantity ?? 1);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+}
+
+function checklistProgress(entries) {
+  const useRewardQuantities = entries.some((entry) => entry?.category === "ambers");
+  const seen = new Set();
+  let completed = 0;
+  let total = 0;
+  entries.forEach((entry) => {
+    (entry?.completion_states || []).forEach((completionState) => {
+      const id = String(completionState?.id || "").trim();
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      const quantity = useRewardQuantities ? checklistCompletionStateQuantity(completionState) : 1;
+      total += quantity;
+      if (state.completed.has(id)) completed += quantity;
+    });
+  });
+  return { completed, total };
+}
+
 function totalChecklistCompletions() {
   if (!state.checklistData) return state.completed.size;
   return completedChecklistCount();
@@ -807,7 +897,7 @@ function checklistEntryMatches(entry) {
   ]).includes(state.checklistSearch);
 }
 
-const LUMIN_COMPLETION_MARKER_TYPES = new Set(["lumin_amber", "lumin_marking", "teleport_sanctum", "quest_lumen_seed"]);
+const LUMIN_COMPLETION_MARKER_TYPES = new Set(["lumin_amber", "lumin_marking", "teleport_sanctum", "quest_lumen_seed", "lumin_event"]);
 const LUMIN_CHECKLIST_ENTRY_KINDS = new Set(["lumin_amber", "lumin_sanctum"]);
 
 function isLuminCompletionSpawn(spawn) {
@@ -823,6 +913,7 @@ function luminSourceTypeForSpawn(spawn) {
   if (spawn?.marker_type === "lumin_marking") return "lumin_marking";
   if (spawn?.marker_type === "teleport_sanctum") return "sanctum";
   if (spawn?.marker_type === "quest_lumen_seed") return "quest";
+  if (spawn?.marker_type === "lumin_event") return "event";
   return "";
 }
 
@@ -1005,6 +1096,7 @@ function renderChecklistRow(entry) {
   const row = document.createElement("article");
   row.className = "checklist-row";
   if (entry?.kind === "aniimo_special") row.classList.add("checklist-special-row");
+  if (isLuminChecklistEntry(entry)) row.classList.add("checklist-lumin-row");
   row.dataset.checklistEntryId = entry.id;
 
   row.append(makeIcon("checklist-icon", entry.icon));
@@ -1086,7 +1178,7 @@ function renderLuminChecklistTabs() {
   }
   availableTabs.forEach((tab) => {
     const entries = luminChecklistEntries(tab.id);
-    const states = checklistCompletionStateIds(entries);
+    const progress = checklistProgress(entries);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "lumin-checklist-tab";
@@ -1100,7 +1192,7 @@ function renderLuminChecklistTabs() {
     const label = document.createElement("span");
     label.textContent = tab.label;
     const count = document.createElement("small");
-    count.textContent = `${completedChecklistCount(entries)} / ${states.size}`;
+    count.textContent = `${progress.completed} / ${progress.total}`;
     button.append(label, count);
     els.luminChecklistTabs.append(button);
   });
@@ -1129,10 +1221,10 @@ function renderChecklist() {
 
   categories.forEach((category) => {
     const entries = checklistEntriesForCategory(category.id);
-    const states = checklistCompletionStateIds(entries);
+    const progress = checklistProgress(entries);
     const tab = document.createElement("button");
     tab.type = "button";
-    tab.className = "checklist-category-tab";
+    tab.className = "checklist-category-tab checklist-main-tab";
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", String(state.checklistCategory === category.id));
     tab.tabIndex = state.checklistCategory === category.id ? 0 : -1;
@@ -1143,7 +1235,7 @@ function renderChecklist() {
     const label = document.createElement("span");
     label.textContent = category.label || category.id;
     const count = document.createElement("small");
-    count.textContent = `${completedChecklistCount(entries)} / ${states.size}`;
+    count.textContent = `${progress.completed} / ${progress.total}`;
     tab.append(label, count);
     els.checklistCategoryTabs.append(tab);
   });
@@ -1151,8 +1243,8 @@ function renderChecklist() {
   if (state.checklistCategory === "ambers") renderLuminChecklistTabs();
 
   const entries = checklistEntriesForActiveTab();
-  const totalStates = checklistCompletionStateIds(entries).size;
-  els.checklistCount.textContent = `${completedChecklistCount(entries)} / ${totalStates}`;
+  const progress = checklistProgress(entries);
+  els.checklistCount.textContent = `${progress.completed} / ${progress.total}`;
   const visibleEntries = entries.filter(checklistEntryMatches);
   const fragment = document.createDocumentFragment();
   let renderedSections = 0;
@@ -1423,19 +1515,37 @@ function restoreMapView(view) {
   applyTransform();
 }
 
-function setPinMapPosition(pin, spawn) {
+function pinHitSize() {
+  return MOBILE_LAYOUT_QUERY.matches ? 46 : 44;
+}
+
+function setPinScreenPosition(pin, spawn) {
   if (!spawn?.normalized) return;
   const map = currentMap();
-  pin.style.setProperty("--pin-x", String(spawn.normalized.x * map.width));
-  pin.style.setProperty("--pin-y", String(spawn.normalized.y * map.height));
+  const hitSize = pinHitSize();
+  const x = spawn.normalized.x * map.width * state.scale + state.panX - hitSize / 2;
+  const y = spawn.normalized.y * map.height * state.scale + state.panY - hitSize / 2;
+  pin.style.left = `${Math.round(x)}px`;
+  pin.style.top = `${Math.round(y)}px`;
+}
+
+function syncDomPinPositions() {
+  if (state.canvasMode) return;
+  state.visibleEntries.forEach(({ spawn, index }) => {
+    const pin = state.domPins.get(index);
+    if (pin) setPinScreenPosition(pin, spawn);
+  });
 }
 
 function applyTransform() {
   stabilizeViewport();
   els.mapWorld.style.transform = `matrix(${state.scale}, 0, 0, ${state.scale}, ${state.panX}, ${state.panY})`;
-  els.mapWorld.style.setProperty("--pin-inverse-scale", String(1 / state.scale));
   scheduleMapTileDetail();
-  if (state.canvasMode) scheduleCanvasRender();
+  if (state.canvasMode) {
+    scheduleCanvasRender();
+  } else {
+    syncDomPinPositions();
+  }
 }
 
 function mapFitScale(rect = els.mapViewport.getBoundingClientRect()) {
@@ -1490,6 +1600,147 @@ function zoomAt(clientX, clientY, nextScale) {
   state.panY = clientY - rect.top - mapY * state.scale;
   clampPan();
   applyTransform();
+}
+
+function eventTargetsPin(event) {
+  return event.target instanceof Element && Boolean(event.target.closest(".pin"));
+}
+
+function rememberActivePointer(event, fromPin = false) {
+  const current = state.activePointers.get(event.pointerId);
+  const pointer = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    pointerType: event.pointerType,
+    fromPin: current?.fromPin ?? fromPin,
+  };
+  state.activePointers.set(event.pointerId, pointer);
+  return pointer;
+}
+
+function activePointerPair() {
+  const pointers = [...state.activePointers.values()];
+  if (pointers.length < 2) return null;
+  return [pointers[0], pointers[1]];
+}
+
+function pointerDistance(first, second) {
+  return Math.hypot(second.x - first.x, second.y - first.y);
+}
+
+function pointerMidpoint(first, second) {
+  return {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+  };
+}
+
+function stopMapDrag() {
+  state.dragging = false;
+  state.dragStart = null;
+  els.mapViewport.classList.remove("dragging");
+}
+
+function startMapDrag(pointer) {
+  if (!pointer || pointer.fromPin) return;
+  state.dragging = true;
+  state.dragStart = {
+    pointerId: pointer.id,
+    x: pointer.x,
+    y: pointer.y,
+    panX: state.panX,
+    panY: state.panY,
+  };
+  els.mapViewport.classList.add("dragging");
+}
+
+function beginPinch() {
+  const pair = activePointerPair();
+  if (!pair) return false;
+  const [first, second] = pair;
+  const distance = pointerDistance(first, second);
+  if (distance <= 0) return false;
+  const midpoint = pointerMidpoint(first, second);
+  const anchor = screenToImagePoint(midpoint.x, midpoint.y);
+  state.pinch = {
+    pointerIds: [first.id, second.id],
+    distance,
+    scale: state.scale,
+    anchor,
+  };
+  state.canvasPointerHit = null;
+  state.suppressPinClickUntil = window.performance.now() + 320;
+  stopMapDrag();
+  hideCanvasTooltip();
+  return true;
+}
+
+function pinchPointers() {
+  if (!state.pinch) return null;
+  const [firstId, secondId] = state.pinch.pointerIds;
+  const first = state.activePointers.get(firstId);
+  const second = state.activePointers.get(secondId);
+  return first && second ? [first, second] : null;
+}
+
+function updatePinch() {
+  const pair = pinchPointers();
+  if (!pair || !state.pinch) return false;
+  const [first, second] = pair;
+  const distance = pointerDistance(first, second);
+  if (distance <= 0) return true;
+  const midpoint = pointerMidpoint(first, second);
+  const rect = els.mapViewport.getBoundingClientRect();
+  state.scale = clamp(state.pinch.scale * (distance / state.pinch.distance), MIN_SCALE, MAX_SCALE);
+  state.panX = midpoint.x - rect.left - state.pinch.anchor.x * state.scale;
+  state.panY = midpoint.y - rect.top - state.pinch.anchor.y * state.scale;
+  clampPan();
+  applyTransform();
+  return true;
+}
+
+function releasePointerCapture(event) {
+  if (els.mapViewport.hasPointerCapture(event.pointerId)) {
+    els.mapViewport.releasePointerCapture(event.pointerId);
+  }
+}
+
+function finishPointerInteraction(event, cancelled = false) {
+  const pointer = state.activePointers.get(event.pointerId);
+  const wasPinching = Boolean(state.pinch?.pointerIds.includes(event.pointerId));
+  const canvasCandidate = state.canvasPointerHit?.pointerId === event.pointerId
+    ? state.canvasPointerHit
+    : null;
+  state.activePointers.delete(event.pointerId);
+  releasePointerCapture(event);
+
+  if (state.activePointers.size >= 2) {
+    beginPinch();
+    return;
+  }
+
+  if (wasPinching) {
+    state.pinch = null;
+    state.canvasPointerHit = null;
+    state.suppressPinClickUntil = window.performance.now() + 240;
+    stopMapDrag();
+    const [remainingPointer] = state.activePointers.values();
+    if (!cancelled && remainingPointer) startMapDrag(remainingPointer);
+    return;
+  }
+
+  if (canvasCandidate) {
+    state.canvasPointerHit = null;
+    if (!cancelled && Math.hypot(event.clientX - canvasCandidate.x, event.clientY - canvasCandidate.y) < 8) {
+      selectSpawn(canvasCandidate.index);
+    }
+    return;
+  }
+
+  if (state.dragStart?.pointerId === event.pointerId || pointer) {
+    stopMapDrag();
+  }
 }
 
 function screenToImagePoint(clientX, clientY) {
@@ -1788,6 +2039,7 @@ function renderItems() {
     section.hidden = layer.id !== state.activeLayer;
 
     layerItems.forEach((item) => {
+    const tier = itemTier(item);
     const row = document.createElement("button");
     row.type = "button";
     row.className = [
@@ -1795,6 +2047,7 @@ function renderItems() {
       state.enabled.has(item.item_id) ? "enabled" : "",
       item.is_elite_egg ? "elite-egg" : "",
       item.is_aniimo ? "aniimo-row" : "",
+      tier ? `item-tier-${tier}` : "",
       item.is_elite_egg && !item.spawn_count ? "unplaced" : "",
     ].filter(Boolean).join(" ");
     row.dataset.itemId = item.item_id;
@@ -1859,6 +2112,10 @@ function pinClassName(spawn) {
     .join(" ");
 }
 
+function availabilityLabelForSpawn(spawn) {
+  return typeof spawn?.availability?.label === "string" ? spawn.availability.label : "";
+}
+
 function createMarkerPin(entry) {
   const { spawn, index } = entry;
   const item = state.data.itemsById.get(spawn.item_id);
@@ -1868,10 +2125,10 @@ function createMarkerPin(entry) {
   pin.className = pinClassName(spawn);
   pin.dataset.spawnIndex = String(index);
   pin.style.setProperty("--pin-color", item.color);
-  setPinMapPosition(pin, spawn);
+  setPinScreenPosition(pin, spawn);
   pin.setAttribute(
     "aria-label",
-    `${spawn.display_name} ${spawn.area_name || spawn.region_name || ""} ${formatCoordinate(spawn.x)} ${formatCoordinate(spawn.y)}${spawn.is_underground ? " underground" : ""}`,
+    `${spawn.display_name} ${spawn.area_name || spawn.region_name || ""} ${formatCoordinate(spawn.x)} ${formatCoordinate(spawn.y)}${spawn.is_underground ? " underground" : ""}${availabilityLabelForSpawn(spawn) ? ` ${availabilityLabelForSpawn(spawn)}` : ""}`,
   );
 
   const icon = makeIcon("pin-icon", item.icon);
@@ -1884,19 +2141,23 @@ function createMarkerPin(entry) {
   label.className = "pin-label";
   const areaLabel = spawn.area_name || spawn.region_name;
   const labelName = areaLabel ? `${spawn.display_name} (${areaLabel})` : spawn.display_name;
-  label.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}`;
+  const availabilityLabel = availabilityLabelForSpawn(spawn);
+  label.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}${availabilityLabel ? ` - ${availabilityLabel}` : ""}`;
   pinBody.append(icon);
   if (undergroundBadge) pinBody.append(undergroundBadge);
   if (state.completed.has(luminCompletionIdForSpawn(spawn))) {
     pinBody.append(createPinCompletionBadge());
   }
-  pinBody.append(label);
-  pin.append(pinBody);
+  pin.append(pinBody, label);
   pin.tabIndex = -1;
   pin.addEventListener("mousedown", preventControlFocus);
   pin.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    // Pointer activation is finalized by the viewport after pointer capture.
+    // Keep this handler for keyboard and assistive-technology activation only.
+    if (event.detail !== 0) return;
+    if (window.performance.now() < state.suppressPinClickUntil) return;
     const view = currentMapView();
     selectSpawn(index);
     restoreMapView(view);
@@ -1909,10 +2170,11 @@ function createMarkerPin(entry) {
 }
 
 function pinSizeFor(spawn) {
-  if (spawn.marker_type === "elite_egg") return 34;
-  if (spawn.marker_type === "underground_entrance") return 28;
-  if (spawn.marker_type === "physical_reward_source") return 36;
-  return 32;
+  const baseSize = MOBILE_LAYOUT_QUERY.matches ? 26 : 30;
+  if (spawn.marker_type === "elite_egg") return baseSize + 2;
+  if (spawn.marker_type === "underground_entrance") return baseSize - 4;
+  if (spawn.marker_type === "physical_reward_source") return baseSize + 2;
+  return baseSize;
 }
 
 function canvasIcon(source) {
@@ -1955,7 +2217,7 @@ function buildCanvasHitGrid(entries) {
 function findCanvasHit(clientX, clientY) {
   if (!state.canvasMode) return null;
   const point = screenToImagePoint(clientX, clientY);
-  const hitRadius = 22 / state.scale;
+  const hitRadius = pinHitSize() / 2 / state.scale;
   const cellRadius = Math.ceil(hitRadius / CANVAS_HIT_CELL_SIZE);
   const minCellX = Math.floor(point.x / CANVAS_HIT_CELL_SIZE) - cellRadius;
   const maxCellX = Math.floor(point.x / CANVAS_HIT_CELL_SIZE) + cellRadius;
@@ -2006,7 +2268,8 @@ function updateCanvasHover(event) {
   const { spawn } = hit;
   const areaLabel = spawn.area_name || spawn.region_name;
   const labelName = areaLabel ? `${spawn.display_name} (${areaLabel})` : spawn.display_name;
-  els.pinTooltip.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}`;
+  const availabilityLabel = availabilityLabelForSpawn(spawn);
+  els.pinTooltip.textContent = `${labelName} ${Math.round(spawn.x)}, ${Math.round(spawn.y)}${availabilityLabel ? ` - ${availabilityLabel}` : ""}`;
   els.pinTooltip.style.left = `${clamp(event.clientX - rect.left + 14, 4, Math.max(4, rect.width - 220))}px`;
   els.pinTooltip.style.top = `${clamp(event.clientY - rect.top + 14, 4, Math.max(4, rect.height - 46))}px`;
   els.pinTooltip.hidden = false;
@@ -2024,9 +2287,14 @@ function renderCanvasPins() {
   if (!state.canvasMode) return;
   const canvas = els.pinCanvas;
   const viewport = els.mapViewport.getBoundingClientRect();
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
   const width = Math.max(1, Math.round(viewport.width));
   const height = Math.max(1, Math.round(viewport.height));
+  const pixelBudget = 12_000_000;
+  const pixelRatio = Math.min(
+    window.devicePixelRatio || 1,
+    3,
+    Math.max(1, Math.sqrt(pixelBudget / (width * height))),
+  );
   const pixelWidth = Math.round(width * pixelRatio);
   const pixelHeight = Math.round(height * pixelRatio);
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
@@ -2037,6 +2305,7 @@ function renderCanvasPins() {
   const context = canvas.getContext("2d", { alpha: true });
   if (!context) return;
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.imageSmoothingQuality = "high";
   context.clearRect(0, 0, width, height);
 
   const map = currentMap();
@@ -2099,6 +2368,7 @@ function renderCanvasPins() {
 
 function renderPins(entries) {
   state.selectedPin = null;
+  state.domPins.clear();
   if (entries.length > PIN_CANVAS_THRESHOLD) {
     state.canvasMode = true;
     state.canvasEntries = entries;
@@ -2120,7 +2390,10 @@ function renderPins(entries) {
   const fragment = document.createDocumentFragment();
   entries.forEach((entry) => {
     const pin = createMarkerPin(entry);
-    if (pin) fragment.append(pin);
+    if (pin) {
+      state.domPins.set(entry.index, pin);
+      fragment.append(pin);
+    }
   });
   els.pinLayer.replaceChildren(fragment);
 }
@@ -2134,7 +2407,7 @@ function selectSpawn(index) {
     state.selectedPin.classList.remove("selected");
   }
   state.selectedSpawnIndex = index;
-  const pin = els.pinLayer.querySelector(`[data-spawn-index="${index}"]`);
+  const pin = state.domPins.get(index) || null;
   if (pin) pin.classList.add("selected");
   state.selectedPin = pin;
   if (state.canvasMode) scheduleCanvasRender();
@@ -2201,13 +2474,16 @@ function renderSelectionDetail(detail, spawn, item) {
   grid.className = "detail-grid";
   const typeLabel = spawn.display_type_label || item.display_type_label || markerTypeLabel(spawn.marker_type);
   const trackable = isTrackableOverworldItem(spawn, item);
+  const availabilityLabel = availabilityLabelForSpawn(spawn);
   const rows = [
     ["Type", typeLabel],
+    availabilityLabel ? ["Availability", availabilityLabel] : null,
     ["Reward", spawn.reward_label || item.reward_label],
+    trackable ? ["Respawn", `${respawnEvidenceLabel(spawn)}: ${respawnLabelForSpawn(spawn, item)}`] : null,
     ["X", formatCoordinate(spawn.x), formatCoordinate(spawn.x)],
     ["Y", formatCoordinate(spawn.y), formatCoordinate(spawn.y)],
     ["Height", formatNumber(spawn.height_y, 2)],
-  ].filter(([, value]) => value);
+  ].filter((row) => row && row[1]);
   const areaValue = areaDetailValue(spawn);
   if (areaValue) rows.push(["Area", areaValue]);
   if (spawn.form_label || item.form_label) rows.push(["Form", spawn.form_label || item.form_label]);
@@ -2303,7 +2579,7 @@ function prepareData(data) {
   data.items.sort(compareItems);
   data.items.forEach((item, index) => {
     item.layer_id = item.layer_id || (item.is_elite_egg ? "eggs" : "items");
-    item.color = layerColor(item.layer_id, index);
+    item.color = itemColor(item, index);
     item.search_text = itemSearchText(item);
     data.itemsById.set(item.item_id, item);
   });
@@ -2580,55 +2856,71 @@ function bindEvents() {
     zoomAt(event.clientX, event.clientY, state.scale * factor);
   }, { passive: false });
   els.mapViewport.addEventListener("pointerdown", (event) => {
-    if (event.target.closest(".pin")) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const pointer = rememberActivePointer(event, eventTargetsPin(event));
+    els.mapViewport.setPointerCapture(event.pointerId);
+
+    if (state.activePointers.size >= 2) {
+      if (beginPinch()) event.preventDefault();
+      return;
+    }
+
+    if (pointer.fromPin) {
+      const pin = event.target instanceof Element ? event.target.closest(".pin") : null;
+      const index = Number(pin?.dataset.spawnIndex);
+      if (Number.isInteger(index)) {
+        state.canvasPointerHit = {
+          pointerId: event.pointerId,
+          index,
+          x: event.clientX,
+          y: event.clientY,
+        };
+      }
+      return;
+    }
     const canvasHit = findCanvasHit(event.clientX, event.clientY);
     if (canvasHit) {
       state.canvasPointerHit = {
+        pointerId: event.pointerId,
         index: canvasHit.index,
         x: event.clientX,
         y: event.clientY,
       };
-      els.mapViewport.setPointerCapture(event.pointerId);
       return;
     }
-    state.dragging = true;
-    state.dragStart = {
-      x: event.clientX,
-      y: event.clientY,
-      panX: state.panX,
-      panY: state.panY,
-    };
-    els.mapViewport.classList.add("dragging");
-    els.mapViewport.setPointerCapture(event.pointerId);
+    startMapDrag(pointer);
   });
   els.mapViewport.addEventListener("pointermove", (event) => {
+    if (state.activePointers.has(event.pointerId)) rememberActivePointer(event);
     updateCoordinateReadout(event);
-    updateCanvasHover(event);
-    if (!state.dragging) return;
+
+    if (state.pinch && updatePinch()) {
+      event.preventDefault();
+      return;
+    }
+
+    if (event.pointerType === "mouse" && !state.dragging) updateCanvasHover(event);
+    if (!state.dragging || state.dragStart?.pointerId !== event.pointerId) return;
     state.panX = state.dragStart.panX + event.clientX - state.dragStart.x;
     state.panY = state.dragStart.panY + event.clientY - state.dragStart.y;
     clampPan();
     applyTransform();
   });
   els.mapViewport.addEventListener("pointerup", (event) => {
-    if (state.canvasPointerHit) {
-      const candidate = state.canvasPointerHit;
-      state.canvasPointerHit = null;
-      if (els.mapViewport.hasPointerCapture(event.pointerId)) {
-        els.mapViewport.releasePointerCapture(event.pointerId);
-      }
-      if (Math.hypot(event.clientX - candidate.x, event.clientY - candidate.y) < 8) {
-        selectSpawn(candidate.index);
-      }
-      return;
-    }
-    state.dragging = false;
-    els.mapViewport.classList.remove("dragging");
-    els.mapViewport.releasePointerCapture(event.pointerId);
+    if (!state.activePointers.has(event.pointerId)) return;
+    rememberActivePointer(event);
+    finishPointerInteraction(event);
   });
-  els.mapViewport.addEventListener("pointerleave", () => {
-    state.dragging = false;
-    els.mapViewport.classList.remove("dragging");
+  els.mapViewport.addEventListener("pointercancel", (event) => {
+    if (!state.activePointers.has(event.pointerId)) return;
+    finishPointerInteraction(event, true);
+  });
+  els.mapViewport.addEventListener("lostpointercapture", (event) => {
+    if (!state.activePointers.has(event.pointerId)) return;
+    finishPointerInteraction(event, true);
+  });
+  els.mapViewport.addEventListener("pointerleave", (event) => {
+    if (event.pointerType !== "mouse" || state.dragging || state.pinch) return;
     if (state.hoveredCanvasIndex !== null) {
       state.hoveredCanvasIndex = null;
       scheduleCanvasRender();
@@ -2640,6 +2932,14 @@ function bindEvents() {
     state.viewportResizeObserver.observe(els.mapViewport);
   }
   window.addEventListener("resize", scheduleMapViewportFit, { passive: true });
+  const refreshPinGeometry = () => {
+    if (state.data) applyTransform();
+  };
+  if (typeof MOBILE_LAYOUT_QUERY.addEventListener === "function") {
+    MOBILE_LAYOUT_QUERY.addEventListener("change", refreshPinGeometry);
+  } else if (typeof MOBILE_LAYOUT_QUERY.addListener === "function") {
+    MOBILE_LAYOUT_QUERY.addListener(refreshPinGeometry);
+  }
 }
 
 async function init() {

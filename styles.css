@@ -300,41 +300,44 @@ button[aria-pressed="true"] {
 .checklist-category-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .checklist-category-tab {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
-  min-height: 42px;
+  min-height: 54px;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 6px 9px;
+  gap: 8px;
+  border-color: rgba(97, 124, 132, 0.9);
+  background: rgba(39, 48, 52, 0.86);
+  padding: 8px 10px;
   text-align: left;
 }
 
-.checklist-category-tab span,
-.checklist-category-tab small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .checklist-category-tab span {
-  font-size: 12px;
-  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: normal;
+  white-space: normal;
+  line-height: 1.08;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .checklist-category-tab small {
+  min-width: max-content;
+  white-space: nowrap;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
 .checklist-category-tab[aria-selected="true"] {
   border-color: var(--accent);
-  background: rgba(127, 198, 178, 0.18);
+  box-shadow: inset 0 -3px 0 rgba(127, 198, 178, 0.66);
+  background: rgba(127, 198, 178, 0.2);
   color: #d7fff4;
 }
 
@@ -342,15 +345,20 @@ button[aria-pressed="true"] {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+  border-top: 1px solid rgba(80, 96, 103, 0.66);
+  padding-top: 10px;
 }
 
 .lumin-checklist-tab {
   display: flex;
   min-width: 0;
-  min-height: 36px;
+  min-height: 34px;
   align-items: center;
   justify-content: space-between;
   gap: 5px;
+  border-color: rgba(80, 96, 103, 0.76);
+  border-radius: 5px;
+  background: rgba(18, 24, 27, 0.45);
   padding: 5px 8px;
   text-align: left;
 }
@@ -364,7 +372,7 @@ button[aria-pressed="true"] {
 
 .lumin-checklist-tab span {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 750;
 }
 
 .lumin-checklist-tab small {
@@ -375,7 +383,7 @@ button[aria-pressed="true"] {
 
 .lumin-checklist-tab[aria-selected="true"] {
   border-color: var(--accent);
-  background: rgba(127, 198, 178, 0.18);
+  background: rgba(127, 198, 178, 0.13);
   color: #d7fff4;
 }
 
@@ -444,6 +452,38 @@ button[aria-pressed="true"] {
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.025);
   padding: 6px;
+}
+
+.checklist-lumin-row {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  padding: 8px;
+}
+
+.checklist-lumin-row .checklist-icon {
+  margin-top: 1px;
+}
+
+.checklist-lumin-row .checklist-text strong,
+.checklist-lumin-row .checklist-text small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.checklist-lumin-row .checklist-text strong {
+  line-height: 1.3;
+}
+
+.checklist-lumin-row .checklist-text small {
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.checklist-lumin-row .checklist-states {
+  grid-column: 2;
+  justify-content: flex-start;
+  margin-top: 3px;
 }
 
 .checklist-special-row {
@@ -801,6 +841,57 @@ button[aria-pressed="true"] {
   background: rgba(111, 199, 232, 0.08);
 }
 
+.item-row.item-tier-grey {
+  --item-tier-rgb: 188, 197, 204;
+  --item-tier-text: #e0e5e8;
+}
+
+.item-row.item-tier-blue {
+  --item-tier-rgb: 107, 184, 255;
+  --item-tier-text: #d9efff;
+}
+
+.item-row.item-tier-purple {
+  --item-tier-rgb: 193, 140, 255;
+  --item-tier-text: #f0e1ff;
+}
+
+.item-row.item-tier-gold {
+  --item-tier-rgb: 240, 199, 101;
+  --item-tier-text: #ffebb3;
+}
+
+.item-row.item-tier-grey,
+.item-row.item-tier-blue,
+.item-row.item-tier-purple,
+.item-row.item-tier-gold {
+  border-color: rgba(var(--item-tier-rgb), 0.46);
+  background: rgba(var(--item-tier-rgb), 0.075);
+  box-shadow: inset 3px 0 0 rgba(var(--item-tier-rgb), 0.82);
+}
+
+.item-row.item-tier-grey:hover,
+.item-row.item-tier-blue:hover,
+.item-row.item-tier-purple:hover,
+.item-row.item-tier-gold:hover {
+  border-color: rgba(var(--item-tier-rgb), 0.84);
+}
+
+.item-row.item-tier-grey .item-icon,
+.item-row.item-tier-blue .item-icon,
+.item-row.item-tier-purple .item-icon,
+.item-row.item-tier-gold .item-icon {
+  box-shadow: 0 0 0 1px rgba(var(--item-tier-rgb), 0.44);
+}
+
+.item-row.item-tier-grey .item-count,
+.item-row.item-tier-blue .item-count,
+.item-row.item-tier-purple .item-count,
+.item-row.item-tier-gold .item-count {
+  background: rgba(var(--item-tier-rgb), 0.18);
+  color: var(--item-tier-text);
+}
+
 .item-row.unplaced .item-count {
   min-width: 48px;
   background: rgba(159, 170, 173, 0.14);
@@ -1027,7 +1118,6 @@ button[aria-pressed="true"] {
   width: 1024px;
   height: 1024px;
   contain: layout paint;
-  --pin-inverse-scale: 1;
   transform-origin: 0 0;
   will-change: transform;
 }
@@ -1075,7 +1165,7 @@ button[aria-pressed="true"] {
   height: 100%;
   pointer-events: none;
   z-index: 2;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .pin-canvas {
@@ -1108,58 +1198,58 @@ button[aria-pressed="true"] {
 
 .pin {
   position: absolute;
-  --pin-hover-scale: 1;
-  --pin-size: 32px;
-  --pin-x: 0;
-  --pin-y: 0;
+  --pin-size: 30px;
+  --pin-hit-size: 44px;
+  --pin-label-offset: 21px;
   left: 0;
   top: 0;
-  width: 0;
-  height: 0;
+  width: var(--pin-hit-size);
+  height: var(--pin-hit-size);
   min-height: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
-  transform:
-    translate(calc(var(--pin-x) * 1px), calc(var(--pin-y) * 1px))
-    scale(var(--pin-inverse-scale));
-  transform-origin: center;
+  cursor: pointer;
   pointer-events: auto;
   padding: 0;
+  touch-action: none;
 }
 
 .pin-body {
   position: absolute;
-  left: 0;
-  top: 0;
+  inset: 0;
   display: grid;
   width: var(--pin-size);
   height: var(--pin-size);
+  margin: auto;
   place-items: center;
-  transform: translate(-50%, -50%) scale(var(--pin-hover-scale));
   transform-origin: center;
+  transition: transform 120ms ease;
 }
 
 .pin:hover,
 .pin.selected {
   z-index: 3;
-  --pin-hover-scale: 1.18;
+}
+
+.pin:hover .pin-body,
+.pin.selected .pin-body {
+  transform: scale(1.14);
 }
 
 .pin.pin-elite-egg {
-  --pin-size: 34px;
+  --pin-size: 32px;
+  --pin-label-offset: 22px;
 }
 
 .pin.pin-underground {
-  --pin-size: 28px;
-}
-
-.pin.pin-underground-marker {
-  --pin-size: 32px;
+  --pin-size: 26px;
+  --pin-label-offset: 19px;
 }
 
 .pin.pin-physical-reward-source {
-  --pin-size: 36px;
+  --pin-size: 32px;
+  --pin-label-offset: 22px;
 }
 
 .pin-icon {
@@ -1222,8 +1312,8 @@ button[aria-pressed="true"] {
 
 .pin-label {
   position: absolute;
-  left: calc(100% + 6px);
-  top: 0;
+  left: calc(50% + var(--pin-label-offset));
+  top: 50%;
   display: none;
   width: max-content;
   max-width: 180px;
@@ -1235,6 +1325,7 @@ button[aria-pressed="true"] {
   line-height: 1.2;
   padding: 5px 7px;
   pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .pin:hover .pin-label,
@@ -1296,6 +1387,26 @@ button[aria-pressed="true"] {
 
   .map-world {
     will-change: auto;
+  }
+
+  .pin {
+    --pin-size: 26px;
+    --pin-hit-size: 46px;
+  }
+
+  .pin.pin-elite-egg {
+    --pin-size: 28px;
+    --pin-label-offset: 20px;
+  }
+
+  .pin.pin-underground {
+    --pin-size: 24px;
+    --pin-label-offset: 18px;
+  }
+
+  .pin.pin-physical-reward-source {
+    --pin-size: 28px;
+    --pin-label-offset: 20px;
   }
 
   .sidebar-workspace,
