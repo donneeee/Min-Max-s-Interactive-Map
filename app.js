@@ -1,8 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260716-catalog-preview-v001";
+const DATA_URL = "./data/map_site_data.json?v=20260716-whisperwake-spawn-audit-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260716-catalog-preview-v001";
-const CATALOG_PREVIEW_URL = "./data/catalog_preview.json?v=20260716-catalog-preview-v002";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260716-aniilog-v002";
-const APP_VERSION = "v0.3.49";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260716-itemlog-catalog-v001";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260716-aniilog-exploration-v001";
+const APP_VERSION = "v0.3.52";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -81,8 +81,9 @@ const state = {
   checklistCategory: "aniimo",
   luminChecklistTab: "ambers",
   checklistSearch: "",
-  catalogData: null,
-  catalogLoadError: "",
+  itemlogData: null,
+  itemlogLoadError: "",
+  itemlogLoadPromise: null,
   aniilogData: null,
   aniilogLoadError: "",
   aniilogLoadPromise: null,
@@ -90,11 +91,16 @@ const state = {
     aniilog: "",
     itemlog: "",
   },
+  catalogIndexScroll: {
+    aniilog: 0,
+    itemlog: 0,
+  },
   catalogSelection: {
     aniilog: "aniimo:1005100",
-    itemlog: "chroma-ore",
+    itemlog: "item:4010132",
   },
   catalogCategory: {
+    aniilog: "all",
     itemlog: "all",
   },
   trackingTicker: 0,
@@ -119,6 +125,8 @@ const els = {
   mapWorkspace: document.querySelector("#mapWorkspace"),
   trackingWorkspace: document.querySelector("#trackingWorkspace"),
   checklistWorkspace: document.querySelector("#checklistWorkspace"),
+  catalogWorkspace: document.querySelector("#catalogWorkspace"),
+  catalogSidebarContent: document.querySelector("#catalogSidebarContent"),
   trackingCount: document.querySelector("#trackingCount"),
   trackingList: document.querySelector("#trackingList"),
   checklistCount: document.querySelector("#checklistCount"),
@@ -345,6 +353,7 @@ function itemColor(item, index = 0) {
 
 function markerTypeLabel(type) {
   if (type === "elite_egg") return "Elite Egg";
+  if (type === "alpha_egg") return "Alpha Egg";
   if (type === "aniimo_spawn") return "Aniimo";
   if (type === "teleport_bloom") return "Bloom";
   if (type === "teleport_sanctum") return "Sanctum";
@@ -367,6 +376,14 @@ function markerTypeLabel(type) {
   if (type === "elite_pathfinder_challenger") return "Elite Pathfinder Challenge";
   if (type === "physical_reward_source") return "Overworld Reward";
   return "Collectable";
+}
+
+function isEggItem(item) {
+  return Boolean(item?.is_elite_egg || item?.is_alpha_egg || item?.egg_kind);
+}
+
+function isEggMarker(spawn) {
+  return spawn?.marker_type === "elite_egg" || spawn?.marker_type === "alpha_egg";
 }
 
 function stripFormSuffix(value) {
@@ -915,6 +932,8 @@ function isCatalogView(view = state.sidebarView) {
   return view === "aniilog" || view === "itemlog";
 }
 
+const ANIILOG_CLASS_ORDER = Object.freeze(["DPS", "REGEN", "BREAK", "HEALER", "SUPPORT"]);
+
 function ensureAniilogData() {
   if (state.aniilogData) return Promise.resolve(state.aniilogData);
   if (state.aniilogLoadPromise) return state.aniilogLoadPromise;
@@ -943,42 +962,81 @@ function ensureAniilogData() {
   return state.aniilogLoadPromise;
 }
 
+function ensureItemlogData() {
+  if (state.itemlogData) return Promise.resolve(state.itemlogData);
+  if (state.itemlogLoadPromise) return state.itemlogLoadPromise;
+
+  state.itemlogLoadPromise = fetch(ITEMLOG_DATA_URL)
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`Could not load ${ITEMLOG_DATA_URL}`);
+      const payload = await response.json();
+      if (!Array.isArray(payload?.entries) || !Array.isArray(payload?.categories) || !payload?.totals) {
+        throw new Error("Item-log data has an invalid format");
+      }
+      state.itemlogData = payload;
+      state.itemlogLoadError = "";
+      return payload;
+    })
+    .catch((error) => {
+      state.itemlogData = null;
+      state.itemlogLoadError = error instanceof Error ? error.message : String(error);
+      return null;
+    })
+    .finally(() => {
+      state.itemlogLoadPromise = null;
+      if (state.sidebarView === "itemlog") renderCatalogPreview();
+    });
+
+  return state.itemlogLoadPromise;
+}
+
 function allCatalogEntriesForView(view = state.sidebarView) {
   if (view === "aniilog") {
     return Array.isArray(state.aniilogData?.entries) ? state.aniilogData.entries : [];
   }
   if (view === "itemlog") {
-    return Array.isArray(state.catalogData?.itemlog) ? state.catalogData.itemlog : [];
+    return Array.isArray(state.itemlogData?.entries) ? state.itemlogData.entries : [];
   }
   return [];
 }
 
 function catalogLoadErrorForView(view = state.sidebarView) {
-  return view === "aniilog" ? state.aniilogLoadError : state.catalogLoadError;
+  return view === "aniilog" ? state.aniilogLoadError : state.itemlogLoadError;
 }
 
 function catalogSearchForView(view = state.sidebarView) {
   return String(state.catalogSearch[view] || "");
 }
 
-function catalogCategoryForEntry(entry) {
+function catalogCategoryForEntry(entry, view = state.sidebarView) {
+  if (view === "aniilog") {
+    return String(entry?.role || "Other").trim() || "Other";
+  }
   return String(entry?.catalog_category || entry?.type || "Other").trim() || "Other";
 }
 
 function catalogCategoriesForView(view = state.sidebarView) {
-  if (view !== "itemlog") return [];
+  if (!isCatalogView(view)) return [];
+  if (view === "itemlog" && Array.isArray(state.itemlogData?.categories)) {
+    return ["all", ...state.itemlogData.categories.map((category) => category?.id).filter(Boolean)];
+  }
   const entries = allCatalogEntriesForView(view);
-  const categories = [...new Set(entries.map(catalogCategoryForEntry))].sort(compareText);
+  const categories = [...new Set(entries.map((entry) => catalogCategoryForEntry(entry, view)))].sort(compareText);
+  if (view === "aniilog") {
+    const configuredClasses = ANIILOG_CLASS_ORDER.filter((role) => categories.includes(role));
+    const remainingClasses = categories.filter((role) => !configuredClasses.includes(role));
+    return ["all", ...configuredClasses, ...remainingClasses];
+  }
   return ["all", ...categories];
 }
 
 function catalogEntriesForView(view = state.sidebarView) {
   let entries = allCatalogEntriesForView(view);
-  if (view === "itemlog") {
-    const category = state.catalogCategory.itemlog || "all";
+  if (isCatalogView(view)) {
+    const category = state.catalogCategory[view] || "all";
     entries = category === "all"
       ? entries
-      : entries.filter((entry) => catalogCategoryForEntry(entry) === category);
+      : entries.filter((entry) => catalogCategoryForEntry(entry, view) === category);
   }
   const query = catalogSearchForView(view).trim().toLowerCase();
   if (!query) return entries;
@@ -995,6 +1053,13 @@ function catalogEntrySearchText(entry) {
     entry?.type,
     entry?.inventory,
     entry?.source,
+    entry?.catalog_category,
+    entry?.quality,
+    entry?.description,
+    entry?.obtain_methods?.flatMap((method) => [method?.label, method?.detail]),
+    entry?.carried_effects?.base_attributes,
+    entry?.carried_effects?.core_effects,
+    entry?.carried_effects?.advanced_effects?.flatMap((effect) => effect?.effects),
     entry?.elements?.map((element) => element?.name),
     entry?.locations?.flatMap((location) => [location?.map_label, location?.areas]),
     entry?.spawn_requirements,
@@ -1022,43 +1087,81 @@ function createCatalogSection(title) {
   return section;
 }
 
+const CATALOG_INDEX_ROW_HEIGHT = 72;
+const CATALOG_INDEX_OVERSCAN = 6;
+
+function createCatalogIndexRow(entry, selectedId, view, virtualIndex) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "catalog-index-row catalog-index-row--virtual";
+  const selected = entry.id === selectedId;
+  button.setAttribute("aria-pressed", String(selected));
+  button.dataset.catalogEntryId = entry.id;
+  button.style.transform = `translateY(${virtualIndex * CATALOG_INDEX_ROW_HEIGHT}px)`;
+
+  const icon = makeIcon("catalog-index-icon", entry.icon);
+  const copy = document.createElement("span");
+  copy.className = "catalog-index-copy";
+  const name = document.createElement("strong");
+  name.textContent = entry.name;
+  const meta = document.createElement("small");
+  meta.textContent = view === "aniilog"
+    ? `${entry.aniilog_number || "Special"} - ${entry.form_label || "Basic"}`
+    : [entry.type || "Item", entry.quality].filter(Boolean).join(" - ");
+  copy.append(name, meta);
+  button.append(icon, copy);
+  button.addEventListener("click", () => {
+    state.catalogSelection[view] = entry.id;
+    renderCatalogPreview();
+  });
+  return button;
+}
+
 function renderCatalogIndex(entries, selectedId, view, title) {
   const index = document.createElement("nav");
   index.className = "catalog-index";
   index.setAttribute("aria-label", `${title} entries`);
 
-  entries.forEach((entry) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "catalog-index-row";
-    const selected = entry.id === selectedId;
-    button.setAttribute("aria-pressed", String(selected));
-    button.dataset.catalogEntryId = entry.id;
+  const virtualList = document.createElement("div");
+  virtualList.className = "catalog-index-virtual";
+  virtualList.style.height = `${Math.max(entries.length * CATALOG_INDEX_ROW_HEIGHT, CATALOG_INDEX_ROW_HEIGHT)}px`;
+  index.append(virtualList);
 
-    const icon = makeIcon("catalog-index-icon", entry.icon);
-    const copy = document.createElement("span");
-    copy.className = "catalog-index-copy";
-    const name = document.createElement("strong");
-    name.textContent = entry.name;
-    const meta = document.createElement("small");
-    meta.textContent = view === "aniilog"
-      ? `${entry.aniilog_number || "Special"} - ${entry.form_label || "Basic"}`
-      : entry.type || "Item";
-    copy.append(name, meta);
-    button.append(icon, copy);
-    button.addEventListener("click", () => {
-      state.catalogSelection[view] = entry.id;
-      renderCatalogPreview();
-    });
-    index.append(button);
-  });
+  let animationFrame = 0;
+  const refreshVisibleRows = () => {
+    animationFrame = 0;
+    const viewportHeight = index.clientHeight || 400;
+    const start = Math.max(0, Math.floor(index.scrollTop / CATALOG_INDEX_ROW_HEIGHT) - CATALOG_INDEX_OVERSCAN);
+    const end = Math.min(
+      entries.length,
+      Math.ceil((index.scrollTop + viewportHeight) / CATALOG_INDEX_ROW_HEIGHT) + CATALOG_INDEX_OVERSCAN,
+    );
+    const fragment = document.createDocumentFragment();
+    for (let rowIndex = start; rowIndex < end; rowIndex += 1) {
+      fragment.append(createCatalogIndexRow(entries[rowIndex], selectedId, view, rowIndex));
+    }
+    virtualList.replaceChildren(fragment);
+  };
+
+  index.refreshVirtualRows = refreshVisibleRows;
+  index.addEventListener("scroll", () => {
+    if (!animationFrame) animationFrame = window.requestAnimationFrame(refreshVisibleRows);
+  }, { passive: true });
+  window.requestAnimationFrame(refreshVisibleRows);
 
   return index;
 }
 
-function renderCatalogSearch(view) {
+function renderCatalogSearch(view, existingLabel = null) {
+  const existingInput = existingLabel?.querySelector(".catalog-search");
+  if (existingInput && existingLabel.dataset.catalogView === view) {
+    existingInput.value = catalogSearchForView(view);
+    return existingLabel;
+  }
+
   const label = document.createElement("label");
   label.className = "catalog-search-label";
+  label.dataset.catalogView = view;
   label.textContent = "Search";
   const input = document.createElement("input");
   input.className = "catalog-search";
@@ -1067,38 +1170,84 @@ function renderCatalogSearch(view) {
   input.value = catalogSearchForView(view);
   input.placeholder = view === "aniilog" ? "Aniimo, form, element, location" : "Item, type, or source";
   input.addEventListener("input", () => {
+    const selectionStart = input.selectionStart;
+    const selectionEnd = input.selectionEnd;
     state.catalogSearch[view] = input.value;
-    renderCatalogPreview();
+    state.catalogIndexScroll[view] = 0;
+    renderCatalogPreview({ preserveSearchInput: true });
+    const nextInput = els.catalogSidebarContent.querySelector(`.catalog-search-label[data-catalog-view="${view}"] .catalog-search`);
+    if (!nextInput) return;
+    nextInput.focus({ preventScroll: true });
+    if (selectionStart !== null && selectionEnd !== null) {
+      nextInput.setSelectionRange(selectionStart, selectionEnd);
+    }
   });
   label.append(input);
   return label;
 }
 
 function renderCatalogCategoryToolbar(view) {
-  if (view !== "itemlog") return null;
+  if (!isCatalogView(view)) return null;
+  const group = document.createElement("section");
+  group.className = "catalog-category-group";
+  const label = document.createElement("p");
+  label.className = "catalog-category-label";
+  label.textContent = view === "aniilog" ? "Class" : "Category";
+  const activeCategory = state.catalogCategory[view] || "all";
+  const categories = catalogCategoriesForView(view);
+
+  if (view === "itemlog") {
+    const select = document.createElement("select");
+    select.className = "catalog-category-select";
+    select.setAttribute("aria-label", "Item categories");
+    const counts = new Map((state.itemlogData?.categories || []).map((category) => [category?.id, category?.count]));
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.selected = category === activeCategory;
+      const count = category === "all" ? allCatalogEntriesForView(view).length : counts.get(category);
+      option.textContent = category === "all"
+        ? `All categories (${formatNumber(count)})`
+        : `${category} (${formatNumber(count)})`;
+      select.append(option);
+    });
+    select.addEventListener("change", () => {
+      state.catalogCategory[view] = select.value;
+      state.catalogIndexScroll[view] = 0;
+      const visibleEntries = catalogEntriesForView(view);
+      if (!visibleEntries.some((entry) => entry.id === state.catalogSelection[view])) {
+        state.catalogSelection[view] = visibleEntries[0]?.id || "";
+      }
+      renderCatalogPreview();
+    });
+    group.append(label, select);
+    return group;
+  }
+
   const toolbar = document.createElement("nav");
   toolbar.className = "catalog-category-toolbar";
-  toolbar.setAttribute("aria-label", "Item categories");
-  const activeCategory = state.catalogCategory.itemlog || "all";
+  toolbar.setAttribute("aria-label", "Aniimo classes");
 
-  catalogCategoriesForView(view).forEach((category) => {
+  categories.forEach((category) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "catalog-category-button";
     button.textContent = category === "all" ? "All" : category;
     button.setAttribute("aria-pressed", String(category === activeCategory));
     button.addEventListener("click", () => {
-      state.catalogCategory.itemlog = category;
+      state.catalogCategory[view] = category;
+      state.catalogIndexScroll[view] = 0;
       const visibleEntries = catalogEntriesForView(view);
-      if (!visibleEntries.some((entry) => entry.id === state.catalogSelection.itemlog)) {
-        state.catalogSelection.itemlog = visibleEntries[0]?.id || "";
+      if (!visibleEntries.some((entry) => entry.id === state.catalogSelection[view])) {
+        state.catalogSelection[view] = visibleEntries[0]?.id || "";
       }
       renderCatalogPreview();
     });
     toolbar.append(button);
   });
 
-  return toolbar;
+  group.append(label, toolbar);
+  return group;
 }
 
 function elementClassName(element) {
@@ -1137,6 +1286,19 @@ function renderCatalogLevels(title, entries, emptyText = "No ability data availa
   return section;
 }
 
+function appendCatalogAbilityFact(container, label, value, suffix = "", modifier = "") {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return;
+  const fact = document.createElement("div");
+  fact.className = `catalog-ability-fact${modifier ? ` catalog-ability-fact--${modifier}` : ""}`;
+  const term = document.createElement("span");
+  term.textContent = label;
+  const detail = document.createElement("strong");
+  detail.textContent = `${formatNumber(numericValue, 2)}${suffix}`;
+  fact.append(term, detail);
+  container.append(fact);
+}
+
 function renderCatalogAbilitySection(title, abilities, emptyText = "No data available.") {
   const section = createCatalogSection(title);
   if (!Array.isArray(abilities) || !abilities.length) {
@@ -1157,19 +1319,46 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
     const name = document.createElement("strong");
     name.textContent = ability.name || "Ability";
     copy.append(name);
+    const combat = ability.combat && typeof ability.combat === "object" ? ability.combat : null;
+    if (combat) {
+      const badges = document.createElement("div");
+      badges.className = "catalog-ability-badges";
+      const addBadge = (label, type, color = "") => {
+        if (!label) return;
+        const badge = document.createElement("span");
+        badge.className = `catalog-ability-badge catalog-ability-badge--${type}`;
+        badge.textContent = label;
+        if (color) badge.style.setProperty("--catalog-ability-element-color", color);
+        badges.append(badge);
+      };
+      addBadge(combat.category, "category");
+      (Array.isArray(combat.types) ? combat.types : []).forEach((type) => addBadge(type, "type"));
+      addBadge(combat.element, "element", combat.element_color);
+      if (badges.childElementCount) copy.append(badges);
+
+      const facts = document.createElement("div");
+      facts.className = "catalog-ability-facts";
+      appendCatalogAbilityFact(facts, "Might", combat.might);
+      appendCatalogAbilityFact(facts, "EP Cost", combat.ep_cost);
+      appendCatalogAbilityFact(facts, "BREAK", Number(combat.break_power) * 100, "%");
+      appendCatalogAbilityFact(facts, "Cooldown", combat.cooldown, "s", "cooldown");
+      if (facts.childElementCount) copy.append(facts);
+    }
     if (ability.description) {
       const description = document.createElement("p");
       description.textContent = ability.description;
       copy.append(description);
     }
-    const meta = [];
-    if (ability.group && ability.group !== "Ultimate") meta.push(ability.group);
-    if (ability.power) meta.push(`Power ${ability.power}`);
-    if (ability.consume) meta.push(`EP ${ability.consume}`);
-    if (meta.length) {
-      const detail = document.createElement("small");
-      detail.textContent = meta.join(" - ");
-      copy.append(detail);
+    if (!combat) {
+      const meta = [];
+      if (ability.group && ability.group !== "Ultimate") meta.push(ability.group);
+      if (ability.power) meta.push(`Might ${ability.power}`);
+      if (ability.consume) meta.push(`EP Cost ${ability.consume}`);
+      if (meta.length) {
+        const detail = document.createElement("small");
+        detail.textContent = meta.join(" - ");
+        copy.append(detail);
+      }
     }
     card.append(icon, copy);
     grid.append(card);
@@ -1440,7 +1629,7 @@ function renderAniilogCatalogRecord(entry) {
   record.append(renderCatalogAbilitySection("Ultimate", entry.ultimates, "No Ultimate ability is currently listed for this form."));
   record.append(renderCatalogAbilitySection("Trait", entry.traits, "No Trait is currently listed for this form."));
   record.append(renderCatalogAbilitySection("Mobility skills", entry.mobility_skills, "No Mobility skill is currently listed for this form."));
-  record.append(renderCatalogLevels("Exploration", entry.exploration, "No exploration ability is listed for this form."));
+  record.append(renderCatalogLevels("Exploration", entry.exploration, "None"));
   record.append(renderCatalogLevels("Homeland abilities", entry.homeland, "No Homeland ability is listed for this form."));
 
   if (entry.spawn_requirements?.length) {
@@ -1468,6 +1657,85 @@ function qualityClassName(quality) {
   return String(quality || "normal").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "normal";
 }
 
+function renderItemLogObtainMethods(methods) {
+  const section = createCatalogSection("How to obtain");
+  if (!Array.isArray(methods) || !methods.length) {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = "No acquisition method is exposed by the currently extracted game tables.";
+    section.append(empty);
+    return section;
+  }
+
+  const list = document.createElement("div");
+  list.className = "catalog-obtain-list";
+  methods.forEach((method) => {
+    const row = document.createElement("div");
+    row.className = "catalog-obtain-row";
+    const label = document.createElement("strong");
+    label.textContent = method?.label || "Source method";
+    row.append(label);
+    if (method?.detail) {
+      const detail = document.createElement("p");
+      detail.textContent = method.detail;
+      row.append(detail);
+    }
+    list.append(row);
+  });
+  section.append(list);
+  return section;
+}
+
+function appendCarriedEffectRow(list, label, effects, unlockLevel = 0, emptyText = "No effect is listed for this item tier.") {
+  const row = document.createElement("div");
+  row.className = "catalog-carried-effect";
+  const heading = document.createElement("div");
+  heading.className = "catalog-carried-effect-heading";
+  const title = document.createElement("strong");
+  title.textContent = label;
+  heading.append(title);
+  if (unlockLevel) {
+    const unlock = document.createElement("span");
+    unlock.textContent = `Enhance +${unlockLevel}`;
+    heading.append(unlock);
+  }
+  row.append(heading);
+  const values = Array.isArray(effects) ? effects.filter(Boolean) : [];
+  if (values.length) {
+    const text = document.createElement("p");
+    text.textContent = values.join(" ");
+    row.append(text);
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = emptyText;
+    row.append(empty);
+  }
+  list.append(row);
+}
+
+function renderCarriedItemEffects(carriedEffects) {
+  if (!carriedEffects) return null;
+  const section = createCatalogSection("Carried item effects");
+  const list = document.createElement("div");
+  list.className = "catalog-carried-effects";
+  appendCarriedEffectRow(list, "Base attributes", carriedEffects.base_attributes);
+  appendCarriedEffectRow(list, "Core effect", carriedEffects.core_effects);
+  const advancedEffects = Array.isArray(carriedEffects.advanced_effects) ? carriedEffects.advanced_effects : [];
+  for (let effectIndex = 0; effectIndex < 2; effectIndex += 1) {
+    const advanced = advancedEffects[effectIndex];
+    appendCarriedEffectRow(
+      list,
+      `Advanced effect ${effectIndex === 0 ? "I" : "II"}`,
+      advanced?.effects,
+      Number(advanced?.unlock_level) || 0,
+      `No advanced effect ${effectIndex === 0 ? "I" : "II"} is listed for this item tier.`,
+    );
+  }
+  section.append(list);
+  return section;
+}
+
 function renderItemLogCatalogRecord(entry) {
   const record = document.createElement("article");
   record.className = "catalog-record";
@@ -1479,7 +1747,7 @@ function renderItemLogCatalogRecord(entry) {
   const copy = document.createElement("div");
   const eyebrow = document.createElement("p");
   eyebrow.className = "catalog-eyebrow";
-  eyebrow.textContent = entry.type || "Item";
+  eyebrow.textContent = entry.catalog_category || entry.type || "Item";
   const name = document.createElement("h2");
   name.textContent = entry.name;
   const subtitle = document.createElement("p");
@@ -1505,50 +1773,82 @@ function renderItemLogCatalogRecord(entry) {
   const details = createCatalogSection("Item details");
   const facts = document.createElement("dl");
   facts.className = "catalog-facts";
-  appendCatalogFact(facts, "Category", entry.type);
+  appendCatalogFact(facts, "Category", entry.catalog_category || entry.type);
   appendCatalogFact(facts, "Inventory", entry.inventory);
-  appendCatalogFact(facts, "Source", entry.source);
+  appendCatalogFact(facts, "Quality", entry.quality);
   appendCatalogFact(facts, "Overworld nodes", entry.overworld_spawn_count ? formatNumber(entry.overworld_spawn_count) : "");
-  appendCatalogFact(facts, "Respawn", entry.respawn_label);
+  appendCatalogFact(facts, "Known maps", Array.isArray(entry.spawn_maps) ? entry.spawn_maps.join(", ") : "");
   details.append(facts);
   record.append(details);
 
-  if (entry.core_effect) {
-    const coreEffect = createCatalogSection("Core effect");
-    const effect = document.createElement("p");
-    effect.className = "catalog-core-effect";
-    effect.textContent = entry.core_effect;
-    coreEffect.append(effect);
-    record.append(coreEffect);
-  }
-
-  if (Array.isArray(entry.set_effects)) {
-    const effects = createCatalogSection("Set effects");
-    if (entry.set_effects.length) {
-      const list = document.createElement("ul");
-      list.className = "catalog-effect-list";
-      entry.set_effects.forEach((effect) => {
-        const row = document.createElement("li");
-        row.textContent = effect;
-        list.append(row);
-      });
-      effects.append(list);
-    } else {
-      const empty = document.createElement("p");
-      empty.className = "catalog-empty-detail";
-      empty.textContent = "No set-effect lines are included in this preview.";
-      effects.append(empty);
-    }
-    record.append(effects);
-  }
+  record.append(renderItemLogObtainMethods(entry.obtain_methods));
+  const carriedEffects = renderCarriedItemEffects(entry.carried_effects);
+  if (carriedEffects) record.append(carriedEffects);
 
   return record;
 }
 
-function renderCatalogPreview() {
+function renderCatalogSidebar(view, title, allEntries, entries, selectedId, statusMessage = "", allowControls = true, options = {}) {
+  const fragment = document.createDocumentFragment();
+  let index = null;
+  const savedScrollTop = Number(state.catalogIndexScroll[view]) || 0;
+  const existingSearchLabel = options.preserveSearchInput
+    ? els.catalogSidebarContent.querySelector(`.catalog-search-label[data-catalog-view="${view}"]`)
+    : null;
+  const existingSearchInput = existingSearchLabel?.querySelector(".catalog-search");
+  const shouldRestoreSearchFocus = document.activeElement === existingSearchInput;
+  const heading = document.createElement("div");
+  heading.className = "panel-heading catalog-sidebar-heading";
+  const name = document.createElement("h2");
+  name.textContent = title;
+  const count = document.createElement("span");
+  count.className = "filter-count";
+  count.textContent = allowControls
+    ? `${entries.length} / ${allEntries.length}`
+    : (statusMessage.startsWith("Loading") ? "Loading" : "Unavailable");
+  heading.append(name, count);
+  fragment.append(heading);
+
+  if (allowControls) {
+    const categoryToolbar = renderCatalogCategoryToolbar(view);
+    if (categoryToolbar) fragment.append(categoryToolbar);
+    fragment.append(renderCatalogSearch(view, existingSearchLabel));
+  }
+
+  if (entries.length) {
+    index = renderCatalogIndex(entries, selectedId, view, title);
+    index.dataset.catalogView = view;
+    index.addEventListener("scroll", () => {
+      state.catalogIndexScroll[view] = index.scrollTop;
+    }, { passive: true });
+    fragment.append(index);
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty catalog-sidebar-empty";
+    empty.textContent = statusMessage || "No catalogue entries are available.";
+    fragment.append(empty);
+  }
+
+  els.catalogSidebarContent.replaceChildren(fragment);
+  if (shouldRestoreSearchFocus && existingSearchInput?.isConnected) {
+    existingSearchInput.focus({ preventScroll: true });
+  }
+  if (index && savedScrollTop) {
+    window.requestAnimationFrame(() => {
+      if (!index.isConnected) return;
+      index.scrollTop = savedScrollTop;
+      index.refreshVirtualRows?.();
+    });
+  }
+}
+
+function renderCatalogPreview(options = {}) {
   if (!isCatalogView()) return;
   const view = state.sidebarView;
   const title = view === "aniilog" ? "Aniilog" : "Item-log";
+  const sidebarTitle = view === "aniilog" ? "Aniimo" : "Items";
+  const currentIndex = els.catalogSidebarContent.querySelector(".catalog-index");
+  if (currentIndex?.dataset.catalogView === view) state.catalogIndexScroll[view] = currentIndex.scrollTop;
   els.catalogPanel.textContent = "";
   els.catalogPanel.setAttribute("aria-label", `${title} catalogue`);
 
@@ -1558,31 +1858,43 @@ function renderCatalogPreview() {
   const name = document.createElement("h1");
   name.textContent = title;
   const subtitle = document.createElement("p");
-  subtitle.textContent = view === "aniilog" ? "Loading form data" : "Preview records";
+  subtitle.textContent = view === "aniilog" ? "Loading form data" : "Loading item data";
   headingCopy.append(name, subtitle);
   const badge = document.createElement("span");
   badge.className = "catalog-preview-badge";
-  badge.textContent = view === "aniilog" ? "Source data" : "Preview";
+  badge.textContent = "Source data";
   heading.append(headingCopy, badge);
   els.catalogPanel.append(heading);
 
   const loadError = catalogLoadErrorForView(view);
   if (loadError) {
+    renderCatalogSidebar(view, sidebarTitle, [], [], "", "Catalogue data could not be loaded.", false);
     const message = document.createElement("p");
     message.className = "catalog-empty";
     message.textContent = view === "aniilog"
       ? "Aniilog data could not be loaded."
-      : "Item-log preview data could not be loaded.";
+      : "Item-log data could not be loaded.";
     els.catalogPanel.append(message);
     return;
   }
 
   if (view === "aniilog" && !state.aniilogData) {
+    renderCatalogSidebar(view, sidebarTitle, [], [], "", "Loading source-backed Aniimo data.", false);
     const message = document.createElement("p");
     message.className = "catalog-empty";
     message.textContent = "Loading Aniilog forms and source-backed abilities.";
     els.catalogPanel.append(message);
     void ensureAniilogData();
+    return;
+  }
+
+  if (view === "itemlog" && !state.itemlogData) {
+    renderCatalogSidebar(view, sidebarTitle, [], [], "", "Loading source-backed Item-log data.", false);
+    const message = document.createElement("p");
+    message.className = "catalog-empty";
+    message.textContent = "Loading named game items, source art, effects, and acquisition methods.";
+    els.catalogPanel.append(message);
+    void ensureItemlogData();
     return;
   }
 
@@ -1592,9 +1904,21 @@ function renderCatalogPreview() {
     const totals = state.aniilogData.totals;
     subtitle.textContent = `${formatNumber(totals.forms)} current forms + ${formatNumber(totals.special_forms)} special forms`;
   } else if (view === "itemlog" && allEntries.length) {
-    subtitle.textContent = `${entries.length} of ${allEntries.length} preview items`;
+    const totals = state.itemlogData?.totals;
+    subtitle.textContent = `${formatNumber(entries.length)} of ${formatNumber(totals?.named_items || allEntries.length)} named game items`;
   }
   if (!entries.length) {
+    const entryLabel = view === "aniilog" ? "Aniimo" : "Item";
+    renderCatalogSidebar(
+      view,
+      sidebarTitle,
+      allEntries,
+      entries,
+      "",
+      catalogSearchForView(view) ? `No ${entryLabel} entries match that search.` : "No catalogue records are available.",
+      true,
+      options,
+    );
     const message = document.createElement("p");
     message.className = "catalog-empty";
     message.textContent = catalogSearchForView(view) ? "No catalogue entries match that search." : "No catalogue records are available.";
@@ -1604,19 +1928,8 @@ function renderCatalogPreview() {
 
   const selected = entries.find((entry) => entry.id === state.catalogSelection[view]) || entries[0];
   state.catalogSelection[view] = selected.id;
-  const layout = document.createElement("div");
-  layout.className = "catalog-layout";
-  const rail = document.createElement("aside");
-  rail.className = "catalog-rail";
-  const categoryToolbar = renderCatalogCategoryToolbar(view);
-  if (categoryToolbar) rail.append(categoryToolbar);
-  rail.append(renderCatalogSearch(view));
-  rail.append(renderCatalogIndex(entries, selected.id, view, title));
-  layout.append(
-    rail,
-    view === "aniilog" ? renderAniilogCatalogRecord(selected) : renderItemLogCatalogRecord(selected),
-  );
-  els.catalogPanel.append(layout);
+  renderCatalogSidebar(view, sidebarTitle, allEntries, entries, selected.id, "", true, options);
+  els.catalogPanel.append(view === "aniilog" ? renderAniilogCatalogRecord(selected) : renderItemLogCatalogRecord(selected));
 }
 
 function checklistEntriesForCategory(category = state.checklistCategory) {
@@ -2099,8 +2412,8 @@ function updateWorkspaceTabs() {
     map: { tab: els.mapWorkspaceTab, panel: els.mapWorkspace },
     tracking: { tab: els.trackingWorkspaceTab, panel: els.trackingWorkspace },
     checklist: { tab: els.checklistWorkspaceTab, panel: els.checklistWorkspace },
-    aniilog: { tab: els.aniilogWorkspaceTab, panel: null },
-    itemlog: { tab: els.itemlogWorkspaceTab, panel: null },
+    aniilog: { tab: els.aniilogWorkspaceTab },
+    itemlog: { tab: els.itemlogWorkspaceTab },
   };
   Object.entries(workspaces).forEach(([view, workspace]) => {
     const selected = state.sidebarView === view;
@@ -2110,6 +2423,13 @@ function updateWorkspaceTabs() {
   });
 
   const catalogView = isCatalogView();
+  els.catalogWorkspace.hidden = !catalogView;
+  if (catalogView) {
+    els.catalogWorkspace.setAttribute(
+      "aria-labelledby",
+      state.sidebarView === "aniilog" ? "aniilogWorkspaceTab" : "itemlogWorkspaceTab",
+    );
+  }
   els.mapSurface.hidden = catalogView;
   els.catalogPanel.hidden = !catalogView;
   els.mapPanel.classList.toggle("catalog-active", catalogView);
@@ -2882,9 +3202,10 @@ function renderItems() {
       "item-row",
       state.enabled.has(item.item_id) ? "enabled" : "",
       item.is_elite_egg ? "elite-egg" : "",
+      item.is_alpha_egg ? "alpha-egg" : "",
       item.is_aniimo ? "aniimo-row" : "",
       tier ? `item-tier-${tier}` : "",
-      item.is_elite_egg && !item.spawn_count ? "unplaced" : "",
+      isEggItem(item) && !item.spawn_count ? "unplaced" : "",
     ].filter(Boolean).join(" ");
     row.dataset.itemId = item.item_id;
     row.setAttribute("aria-pressed", String(state.enabled.has(item.item_id)));
@@ -2911,7 +3232,7 @@ function renderItems() {
       ? [item.subtitle]
       : item.is_aniimo
         ? [aniimoListMeta(item)]
-        : item.is_elite_egg
+        : isEggItem(item)
           ? [item.region_name || item.area_name || item.display_type_label]
           : [item.display_type_label, item.region_name];
     small.textContent = smallParts.filter(Boolean).join(" - ");
@@ -2922,7 +3243,7 @@ function renderItems() {
     const count = document.createElement("span");
     count.className = "item-count";
     const mapSpawnCount = activeMapSpawnEntries(item.item_id).length;
-    count.textContent = item.is_elite_egg && !mapSpawnCount ? "No pin" : mapSpawnCount;
+    count.textContent = isEggItem(item) && !mapSpawnCount ? "No pin" : mapSpawnCount;
 
       row.append(icon, text, count);
       section.append(row);
@@ -2936,6 +3257,7 @@ function pinClassName(spawn) {
   return [
     "pin",
     spawn.marker_type === "elite_egg" ? "pin-elite-egg" : "",
+    spawn.marker_type === "alpha_egg" ? "pin-alpha-egg" : "",
     spawn.marker_type === "aniimo_spawn" ? "pin-aniimo-spawn" : "",
     spawn.layer_id === "teleports" ? "pin-teleport" : "",
     spawn.layer_id === "ambers" ? "pin-amber" : "",
@@ -3007,7 +3329,7 @@ function createMarkerPin(entry) {
 
 function pinSizeFor(spawn) {
   const baseSize = MOBILE_LAYOUT_QUERY.matches ? 26 : 30;
-  if (spawn.marker_type === "elite_egg") return baseSize + 2;
+  if (isEggMarker(spawn)) return baseSize + 2;
   if (spawn.marker_type === "underground_entrance") return baseSize - 4;
   if (spawn.marker_type === "physical_reward_source") return baseSize + 2;
   return baseSize;
@@ -3410,11 +3732,11 @@ function prepareData(data) {
   data.spawnsByItemId = new Map();
   data.itemIdsByMap = new Map(data.maps.map((map) => [map.id, new Set()]));
   data.items.forEach((item) => {
-    item.layer_id = item.layer_id || (item.is_elite_egg ? "eggs" : "items");
+    item.layer_id = item.layer_id || (isEggItem(item) ? "eggs" : "items");
   });
   data.items.sort(compareItems);
   data.items.forEach((item, index) => {
-    item.layer_id = item.layer_id || (item.is_elite_egg ? "eggs" : "items");
+    item.layer_id = item.layer_id || (isEggItem(item) ? "eggs" : "items");
     item.color = itemColor(item, index);
     item.search_text = itemSearchText(item);
     data.itemsById.set(item.item_id, item);
@@ -3531,7 +3853,7 @@ function updateMapMeta() {
     `${Math.max(0, (counts.spawns || 0) - hiddenCounts.spawns)} markers`,
     `${Math.max(0, (counts.collectable_items || 0) - hiddenCounts.items)} items`,
     `${counts.aniimo || 0} Aniimo`,
-    `${counts.elite_eggs || 0} eggs`,
+    `${counts.eggs ?? counts.elite_eggs ?? 0} eggs`,
     `${counts.teleports || 0} teleports`,
     `${counts.ambers || 0} Lumens`,
     `${counts.misc || 0} misc`,
@@ -3800,20 +4122,6 @@ async function init() {
       state.checklistData = null;
       state.checklistLoadError = error instanceof Error ? error.message : String(error);
     });
-  const catalogRequest = fetch(CATALOG_PREVIEW_URL)
-    .then(async (response) => {
-      if (!response.ok) throw new Error(`Could not load ${CATALOG_PREVIEW_URL}`);
-      const catalog = await response.json();
-      if (!Array.isArray(catalog?.itemlog)) {
-        throw new Error("Catalogue preview data has an invalid format");
-      }
-      state.catalogData = catalog;
-      state.catalogLoadError = "";
-    })
-    .catch((error) => {
-      state.catalogData = null;
-      state.catalogLoadError = error instanceof Error ? error.message : String(error);
-    });
   const response = await fetch(DATA_URL);
   if (!response.ok) {
     throw new Error(`Could not load ${DATA_URL}`);
@@ -3831,7 +4139,7 @@ async function init() {
     spawns: [],
   };
   state.data = prepareData(state.bootstrap);
-  await Promise.all([checklistRequest, catalogRequest]);
+  await checklistRequest;
   els.appVersion.textContent = APP_VERSION;
   updateWorkspaceTabs();
   updateMobileSelectionPanel();

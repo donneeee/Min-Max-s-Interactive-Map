@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MinMax's Map</title>
-    <link rel="stylesheet" href="./styles.css?v=20260716-aniilog-v002">
+    <link rel="stylesheet" href="./styles.css?v=20260716-catalog-sidebar-v002">
   </head>
   <body>
     <main class="app-shell">
@@ -27,8 +27,8 @@
           <button id="mapWorkspaceTab" class="workspace-tab" data-workspace-view="map" type="button" role="tab" aria-controls="mapWorkspace" aria-selected="true">Map</button>
           <button id="trackingWorkspaceTab" class="workspace-tab" data-workspace-view="tracking" type="button" role="tab" aria-controls="trackingWorkspace" aria-selected="false">Tracking</button>
           <button id="checklistWorkspaceTab" class="workspace-tab" data-workspace-view="checklist" type="button" role="tab" aria-controls="checklistWorkspace" aria-selected="false">Checklist</button>
-          <button id="aniilogWorkspaceTab" class="workspace-tab" data-workspace-view="aniilog" type="button" role="tab" aria-controls="catalogPanel" aria-selected="false">Aniilog</button>
-          <button id="itemlogWorkspaceTab" class="workspace-tab" data-workspace-view="itemlog" type="button" role="tab" aria-controls="catalogPanel" aria-selected="false">Item-log</button>
+          <button id="aniilogWorkspaceTab" class="workspace-tab" data-workspace-view="aniilog" type="button" role="tab" aria-controls="catalogWorkspace" aria-selected="false">Aniilog</button>
+          <button id="itemlogWorkspaceTab" class="workspace-tab" data-workspace-view="itemlog" type="button" role="tab" aria-controls="catalogWorkspace" aria-selected="false">Item-log</button>
         </div>
 
         <div id="mapWorkspace" class="sidebar-workspace" role="tabpanel" aria-labelledby="mapWorkspaceTab">
@@ -70,6 +70,10 @@
           <label class="search-label" for="checklistSearchInput">Search</label>
           <input id="checklistSearchInput" class="search" type="search" autocomplete="off" placeholder="Aniimo, form, or location">
           <div id="checklistList" class="checklist-list" aria-live="polite"></div>
+        </section>
+
+        <section id="catalogWorkspace" class="catalog-workspace" role="tabpanel" aria-labelledby="aniilogWorkspaceTab" hidden>
+          <div id="catalogSidebarContent" class="catalog-sidebar-content"></div>
         </section>
 
         <section class="panel detail-panel" aria-live="polite">
@@ -119,6 +123,6 @@
       </section>
     </div>
 
-  <script defer src="./app.js?v=20260716-aniilog-v002"></script>
+  <script defer src="./app.js?v=20260716-aniilog-exploration-v001"></script>
   </body>
 </html>
