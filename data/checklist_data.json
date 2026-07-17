@@ -11948,7 +11948,7 @@
       "coordinate_key": "MAPCOORDINATE_-1150_1399",
       "x": -1149.8,
       "y": 1398.9,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -11985,7 +11985,7 @@
       "coordinate_key": "MAPCOORDINATE_-1184_1608",
       "x": -1184.28,
       "y": 1608.38,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12022,7 +12022,7 @@
       "coordinate_key": "MAPCOORDINATE_-1293_1512",
       "x": -1293.24,
       "y": 1512.39,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12059,7 +12059,7 @@
       "coordinate_key": "MAPCOORDINATE_-0716_0600",
       "x": -716.07,
       "y": 599.9,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12096,7 +12096,7 @@
       "coordinate_key": "MAPCOORDINATE_-0926_0543",
       "x": -925.71,
       "y": 542.69,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12133,7 +12133,7 @@
       "coordinate_key": "MAPCOORDINATE_-1354_1729",
       "x": -1354.49,
       "y": 1729.01,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12170,7 +12170,7 @@
       "coordinate_key": "MAPCOORDINATE_-1477_1544",
       "x": -1476.77,
       "y": 1543.79,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12207,7 +12207,7 @@
       "coordinate_key": "MAPCOORDINATE_-1565_1392",
       "x": -1564.5,
       "y": 1392.27,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12244,7 +12244,7 @@
       "coordinate_key": "MAPCOORDINATE_-1610_1542",
       "x": -1610.21,
       "y": 1542.06,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12281,7 +12281,7 @@
       "coordinate_key": "MAPCOORDINATE_-1519_0934",
       "x": -1518.71,
       "y": 933.54,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12318,7 +12318,7 @@
       "coordinate_key": "MAPCOORDINATE_-1152_1087",
       "x": -1151.87,
       "y": 1086.9,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12355,7 +12355,7 @@
       "coordinate_key": "MAPCOORDINATE_-1342_0821",
       "x": -1342.15,
       "y": 821.14,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12392,7 +12392,7 @@
       "coordinate_key": "MAPCOORDINATE_0034_0988",
       "x": 34.24,
       "y": 988.1,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12429,7 +12429,7 @@
       "coordinate_key": "MAPCOORDINATE_0132_0834",
       "x": 131.83,
       "y": 834.4,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12466,7 +12466,7 @@
       "coordinate_key": "MAPCOORDINATE_-0242_1695",
       "x": -242.24,
       "y": 1694.63,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12503,7 +12503,7 @@
       "coordinate_key": "MAPCOORDINATE_-0211_0677",
       "x": -211.08,
       "y": 676.76,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12540,7 +12540,7 @@
       "coordinate_key": "MAPCOORDINATE_-0655_0796",
       "x": -654.75,
       "y": 795.72,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12577,7 +12577,7 @@
       "coordinate_key": "MAPCOORDINATE_-1249_0612",
       "x": -1249.49,
       "y": 612.27,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12614,7 +12614,7 @@
       "coordinate_key": "MAPCOORDINATE_-1701_0534",
       "x": -1701.16,
       "y": 534.21,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12651,7 +12651,7 @@
       "coordinate_key": "MAPCOORDINATE_0030_0217",
       "x": 29.82,
       "y": 216.66,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12688,7 +12688,7 @@
       "coordinate_key": "MAPCOORDINATE_1998_-1380",
       "x": 1998.25,
       "y": -1380.02,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -12725,7 +12725,7 @@
       "coordinate_key": "MAPCOORDINATE_2267_-1110",
       "x": 2266.8,
       "y": -1109.67,
-      "icon": "assets/icons/amber_lumin_marking__UI_Icon_POI_Decrypt_Totem_Low_Sprite_-479971628920085934.png",
+      "icon": "assets/icons/amber_lumin_marking__UI_Icon_MarkPoint_RuneDecryption_Sprite_-7341271171028603050.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14562,7 +14562,7 @@
       "coordinate_key": "MAPCOORDINATE_-1143_1433",
       "x": -1143.22,
       "y": 1432.8,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14613,7 +14613,7 @@
       "coordinate_key": "MAPCOORDINATE_-1306_1225",
       "x": -1305.82,
       "y": 1225.03,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14664,7 +14664,7 @@
       "coordinate_key": "MAPCOORDINATE_-1363_1083",
       "x": -1363.46,
       "y": 1082.82,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14715,7 +14715,7 @@
       "coordinate_key": "MAPCOORDINATE_-0693_0679",
       "x": -693.3,
       "y": 679.44,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14766,7 +14766,7 @@
       "coordinate_key": "MAPCOORDINATE_-0727_0542",
       "x": -727.1,
       "y": 542.3,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14817,7 +14817,7 @@
       "coordinate_key": "MAPCOORDINATE_-0822_0707",
       "x": -821.9,
       "y": 707.16,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14868,7 +14868,7 @@
       "coordinate_key": "MAPCOORDINATE_-0875_0495",
       "x": -875.39,
       "y": 494.55,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14919,7 +14919,7 @@
       "coordinate_key": "MAPCOORDINATE_-0993_0609",
       "x": -993.49,
       "y": 608.71,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14970,7 +14970,7 @@
       "coordinate_key": "MAPCOORDINATE_-0513_1162",
       "x": -513.35,
       "y": 1162.33,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15021,7 +15021,7 @@
       "coordinate_key": "MAPCOORDINATE_-1416_1685",
       "x": -1415.93,
       "y": 1685.4,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15072,7 +15072,7 @@
       "coordinate_key": "MAPCOORDINATE_-1508_1749",
       "x": -1507.92,
       "y": 1748.71,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15123,7 +15123,7 @@
       "coordinate_key": "MAPCOORDINATE_-1524_1710",
       "x": -1524.46,
       "y": 1709.84,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15174,7 +15174,7 @@
       "coordinate_key": "MAPCOORDINATE_-1500_1186",
       "x": -1499.59,
       "y": 1186.37,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15225,7 +15225,7 @@
       "coordinate_key": "MAPCOORDINATE_-1623_1000",
       "x": -1623.03,
       "y": 999.72,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15276,7 +15276,7 @@
       "coordinate_key": "MAPCOORDINATE_-1049_0980",
       "x": -1048.8,
       "y": 979.52,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15327,7 +15327,7 @@
       "coordinate_key": "MAPCOORDINATE_-1119_0921",
       "x": -1119.24,
       "y": 920.52,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15378,7 +15378,7 @@
       "coordinate_key": "MAPCOORDINATE_-1119_1087",
       "x": -1119.03,
       "y": 1086.79,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15429,7 +15429,7 @@
       "coordinate_key": "MAPCOORDINATE_-1057_0816",
       "x": -1056.53,
       "y": 815.51,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15480,7 +15480,7 @@
       "coordinate_key": "MAPCOORDINATE_-1114_0751",
       "x": -1114.21,
       "y": 751.0,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15531,7 +15531,7 @@
       "coordinate_key": "MAPCOORDINATE_-1161_0759",
       "x": -1161.09,
       "y": 758.69,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15582,7 +15582,7 @@
       "coordinate_key": "MAPCOORDINATE_-1182_0817",
       "x": -1182.29,
       "y": 817.45,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15633,7 +15633,7 @@
       "coordinate_key": "MAPCOORDINATE_-1288_0920",
       "x": -1288.03,
       "y": 920.09,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15684,7 +15684,7 @@
       "coordinate_key": "MAPCOORDINATE_0024_0861",
       "x": 23.59,
       "y": 861.02,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15735,7 +15735,7 @@
       "coordinate_key": "MAPCOORDINATE_0097_1077",
       "x": 96.58,
       "y": 1076.77,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15786,7 +15786,7 @@
       "coordinate_key": "MAPCOORDINATE_0101_0773",
       "x": 100.61,
       "y": 773.25,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15837,7 +15837,7 @@
       "coordinate_key": "MAPCOORDINATE_-0199_1809",
       "x": -198.51,
       "y": 1808.84,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15888,7 +15888,7 @@
       "coordinate_key": "MAPCOORDINATE_-0344_1735",
       "x": -343.59,
       "y": 1735.2,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15939,7 +15939,7 @@
       "coordinate_key": "MAPCOORDINATE_-0216_1002",
       "x": -215.54,
       "y": 1001.75,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -15990,7 +15990,7 @@
       "coordinate_key": "MAPCOORDINATE_-0446_0828",
       "x": -445.57,
       "y": 827.56,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -16041,7 +16041,7 @@
       "coordinate_key": "MAPCOORDINATE_-1085_0528",
       "x": -1085.48,
       "y": 528.05,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -16092,7 +16092,7 @@
       "coordinate_key": "MAPCOORDINATE_-1622_0689",
       "x": -1621.95,
       "y": 688.87,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -16143,7 +16143,7 @@
       "coordinate_key": "MAPCOORDINATE_0200_1741",
       "x": 199.63,
       "y": 1741.19,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -16194,7 +16194,7 @@
       "coordinate_key": "MAPCOORDINATE_0260_1721",
       "x": 260.24,
       "y": 1720.81,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -16245,7 +16245,7 @@
       "coordinate_key": "MAPCOORDINATE_0529_1481",
       "x": 528.75,
       "y": 1481.47,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -16296,7 +16296,7 @@
       "coordinate_key": "MAPCOORDINATE_0208_0969",
       "x": 208.18,
       "y": 969.49,
-      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_event_ember__UI_Icon_MarkPoint_Challenge_TimeLimited_Sprite_763122636165143150.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [

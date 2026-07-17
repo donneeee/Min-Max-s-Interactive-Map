@@ -1,8 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260716-whisperwake-spawn-audit-v001";
-const CHECKLIST_URL = "./data/checklist_data.json?v=20260716-catalog-preview-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260716-itemlog-catalog-v001";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260716-aniilog-exploration-v001";
-const APP_VERSION = "v0.3.53";
+const DATA_URL = "./data/map_site_data.json?v=20260717-lumin-marking-icon-v001";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260717-lumin-marking-icon-v001";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260717-carried-item-icons-v001";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260717-boss-refresh-seconds-v001";
+const APP_VERSION = "v0.3.55";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -18,13 +18,13 @@ const MOBILE_LAYOUT_QUERY = window.matchMedia("(max-width: 820px)");
 // Reserved for temporarily suppressing incomplete physical reward sources.
 const TEMPORARILY_HIDDEN_ITEM_IDS = new Set();
 const ANIILOG_STAT_CONFIG = Object.freeze([
-  { sourceLabel: "HP", label: "HP", id: "hp", color: "#e56f5f" },
-  { sourceLabel: "Attack", label: "Attack", id: "attack", color: "#e8bf63" },
-  { sourceLabel: "Magic Attack", label: "Magic Attack", id: "magic-attack", color: "#b48fe8", preference: "showMagicAttack" },
-  { sourceLabel: "Break", label: "Break", id: "break", color: "#e0ad59" },
-  { sourceLabel: "Defense", label: "Defense", id: "defense", color: "#75c7d8" },
-  { sourceLabel: "Magic Defense", label: "Magic Defense", id: "magic-defense", color: "#8eb8f4" },
-  { sourceLabel: "EP Regen", label: "Regen", id: "regen", color: "#73c66b" },
+  { sourceLabel: "HP", label: "HP", id: "hp", color: "#ef6a5b" },
+  { sourceLabel: "Attack", label: "Attack", id: "attack", color: "#ffd166" },
+  { sourceLabel: "Magic Attack", label: "Magic Attack", id: "magic-attack", color: "#ec76c5", preference: "showMagicAttack" },
+  { sourceLabel: "Break", label: "Break", id: "break", color: "#b678f4" },
+  { sourceLabel: "Defense", label: "Defense", id: "defense", color: "#44c5d8" },
+  { sourceLabel: "Magic Defense", label: "Magic Defense", id: "magic-defense", color: "#6fa8ff" },
+  { sourceLabel: "EP Regen", label: "Regen", id: "regen", color: "#65d36e" },
 ]);
 const DEFAULT_PREFERENCES = Object.freeze({
   showMagicAttack: false,
@@ -1339,7 +1339,8 @@ function createCatalogIndexRow(entry, selectedId, view, virtualIndex) {
       statValue === null ? "" : `${sort.label.replace(" (high to low)", "")} ${formatNumber(statValue, 0)}`,
     ].filter(Boolean).join(" - ");
   } else {
-    meta.textContent = [entry.type || "Item", entry.quality].filter(Boolean).join(" - ");
+    meta.textContent = entry.list_subtitle
+      || [entry.type || "Item", entry.quality].filter(Boolean).join(" - ");
   }
   copy.append(name, meta);
   button.append(icon, copy);
@@ -1529,8 +1530,9 @@ function createCatalogTag(text, className = "") {
   return tag;
 }
 
-function renderCatalogLevels(title, entries, emptyText = "No ability data available.") {
+function renderCatalogLevels(title, entries, emptyText = "No ability data available.", options = {}) {
   const section = createCatalogSection(title);
+  if (options.compact) section.classList.add("catalog-section--compact");
   if (!Array.isArray(entries) || !entries.length) {
     const empty = document.createElement("p");
     empty.className = "catalog-empty-detail";
@@ -1539,7 +1541,7 @@ function renderCatalogLevels(title, entries, emptyText = "No ability data availa
     return section;
   }
   const levels = document.createElement("div");
-  levels.className = "catalog-level-grid";
+  levels.className = `catalog-level-grid${options.compact ? " catalog-level-grid--compact" : ""}`;
   entries.forEach((entry) => {
     const card = document.createElement("div");
     card.className = "catalog-level-card";
@@ -1569,6 +1571,8 @@ function appendCatalogAbilityFact(container, label, value, suffix = "", modifier
 
 function renderCatalogAbilitySection(title, abilities, emptyText = "No data available.") {
   const section = createCatalogSection(title);
+  const compact = title === "Ultimate" || title === "Trait" || title === "Mobility skills";
+  if (compact) section.classList.add("catalog-section--compact");
   if (!Array.isArray(abilities) || !abilities.length) {
     const empty = document.createElement("p");
     empty.className = "catalog-empty-detail";
@@ -1577,7 +1581,7 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
     return section;
   }
   const grid = document.createElement("div");
-  grid.className = "catalog-ability-grid";
+  grid.className = `catalog-ability-grid${compact ? " catalog-ability-grid--compact" : ""}`;
   abilities.forEach((ability) => {
     const card = document.createElement("article");
     card.className = "catalog-ability-card";
@@ -1637,6 +1641,7 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
 
 function renderCatalogLocations(entry) {
   const section = createCatalogSection("Known locations");
+  section.classList.add("catalog-location-section");
   if (!Array.isArray(entry.locations) || !entry.locations.length) {
     const empty = document.createElement("p");
     empty.className = "catalog-empty-detail";
@@ -1644,21 +1649,43 @@ function renderCatalogLocations(entry) {
     section.append(empty);
     return section;
   }
-  const grid = document.createElement("div");
-  grid.className = "catalog-location-grid";
+  const list = document.createElement("div");
+  list.className = "catalog-location-list";
   entry.locations.forEach((location) => {
-    const card = document.createElement("article");
-    card.className = "catalog-location-card";
+    const areaNames = [...new Set((location.areas || []).filter(Boolean))];
+    const locationEntry = document.createElement(areaNames.length ? "details" : "article");
+    locationEntry.className = "catalog-location-entry";
+    const summary = document.createElement(areaNames.length ? "summary" : "div");
+    summary.className = "catalog-location-summary";
     const name = document.createElement("strong");
+    name.className = "catalog-location-name";
     name.textContent = location.map_label;
-    const count = document.createElement("small");
-    count.textContent = `${formatNumber(location.count)} known spawn point${location.count === 1 ? "" : "s"}`;
-    const areas = document.createElement("p");
-    areas.textContent = (location.areas || []).join(" - ");
-    card.append(name, count, areas);
-    grid.append(card);
+    name.title = location.map_label;
+    const meta = document.createElement("span");
+    meta.className = "catalog-location-meta";
+    const habitatText = areaNames.length
+      ? ` \u00b7 ${formatNumber(areaNames.length)} habitat${areaNames.length === 1 ? "" : "s"}`
+      : "";
+    meta.textContent = `${formatNumber(location.count)} spawn${location.count === 1 ? "" : "s"}${habitatText}`;
+    summary.append(name, meta);
+    locationEntry.append(summary);
+
+    if (areaNames.length) {
+      const areas = document.createElement("ul");
+      areas.className = "catalog-location-chip-list";
+      areas.setAttribute("aria-label", `${location.map_label} habitat areas`);
+      areaNames.forEach((areaName) => {
+        const chip = document.createElement("li");
+        chip.className = "catalog-location-chip";
+        chip.textContent = areaName;
+        chip.title = areaName;
+        areas.append(chip);
+      });
+      locationEntry.append(areas);
+    }
+    list.append(locationEntry);
   });
-  section.append(grid);
+  section.append(list);
   return section;
 }
 
@@ -1709,6 +1736,7 @@ function renderCatalogEvolution(entry) {
   const targets = entry.evolution?.to || [];
   if (!parents.length && !targets.length) return null;
   const section = createCatalogSection("Evolution");
+  section.classList.add("catalog-evolution-section");
   const flow = document.createElement("div");
   flow.className = "catalog-evolution-flow";
   parents.forEach((parent) => flow.append(createEvolutionNode(parent, "Evolved from")));
@@ -1801,9 +1829,9 @@ function renderAniilogBossVariants(bossVariants) {
       locationItem.textContent = location;
       meta.append(locationItem);
     }
-    if (Number(boss.refresh_minutes) > 0) {
+    if (Number(boss.refresh_seconds) > 0) {
       const refresh = document.createElement("span");
-      refresh.textContent = `Refresh: ${boss.refresh_minutes} min`;
+      refresh.textContent = `Refresh: ${boss.refresh_seconds} sec`;
       meta.append(refresh);
     }
     copy.append(eyebrow, name, meta);
@@ -1891,11 +1919,16 @@ function renderAniilogCatalogRecord(entry) {
   record.append(statSection);
 
   record.append(renderCatalogAbilitySection("Combat skills", entry.skills, "No combat skill data is currently available."));
-  record.append(renderCatalogAbilitySection("Ultimate", entry.ultimates, "No Ultimate ability is currently listed for this form."));
-  record.append(renderCatalogAbilitySection("Trait", entry.traits, "No Trait is currently listed for this form."));
-  record.append(renderCatalogAbilitySection("Mobility skills", entry.mobility_skills, "No Mobility skill is currently listed for this form."));
-  record.append(renderCatalogLevels("Exploration", entry.exploration, "None"));
-  record.append(renderCatalogLevels("Homeland abilities", entry.homeland, "No Homeland ability is listed for this form."));
+  const utilityGrid = document.createElement("div");
+  utilityGrid.className = "catalog-utility-grid";
+  utilityGrid.append(
+    renderCatalogAbilitySection("Ultimate", entry.ultimates, "No Ultimate ability is currently listed for this form."),
+    renderCatalogAbilitySection("Trait", entry.traits, "No Trait is currently listed for this form."),
+    renderCatalogAbilitySection("Mobility skills", entry.mobility_skills, "No Mobility skill is currently listed for this form."),
+    renderCatalogLevels("Exploration", entry.exploration, "None", { compact: true }),
+    renderCatalogLevels("Homeland abilities", entry.homeland, "No Homeland ability is listed for this form.", { compact: true }),
+  );
+  record.append(utilityGrid);
 
   if (entry.spawn_requirements?.length) {
     const requirements = createCatalogSection("Spawn requirements");
@@ -1922,19 +1955,42 @@ function qualityClassName(quality) {
   return String(quality || "normal").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "normal";
 }
 
-function renderItemLogObtainMethods(methods) {
-  const section = createCatalogSection("How to obtain");
-  if (!Array.isArray(methods) || !methods.length) {
-    const empty = document.createElement("p");
-    empty.className = "catalog-empty-detail";
-    empty.textContent = "No acquisition method is exposed by the currently extracted game tables.";
-    section.append(empty);
-    return section;
-  }
+function renderItemLogRequirements(requirements) {
+  const usableRequirements = Array.isArray(requirements)
+    ? requirements.filter((requirement) => requirement && (requirement.label || requirement.detail))
+    : [];
+  if (!usableRequirements.length) return null;
 
+  const section = createCatalogSection("Requirements");
+  const list = document.createElement("div");
+  list.className = "catalog-requirements-list";
+  usableRequirements.forEach((requirement) => {
+    const row = document.createElement("div");
+    row.className = "catalog-requirement-row";
+    const label = document.createElement("strong");
+    label.textContent = requirement?.label || "Requirement";
+    row.append(label);
+    if (requirement?.detail) {
+      const detail = document.createElement("p");
+      detail.textContent = requirement.detail;
+      row.append(detail);
+    }
+    list.append(row);
+  });
+  section.append(list);
+  return section;
+}
+
+function renderItemLogObtainMethods(methods) {
+  const usableMethods = Array.isArray(methods)
+    ? methods.filter((method) => method && (method.label || method.detail))
+    : [];
+  if (!usableMethods.length) return null;
+
+  const section = createCatalogSection("How to obtain");
   const list = document.createElement("div");
   list.className = "catalog-obtain-list";
-  methods.forEach((method) => {
+  usableMethods.forEach((method) => {
     const row = document.createElement("div");
     row.className = "catalog-obtain-row";
     const label = document.createElement("strong");
@@ -1951,7 +2007,10 @@ function renderItemLogObtainMethods(methods) {
   return section;
 }
 
-function appendCarriedEffectRow(list, label, effects, unlockLevel = 0, emptyText = "No effect is listed for this item tier.") {
+function appendCarriedEffectRow(list, label, effects, unlockLevel = 0) {
+  const values = Array.isArray(effects) ? effects.filter(Boolean) : [];
+  if (!values.length) return false;
+
   const row = document.createElement("div");
   row.className = "catalog-carried-effect";
   const heading = document.createElement("div");
@@ -1965,18 +2024,11 @@ function appendCarriedEffectRow(list, label, effects, unlockLevel = 0, emptyText
     heading.append(unlock);
   }
   row.append(heading);
-  const values = Array.isArray(effects) ? effects.filter(Boolean) : [];
-  if (values.length) {
-    const text = document.createElement("p");
-    text.textContent = values.join(" ");
-    row.append(text);
-  } else {
-    const empty = document.createElement("p");
-    empty.className = "catalog-empty-detail";
-    empty.textContent = emptyText;
-    row.append(empty);
-  }
+  const text = document.createElement("p");
+  text.textContent = values.join(" ");
+  row.append(text);
   list.append(row);
+  return true;
 }
 
 function renderCarriedItemEffects(carriedEffects) {
@@ -1987,23 +2039,22 @@ function renderCarriedItemEffects(carriedEffects) {
   appendCarriedEffectRow(list, "Base attributes", carriedEffects.base_attributes);
   appendCarriedEffectRow(list, "Core effect", carriedEffects.core_effects);
   const advancedEffects = Array.isArray(carriedEffects.advanced_effects) ? carriedEffects.advanced_effects : [];
-  for (let effectIndex = 0; effectIndex < 2; effectIndex += 1) {
-    const advanced = advancedEffects[effectIndex];
+  advancedEffects.forEach((advanced, effectIndex) => {
     appendCarriedEffectRow(
       list,
       `Advanced effect ${effectIndex === 0 ? "I" : "II"}`,
       advanced?.effects,
       Number(advanced?.unlock_level) || 0,
-      `No advanced effect ${effectIndex === 0 ? "I" : "II"} is listed for this item tier.`,
     );
-  }
+  });
+  if (!list.childElementCount) return null;
   section.append(list);
   return section;
 }
 
 function renderItemLogCatalogRecord(entry) {
   const record = document.createElement("article");
-  record.className = "catalog-record";
+  record.className = "catalog-record catalog-itemlog-record";
 
   const identity = document.createElement("header");
   identity.className = "catalog-identity";
@@ -2038,15 +2089,25 @@ function renderItemLogCatalogRecord(entry) {
   const details = createCatalogSection("Item details");
   const facts = document.createElement("dl");
   facts.className = "catalog-facts";
-  appendCatalogFact(facts, "Category", entry.catalog_category || entry.type);
-  appendCatalogFact(facts, "Inventory", entry.inventory);
-  appendCatalogFact(facts, "Quality", entry.quality);
-  appendCatalogFact(facts, "Overworld nodes", entry.overworld_spawn_count ? formatNumber(entry.overworld_spawn_count) : "");
-  appendCatalogFact(facts, "Known maps", Array.isArray(entry.spawn_maps) ? entry.spawn_maps.join(", ") : "");
-  details.append(facts);
-  record.append(details);
+  const detailFacts = Array.isArray(entry.detail_facts) && entry.detail_facts.length
+    ? entry.detail_facts
+    : [
+      { label: "Category", value: entry.catalog_category || entry.type },
+      { label: "Inventory", value: entry.inventory },
+      { label: "Quality", value: entry.quality },
+      { label: "Overworld nodes", value: entry.overworld_spawn_count ? formatNumber(entry.overworld_spawn_count) : "" },
+      { label: "Known maps", value: Array.isArray(entry.spawn_maps) ? entry.spawn_maps.join(", ") : "" },
+    ];
+  detailFacts.forEach((fact) => appendCatalogFact(facts, fact?.label, fact?.value));
+  if (facts.childElementCount) {
+    details.append(facts);
+    record.append(details);
+  }
 
-  record.append(renderItemLogObtainMethods(entry.obtain_methods));
+  const requirements = renderItemLogRequirements(entry.requirements);
+  if (requirements) record.append(requirements);
+  const obtainMethods = renderItemLogObtainMethods(entry.obtain_methods);
+  if (obtainMethods) record.append(obtainMethods);
   const carriedEffects = renderCarriedItemEffects(entry.carried_effects);
   if (carriedEffects) record.append(carriedEffects);
 
@@ -3257,6 +3318,9 @@ function itemSearchText(item) {
     item.form_label,
     item.display_name,
     item.subtitle,
+    item.list_subtitle,
+    item.egg_location,
+    item.spawn_maps,
     item.book_names,
     item.marker_names,
     item.layer_id,
@@ -4175,17 +4239,22 @@ function renderMapTabs() {
   updateMapTabs();
 }
 
+function headerCatalogCount(key, fallback) {
+  const value = Number(state.data?.catalog_counts?.[key]);
+  return Number.isFinite(value) && value >= 0 ? Math.round(value) : fallback;
+}
+
 function updateMapMeta() {
   const map = currentMap();
   const counts = map.counts || state.data.counts || {};
   const hiddenCounts = state.data?.hiddenCounts || { items: 0, spawns: 0 };
   const parts = [
     `${Math.max(0, (counts.spawns || 0) - hiddenCounts.spawns)} markers`,
-    `${Math.max(0, (counts.collectable_items || 0) - hiddenCounts.items)} items`,
-    `${counts.aniimo || 0} Aniimo`,
-    `${counts.eggs ?? counts.elite_eggs ?? 0} eggs`,
+    `${headerCatalogCount("items", Math.max(0, (counts.collectable_items || 0) - hiddenCounts.items))} items`,
+    `${headerCatalogCount("aniimo", counts.aniimo || 0)} Aniimo`,
+    `${headerCatalogCount("eggs", counts.eggs ?? counts.elite_eggs ?? 0)} eggs`,
     `${counts.teleports || 0} teleports`,
-    `${counts.ambers || 0} Lumens`,
+    `${headerCatalogCount("lumens", counts.ambers || 0)} Lumens`,
     `${counts.misc || 0} misc`,
   ];
   if (state.loadingMapId === map.id) parts.push("Loading markers");
