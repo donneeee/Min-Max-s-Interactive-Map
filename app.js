@@ -1813,7 +1813,7 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
         badge.append(text);
         badges.append(badge);
       };
-      const categoryKey = clean(combat.category).toLowerCase();
+      const categoryKey = String(combat.category || "").trim().toLowerCase();
       const categoryLabel = categoryKey === "magic" ? "Magical" : combat.category;
       const categoryType = categoryKey === "magic" ? "category-magical" : `category-${categoryKey || "other"}`;
       addBadge(categoryLabel, categoryType);
