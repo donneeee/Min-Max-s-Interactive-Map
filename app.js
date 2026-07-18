@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260717-geography-hierarchy-v001"
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260717-lumin-marking-icon-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260718-itemlog-icon-recovery-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260718-core-skills-v001";
-const APP_VERSION = "v0.3.60";
+const APP_VERSION = "v0.3.61";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -47,8 +47,8 @@ const CATALOG_ELEMENT_META = Object.freeze({
   wind: { slug: "wind", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-wind.png`, color: "#58c7b1" },
   dark: { slug: "dark", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-dark.png`, color: "#7b4ca9" },
   shadow: { slug: "dark", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-dark.png`, color: "#7b4ca9" },
-  holy: { slug: "holy", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-holy.png`, color: "#f6a93c" },
-  light: { slug: "holy", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-holy.png`, color: "#f6a93c" },
+  holy: { slug: "holy", label: "Light", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-holy.png`, color: "#f6a93c" },
+  light: { slug: "holy", label: "Light", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-holy.png`, color: "#f6a93c" },
   metal: { slug: "metal", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-metal.png`, color: "#708c9c" },
   poison: { slug: "poison", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-poison.png`, color: "#8d63b8" },
   psychic: { slug: "psychic", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-psychic.png`, color: "#ef65b0" },
@@ -1260,6 +1260,7 @@ function catalogAbilitySearchTerms(abilities) {
       combat.category,
       ...(Array.isArray(combat.types) ? combat.types : []),
       combat.element,
+      catalogElementLabel(combat.element),
       combat.might,
       combat.ep_cost,
       combat.break_power,
@@ -1285,14 +1286,19 @@ function catalogEntrySearchText(entry) {
     entry?.carried_effects?.base_attributes,
     entry?.carried_effects?.core_effects,
     entry?.carried_effects?.advanced_effects?.flatMap((effect) => effect?.effects),
-    entry?.elements?.map((element) => element?.name),
+    entry?.elements?.flatMap((element) => [element?.name, catalogElementLabel(element)]),
     entry?.stats?.flatMap((stat) => [stat?.label, stat?.value]),
     catalogAbilitySearchTerms(entry?.skills),
     catalogAbilitySearchTerms(entry?.ultimates),
     catalogAbilitySearchTerms(entry?.traits),
     catalogAbilitySearchTerms(entry?.mobility_skills),
     entry?.exploration?.flatMap((ability) => [ability?.name, ability?.description, ability?.level]),
-    entry?.homeland?.flatMap((ability) => [ability?.name, ability?.description, ability?.level]),
+    entry?.homeland?.flatMap((ability) => [
+      ability?.name,
+      catalogElementLabel(ability?.name),
+      ability?.description,
+      ability?.level,
+    ]),
     entry?.locations?.flatMap((location) => [location?.map_label, location?.areas]),
     entry?.spawn_requirements,
   ]);
@@ -1633,6 +1639,11 @@ function catalogElementMeta(element) {
   return CATALOG_ELEMENT_META[key] || { slug: key || "unknown", icon: "", color: "#9faaad" };
 }
 
+function catalogElementLabel(element) {
+  const name = typeof element === "string" ? element : element?.name;
+  return catalogElementMeta(element).label || name || "Unknown";
+}
+
 function catalogRoleMeta(role) {
   const key = String(role || "").trim().toUpperCase();
   return CATALOG_ROLE_META[key] || { slug: key.toLowerCase() || "unknown", icon: "", color: "#7fc6b2" };
@@ -1718,7 +1729,7 @@ function renderCatalogHomelandLevels(entries) {
     }
 
     const name = document.createElement("strong");
-    name.textContent = entry.name;
+    name.textContent = catalogElementLabel(entry.name);
     const level = document.createElement("span");
     level.className = "catalog-homeland-level";
     level.textContent = entry.level ? `Level ${entry.level}` : "Available";
@@ -1808,7 +1819,7 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
       addBadge(categoryLabel, categoryType);
       (Array.isArray(combat.types) ? combat.types : []).forEach((type) => addBadge(type, "type"));
       const elementMeta = catalogElementMeta(combat.element);
-      addBadge(combat.element, "element", combat.element_color || elementMeta.color, elementMeta.icon);
+      addBadge(catalogElementLabel(combat.element), "element", combat.element_color || elementMeta.color, elementMeta.icon);
       if (badges.childElementCount) copy.append(badges);
 
       const facts = document.createElement("div");
@@ -2098,7 +2109,7 @@ function renderAniilogCatalogRecord(entry) {
   }
   (entry.elements || []).forEach((element) => {
     const elementMeta = catalogElementMeta(element);
-    tags.append(createCatalogTag(`Type: ${element.name} ${element.level}`, `catalog-element-tag element-${elementClassName(element)}`, elementMeta));
+    tags.append(createCatalogTag(`Type: ${catalogElementLabel(element)} ${element.level}`, `catalog-element-tag element-${elementClassName(element)}`, elementMeta));
   });
   copy.append(number, name, tags);
   identity.append(icon, copy);
