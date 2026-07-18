@@ -1,4 +1,4 @@
-# MinMax's Map
+# MinMax's Aniipedia
 
 Interactive static map for Aniimo world markers.
 

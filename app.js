@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260717-lumin-marking-icon-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260717-lumin-marking-icon-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260717-home-order-rv-v001";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260717-itemlog-known-requirements-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260717-boss-refresh-seconds-v001";
-const APP_VERSION = "v0.3.56";
+const APP_VERSION = "v0.3.58";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -26,6 +26,50 @@ const ANIILOG_STAT_CONFIG = Object.freeze([
   { sourceLabel: "Magic Defense", label: "Magic Defense", id: "magic-defense", color: "#6fa8ff" },
   { sourceLabel: "EP Regen", label: "Regen", id: "regen", color: "#65d36e" },
 ]);
+const ANIILOG_BADGE_ASSET_ROOT = "./assets/aniilog";
+const CATALOG_ROLE_META = Object.freeze({
+  DPS: { slug: "dps", icon: `${ANIILOG_BADGE_ASSET_ROOT}/class-dps.png`, color: "#e76561" },
+  REGEN: { slug: "regen", icon: `${ANIILOG_BADGE_ASSET_ROOT}/class-regen.png`, color: "#58b7d9" },
+  BREAK: { slug: "break", icon: `${ANIILOG_BADGE_ASSET_ROOT}/class-break.png`, color: "#ae7ee8" },
+  HEALER: { slug: "healer", icon: `${ANIILOG_BADGE_ASSET_ROOT}/class-healer.png`, color: "#65c889" },
+  SUPPORT: { slug: "support", icon: `${ANIILOG_BADGE_ASSET_ROOT}/class-support.png`, color: "#e47fae" },
+  DEFENSE: { slug: "defense", icon: `${ANIILOG_BADGE_ASSET_ROOT}/class-defense.png`, color: "#d2aa54" },
+});
+const CATALOG_ELEMENT_META = Object.freeze({
+  fire: { slug: "fire", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-fire.png`, color: "#e03d3d" },
+  grass: { slug: "grass", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-grass.png`, color: "#43a061" },
+  water: { slug: "water", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-water.png`, color: "#1e90ff" },
+  rock: { slug: "rock", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-rock.png`, color: "#b8a278" },
+  earth: { slug: "rock", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-rock.png`, color: "#b8a278" },
+  electric: { slug: "electric", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-electric.png`, color: "#e2c10b" },
+  electricity: { slug: "electric", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-electric.png`, color: "#e2c10b" },
+  ice: { slug: "ice", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-ice.png`, color: "#58d0e8" },
+  wind: { slug: "wind", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-wind.png`, color: "#58c7b1" },
+  dark: { slug: "dark", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-dark.png`, color: "#7b4ca9" },
+  shadow: { slug: "dark", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-dark.png`, color: "#7b4ca9" },
+  holy: { slug: "holy", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-holy.png`, color: "#f6a93c" },
+  light: { slug: "holy", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-holy.png`, color: "#f6a93c" },
+  metal: { slug: "metal", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-metal.png`, color: "#708c9c" },
+  poison: { slug: "poison", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-poison.png`, color: "#8d63b8" },
+  psychic: { slug: "psychic", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-psychic.png`, color: "#ef65b0" },
+  psychokinesis: { slug: "psychic", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-psychic.png`, color: "#ef65b0" },
+  normal: { slug: "normal", icon: `${ANIILOG_BADGE_ASSET_ROOT}/element-normal.png`, color: "#9faaad" },
+});
+const CATALOG_HOMELAND_META = Object.freeze({
+  1000: { ...CATALOG_ELEMENT_META.fire },
+  1001: { ...CATALOG_ELEMENT_META.grass },
+  1002: { ...CATALOG_ELEMENT_META.water },
+  1003: { ...CATALOG_ELEMENT_META.rock },
+  1004: { ...CATALOG_ELEMENT_META.electric },
+  1005: { ...CATALOG_ELEMENT_META.ice },
+  1006: { ...CATALOG_ELEMENT_META.wind },
+  1007: { ...CATALOG_ELEMENT_META.dark },
+  1008: { ...CATALOG_ELEMENT_META.holy },
+  1100: { slug: "carry", icon: `${ANIILOG_BADGE_ASSET_ROOT}/homeland-carry.png`, color: "#6285cc" },
+  1101: { slug: "artisanship", icon: `${ANIILOG_BADGE_ASSET_ROOT}/homeland-artisanship.png`, color: "#71b258" },
+  1102: { slug: "leisure", icon: `${ANIILOG_BADGE_ASSET_ROOT}/homeland-leisure.png`, color: "#e77894" },
+  1103: { slug: "incense-making", icon: `${ANIILOG_BADGE_ASSET_ROOT}/homeland-incense-making.png`, color: "#b579dc" },
+});
 const DEFAULT_PREFERENCES = Object.freeze({
   showMagicAttack: false,
 });
@@ -1501,7 +1545,18 @@ function renderCatalogCategoryToolbar(view) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "catalog-category-button";
-    button.textContent = category === "all" ? "All" : category;
+    if (category === "all") {
+      button.textContent = "All";
+    } else {
+      const roleMeta = catalogRoleMeta(category);
+      const icon = document.createElement("img");
+      icon.className = "catalog-category-button-icon";
+      icon.src = roleMeta.icon;
+      icon.alt = "";
+      icon.setAttribute("aria-hidden", "true");
+      button.style.setProperty("--catalog-role-color", roleMeta.color);
+      button.append(icon, document.createTextNode(category));
+    }
     button.setAttribute("aria-pressed", String(category === activeCategory));
     button.addEventListener("click", () => {
       state.catalogCategory[view] = category;
@@ -1520,13 +1575,39 @@ function renderCatalogCategoryToolbar(view) {
 }
 
 function elementClassName(element) {
-  return String(element?.name || "unknown").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "unknown";
+  return catalogElementMeta(element).slug;
 }
 
-function createCatalogTag(text, className = "") {
+function catalogElementMeta(element) {
+  const name = typeof element === "string" ? element : element?.name;
+  const key = String(name || "unknown").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return CATALOG_ELEMENT_META[key] || { slug: key || "unknown", icon: "", color: "#9faaad" };
+}
+
+function catalogRoleMeta(role) {
+  const key = String(role || "").trim().toUpperCase();
+  return CATALOG_ROLE_META[key] || { slug: key.toLowerCase() || "unknown", icon: "", color: "#7fc6b2" };
+}
+
+function catalogHomelandMeta(entry) {
+  return CATALOG_HOMELAND_META[String(entry?.id || "")] || catalogElementMeta(entry?.name);
+}
+
+function createCatalogTag(text, className = "", meta = null) {
   const tag = document.createElement("span");
   tag.className = `catalog-tag ${className}`.trim();
-  tag.textContent = text;
+  if (meta?.color) tag.style.setProperty("--catalog-tag-color", meta.color);
+  if (meta?.icon) {
+    const icon = document.createElement("img");
+    icon.className = "catalog-tag-icon";
+    icon.src = meta.icon;
+    icon.alt = "";
+    icon.setAttribute("aria-hidden", "true");
+    tag.append(icon);
+  }
+  const label = document.createElement("span");
+  label.textContent = text;
+  tag.append(label);
   return tag;
 }
 
@@ -1550,6 +1631,49 @@ function renderCatalogLevels(title, entries, emptyText = "No ability data availa
     const level = document.createElement("span");
     level.textContent = entry.level ? `Level ${entry.level}` : "Available";
     card.append(name, level);
+    levels.append(card);
+  });
+  section.append(levels);
+  return section;
+}
+
+function renderCatalogHomelandLevels(entries) {
+  const section = createCatalogSection("Homeland abilities");
+  section.classList.add("catalog-section--compact", "catalog-homeland-section");
+  if (!Array.isArray(entries) || !entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "catalog-empty-detail";
+    empty.textContent = "No Homeland ability is listed for this form.";
+    section.append(empty);
+    return section;
+  }
+
+  const levels = document.createElement("div");
+  levels.className = "catalog-level-grid catalog-level-grid--compact catalog-homeland-grid";
+  entries.forEach((entry) => {
+    const meta = catalogHomelandMeta(entry);
+    const card = document.createElement("div");
+    card.className = `catalog-level-card catalog-homeland-card homeland-${meta.slug}`;
+    card.style.setProperty("--catalog-homeland-color", meta.color);
+    if (entry.description) card.title = entry.description;
+
+    const iconShell = document.createElement("span");
+    iconShell.className = "catalog-homeland-icon-shell";
+    if (meta.icon) {
+      const icon = document.createElement("img");
+      icon.className = "catalog-homeland-icon";
+      icon.src = meta.icon;
+      icon.alt = "";
+      icon.setAttribute("aria-hidden", "true");
+      iconShell.append(icon);
+    }
+
+    const name = document.createElement("strong");
+    name.textContent = entry.name;
+    const level = document.createElement("span");
+    level.className = "catalog-homeland-level";
+    level.textContent = entry.level ? `Level ${entry.level}` : "Available";
+    card.append(iconShell, name, level);
     levels.append(card);
   });
   section.append(levels);
@@ -1595,17 +1719,28 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
     if (combat) {
       const badges = document.createElement("div");
       badges.className = "catalog-ability-badges";
-      const addBadge = (label, type, color = "") => {
+      const addBadge = (label, type, color = "", iconSrc = "") => {
         if (!label) return;
         const badge = document.createElement("span");
         badge.className = `catalog-ability-badge catalog-ability-badge--${type}`;
-        badge.textContent = label;
         if (color) badge.style.setProperty("--catalog-ability-element-color", color);
+        if (iconSrc) {
+          const icon = document.createElement("img");
+          icon.className = "catalog-ability-badge-icon";
+          icon.src = iconSrc;
+          icon.alt = "";
+          icon.setAttribute("aria-hidden", "true");
+          badge.append(icon);
+        }
+        const text = document.createElement("span");
+        text.textContent = label;
+        badge.append(text);
         badges.append(badge);
       };
       addBadge(combat.category, "category");
       (Array.isArray(combat.types) ? combat.types : []).forEach((type) => addBadge(type, "type"));
-      addBadge(combat.element, "element", combat.element_color);
+      const elementMeta = catalogElementMeta(combat.element);
+      addBadge(combat.element, "element", combat.element_color || elementMeta.color, elementMeta.icon);
       if (badges.childElementCount) copy.append(badges);
 
       const facts = document.createElement("div");
@@ -1889,9 +2024,13 @@ function renderAniilogCatalogRecord(entry) {
   name.textContent = entry.name;
   const tags = document.createElement("div");
   tags.className = "catalog-tags";
-  if (entry.role) tags.append(createCatalogTag(`Class: ${entry.role}`, "catalog-role-tag"));
+  if (entry.role) {
+    const roleMeta = catalogRoleMeta(entry.role);
+    tags.append(createCatalogTag(`Class: ${entry.role}`, `catalog-role-tag role-${roleMeta.slug}`, roleMeta));
+  }
   (entry.elements || []).forEach((element) => {
-    tags.append(createCatalogTag(`Type: ${element.name} ${element.level}`, `catalog-element-tag element-${elementClassName(element)}`));
+    const elementMeta = catalogElementMeta(element);
+    tags.append(createCatalogTag(`Type: ${element.name} ${element.level}`, `catalog-element-tag element-${elementClassName(element)}`, elementMeta));
   });
   copy.append(number, name, tags);
   identity.append(icon, copy);
@@ -1926,7 +2065,7 @@ function renderAniilogCatalogRecord(entry) {
     renderCatalogAbilitySection("Trait", entry.traits, "No Trait is currently listed for this form."),
     renderCatalogAbilitySection("Mobility skills", entry.mobility_skills, "No Mobility skill is currently listed for this form."),
     renderCatalogLevels("Exploration", entry.exploration, "None", { compact: true }),
-    renderCatalogLevels("Homeland abilities", entry.homeland, "No Homeland ability is listed for this form.", { compact: true }),
+    renderCatalogHomelandLevels(entry.homeland),
   );
   record.append(utilityGrid);
 

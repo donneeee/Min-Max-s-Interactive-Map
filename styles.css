@@ -1330,6 +1330,10 @@ button[aria-pressed="true"] {
 }
 
 .catalog-category-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  justify-content: center;
   min-height: 32px;
   border-color: rgba(80, 96, 103, 0.9);
   background: rgba(17, 22, 25, 0.82);
@@ -1339,6 +1343,16 @@ button[aria-pressed="true"] {
   padding: 0 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.catalog-category-button-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 3px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--catalog-role-color, var(--accent)) 64%, #101719);
+  object-fit: contain;
 }
 
 .catalog-category-button[aria-pressed="true"] {
@@ -1783,6 +1797,7 @@ body.catalog-view-active .sidebar .detail-panel {
   display: inline-flex;
   min-height: 24px;
   align-items: center;
+  gap: 5px;
   border: 1px solid rgba(105, 121, 128, 0.76);
   border-radius: 999px;
   background: rgba(22, 28, 31, 0.82);
@@ -1793,10 +1808,22 @@ body.catalog-view-active .sidebar .detail-panel {
   white-space: nowrap;
 }
 
-.catalog-role-tag {
-  border-color: rgba(127, 198, 178, 0.68);
-  background: rgba(127, 198, 178, 0.16);
-  color: #d7fff4;
+.catalog-tag-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border-radius: 50%;
+  background: var(--catalog-tag-color, #7fc6b2);
+  padding: 2px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.52));
+}
+
+.catalog-role-tag,
+.catalog-element-tag {
+  border-color: color-mix(in srgb, var(--catalog-tag-color, #7fc6b2) 76%, #c9d4d6);
+  background: color-mix(in srgb, var(--catalog-tag-color, #7fc6b2) 20%, rgba(16, 21, 24, 0.92));
+  color: color-mix(in srgb, var(--catalog-tag-color, #7fc6b2) 34%, #ffffff);
 }
 
 .catalog-element-tag.element-fire { border-color: rgba(229, 111, 95, 0.8); color: #ffd5cd; }
@@ -1933,6 +1960,7 @@ body.catalog-view-active .sidebar .detail-panel {
 .catalog-ability-badge {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   min-height: 22px;
   border: 1px solid rgba(130, 153, 165, 0.58);
   border-radius: 4px;
@@ -1953,13 +1981,20 @@ body.catalog-view-active .sidebar .detail-panel {
   background: rgba(83, 74, 116, 0.42);
 }
 
-.catalog-ability-badge--element::before {
-  width: 7px;
-  height: 7px;
-  margin-right: 5px;
+.catalog-ability-badge--element {
+  border-color: color-mix(in srgb, var(--catalog-ability-element-color, var(--accent-2)) 74%, #c8d2d5);
+  background: color-mix(in srgb, var(--catalog-ability-element-color, var(--accent-2)) 20%, rgba(16, 21, 24, 0.92));
+  color: color-mix(in srgb, var(--catalog-ability-element-color, var(--accent-2)) 30%, #ffffff);
+}
+
+.catalog-ability-badge-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
   border-radius: 50%;
   background: var(--catalog-ability-element-color, var(--accent-2));
-  content: "";
+  padding: 2px;
+  object-fit: contain;
 }
 
 .catalog-ability-facts {
@@ -2032,6 +2067,47 @@ body.catalog-view-active .sidebar .detail-panel {
   color: var(--accent-2);
   font-size: 12px;
   font-weight: 700;
+}
+
+.catalog-homeland-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  width: 100%;
+}
+
+.catalog-level-grid--compact .catalog-homeland-card {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  max-width: none;
+  gap: 8px;
+  border-color: color-mix(in srgb, var(--catalog-homeland-color, var(--accent-2)) 66%, var(--line));
+  background: color-mix(in srgb, var(--catalog-homeland-color, var(--accent-2)) 16%, rgba(14, 19, 22, 0.94));
+  padding: 6px 8px;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--catalog-homeland-color, var(--accent-2)) 82%, #ffffff);
+}
+
+.catalog-homeland-icon-shell {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--catalog-homeland-color, var(--accent-2));
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.34);
+}
+
+.catalog-homeland-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.42));
+}
+
+.catalog-homeland-card strong {
+  color: color-mix(in srgb, var(--catalog-homeland-color, var(--accent-2)) 28%, #ffffff);
+}
+
+.catalog-homeland-card .catalog-homeland-level {
+  color: color-mix(in srgb, var(--catalog-homeland-color, var(--accent-2)) 64%, #ffffff);
 }
 
 .catalog-location-list {
