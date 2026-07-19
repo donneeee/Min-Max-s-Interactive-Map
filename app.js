@@ -1,8 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260719-compact-lumen-source-labels-v001";
-const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-delist-phantom-alphas-v001";
+const DATA_URL = "./data/map_site_data.json?v=20260719-whisperwake-lumen-groups-v001";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.3.95";
+const APP_VERSION = "v0.3.96";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -544,7 +544,7 @@ function markerTypeLabel(type) {
   if (type === "teleport_outpost") return "Outpost";
   if (type === "teleport_nurture") return "Nurture";
   if (type === "teleport_vein_abundance") return "Vein Abundance";
-  if (type === "lumin_amber") return "Lumin Amber";
+  if (type === "lumin_amber") return "Lumen Ember";
   if (type === "lumin_marking") return "Lumen Marking";
   if (type === "quest_lumen_seed") return "Boss Clear";
   if (type === "lumin_event") return "Event Ember";
@@ -6094,6 +6094,13 @@ function spawnChildDisplayParts(spawn, siblings = [], siblingIndex = 0) {
       name: suffix || localizedTitle,
       sequence,
       typeLabel: suffix ? window.AniipediaI18n.translate("Lumen Marking") : "",
+    };
+  }
+  if (spawn.marker_type === "lumin_amber") {
+    return {
+      name: window.AniipediaI18n.translate("Lumen Ember"),
+      sequence,
+      typeLabel: "",
     };
   }
   if (spawn.marker_type !== "document_pickup") {
