@@ -14,7 +14,7 @@
     "zh-CN": {
       "file": "zh-CN.json",
       "uid_count": 92952,
-      "display_count": 41075,
+      "display_count": 41077,
       "template_count": 696,
       "missing_english_uid_count": 4,
       "ambiguous_display_sources": 830,
@@ -23,7 +23,7 @@
     "ja": {
       "file": "ja.json",
       "uid_count": 92954,
-      "display_count": 41231,
+      "display_count": 41232,
       "template_count": 705,
       "missing_english_uid_count": 0,
       "ambiguous_display_sources": 724,
@@ -32,7 +32,7 @@
     "ko": {
       "file": "ko.json",
       "uid_count": 92954,
-      "display_count": 41120,
+      "display_count": 41122,
       "template_count": 709,
       "missing_english_uid_count": 0,
       "ambiguous_display_sources": 771,

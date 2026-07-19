@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v003";
+  const ASSET_VERSION = "20260719-localization-v008";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -12,6 +12,22 @@
   // Website-owned interface copy. Game-owned names and descriptions come from
   // the complete UID maps generated from the client localization files.
   const UI_ROWS = [
+    ["Document Pickups", "文档拾取", "文書収集物", "문서 수집품"],
+    ["Document Pickup", "文档", "文書", "문서"],
+    ["Lore & Research", "传说与研究", "伝承・研究", "전승 및 연구"],
+    ["Collectibles", "收集品", "収集物", "수집품"],
+    ["Chests", "宝箱", "宝箱", "보물 상자"],
+    ["Challenges", "挑战", "チャレンジ", "도전"],
+    ["Entrances", "入口", "入口", "입구"],
+    ["Locations & Services", "地点与服务", "施設・サービス", "장소 및 서비스"],
+    ["Other", "其他", "その他", "기타"],
+    ["Series", "系列", "シリーズ", "시리즈"],
+    ["Blooms", "绽放点", "ブルーム", "블룸"],
+    ["Sanctums", "圣所", "サンクタム", "성소"],
+    ["Branches", "支点", "ブランチ", "브랜치"],
+    ["Outposts", "前哨站", "前哨基地", "전초기지"],
+    ["Nurture Sites", "培育点", "育成地点", "육성 지점"],
+    ["Vein Abundance Sites", "丰饶矿脉点", "豊穣の脈地点", "풍요의 맥 지점"],
     ["Settings", "设置", "設定", "설정"],
     ["Language", "语言", "言語", "언어"],
     ["Display language", "显示语言", "表示言語", "표시 언어"],
@@ -21,7 +37,7 @@
     ["Maps", "地图", "マップ", "지도"],
     ["Tracking", "追踪", "追跡", "추적"],
     ["Checklist", "清单", "チェックリスト", "체크리스트"],
-    ["Aniilog", "Aniilog", "Aniilog", "Aniilog"],
+    ["Aniilog", "研究手册", "アニモノート", "연구 수첩"],
     ["Item-log", "道具图鉴", "アイテムログ", "아이템 도감"],
     ["Search", "搜索", "検索", "검색"],
     ["Filter", "筛选", "フィルター", "필터"],
@@ -40,9 +56,13 @@
     ["Teleports", "传送点", "テレポート", "순간이동"],
     ["Lumens", "流明", "ルーメン", "루멘"],
     ["Misc", "其他", "その他", "기타"],
+    ["Shell Chest", "贝壳宝箱", "貝殻の宝箱", "조개껍데기 보물 상자"],
+    ["Overworld Reward", "野外奖励", "フィールド報酬", "필드 보상"],
+    ["Interval not yet verified", "刷新间隔尚未验证", "再出現間隔は未確認", "재생성 간격 미확인"],
     ["Changelog", "更新日志", "変更履歴", "변경 내역"],
     ["Loading GitHub changes...", "正在加载 GitHub 更新…", "GitHub の変更を読み込み中…", "GitHub 변경 내역을 불러오는 중…"],
     ["View all changes on GitHub", "在 GitHub 查看所有更新", "GitHub ですべての変更を見る", "GitHub에서 모든 변경 내역 보기"],
+    ["No published changes are available.", "暂无已发布的更新。", "公開済みの変更はありません。", "게시된 변경 사항이 없습니다."],
     ["Open settings", "打开设置", "設定を開く", "설정 열기"],
     ["Close settings", "关闭设置", "設定を閉じる", "설정 닫기"],
     ["Close changelog", "关闭更新日志", "変更履歴を閉じる", "변경 내역 닫기"],
@@ -56,15 +76,15 @@
     ["Checklist entries", "清单条目", "チェックリスト項目", "체크리스트 항목"],
     ["Reset browser data", "重置浏览器数据", "ブラウザデータをリセット", "브라우저 데이터 초기화"],
     ["Resetting...", "正在重置…", "リセット中…", "초기화 중…"],
-    ["Aniilog display", "Aniilog 显示", "Aniilog 表示", "Aniilog 표시"],
-    ["Choose whether legacy stats appear in Aniilog comparison bars.", "选择是否在 Aniilog 对比条中显示旧版属性。", "旧仕様のステータスを Aniilog の比較バーに表示するか選択します。", "기존 능력치를 Aniilog 비교 막대에 표시할지 선택합니다."],
+    ["Aniilog display", "研究手册显示", "アニモノート表示", "연구 수첩 표시"],
+    ["Choose whether legacy stats appear in Aniilog comparison bars.", "选择是否在研究手册对比条中显示旧版属性。", "旧仕様のステータスをアニモノートの比較バーに表示するか選択します。", "기존 능력치를 연구 수첩 비교 막대에 표시할지 선택합니다."],
     ["Show Magic Attack", "显示魔法攻击", "魔法攻撃を表示", "마법 공격 표시"],
     ["Hidden by default because Magic Attack is not currently used.", "魔法攻击目前未使用，因此默认隐藏。", "魔法攻撃は現在使用されていないため、既定では非表示です。", "마법 공격은 현재 사용되지 않아 기본적으로 숨겨집니다."],
     ["Browser storage is unavailable", "浏览器存储不可用", "ブラウザストレージを利用できません", "브라우저 저장소를 사용할 수 없습니다"],
     ["The browser did not allow the map to save tracking data.", "浏览器不允许地图保存追踪数据。", "ブラウザがマップの追跡データ保存を許可しませんでした。", "브라우저에서 지도의 추적 데이터 저장을 허용하지 않았습니다."],
     ["Retry browser storage", "重试浏览器存储", "ブラウザストレージを再試行", "브라우저 저장소 다시 시도"],
     ["Sort", "排序", "並び順", "정렬"],
-    ["Aniilog number", "Aniilog 编号", "Aniilog 番号", "Aniilog 번호"],
+    ["Aniilog number", "研究手册编号", "アニモノート番号", "연구 수첩 번호"],
     ["high to low", "从高到低", "高い順", "높은 순"],
     ["Categories", "分类", "カテゴリー", "카테고리"],
     ["Classes", "职业", "クラス", "클래스"],
@@ -279,6 +299,8 @@
       "zh-CN": [
         [/^(\d+) tracked$/, "$1 个已追踪"],
         [/^(\d+) markers$/, "$1 个标记"],
+        [/^(\d+) locations$/, "$1 个地点"],
+        [/^(\d+) documents?$/, "$1 份文档"],
         [/^(\d+) items$/, "$1 件道具"],
         [/^(\d+) eggs$/, "$1 个蛋"],
         [/^(\d+) teleports$/, "$1 个传送点"],
@@ -291,6 +313,8 @@
       ja: [
         [/^(\d+) tracked$/, "$1 件追跡中"],
         [/^(\d+) markers$/, "$1 マーカー"],
+        [/^(\d+) locations$/, "$1 か所"],
+        [/^(\d+) documents?$/, "$1 件の文書"],
         [/^(\d+) items$/, "$1 アイテム"],
         [/^(\d+) eggs$/, "$1 個のタマゴ"],
         [/^(\d+) teleports$/, "$1 テレポート"],
@@ -303,6 +327,8 @@
       ko: [
         [/^(\d+) tracked$/, "$1개 추적 중"],
         [/^(\d+) markers$/, "마커 $1개"],
+        [/^(\d+) locations$/, "장소 $1개"],
+        [/^(\d+) documents?$/, "문서 $1개"],
         [/^(\d+) items$/, "아이템 $1개"],
         [/^(\d+) eggs$/, "알 $1개"],
         [/^(\d+) teleports$/, "순간이동 $1개"],
@@ -334,10 +360,16 @@
         ja: [["markers", "マーカー"], ["items", "アイテム"], ["eggs", "個のタマゴ"], ["teleports", "テレポート"], ["Lumens", "ルーメン"], ["misc", "その他"]],
         ko: [["markers", "개 마커"], ["items", "개 아이템"], ["eggs", "개 알"], ["teleports", "개 순간이동"], ["Lumens", "개 루멘"], ["misc", "개 기타"]],
       };
-      return (countTerms[activeLocale] || []).reduce(
+      const translatedCounts = (countTerms[activeLocale] || []).reduce(
         (result, [english, localized]) => result.replace(new RegExp(`(\\d+) ${english}`, "g"), `$1${localized}`),
         text,
       );
+      const aniimoCountTerms = {
+        "zh-CN": "个伊莫",
+        ja: "体のアニモ",
+        ko: "개 애니모",
+      };
+      return translatedCounts.replace(/(\d+) Aniimo/g, `$1${aniimoCountTerms[activeLocale] || " Aniimo"}`);
     }
     const formSuffix = text.match(/^(.*?)(\s[-–—]\s)([^-–—]+)$/);
     if (formSuffix) {

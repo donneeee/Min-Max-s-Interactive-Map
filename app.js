@@ -1,9 +1,11 @@
-const DATA_URL = "./data/map_site_data.json?v=20260719-localization-v001";
+const DATA_URL = "./data/map_site_data.json?v=20260719-grouped-map-menus-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-rv-loot-v003";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
 const APP_VERSION = "v0.3.84";
-const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
+const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
+const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
+const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
 const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
@@ -127,6 +129,9 @@ const state = {
   canvasIconLoadTimer: 0,
   domPins: new Map(),
   enabled: new Set(),
+  disabledSpawnIds: new Set(),
+  expandedMapGroups: new Set(),
+  renderedMapGroups: new Map(),
   activeMapId: REQUESTED_MAP_ID || "country-of-time",
   activeLayer: "items",
   eggSubfilter: "all",
@@ -469,6 +474,7 @@ function markerTypeLabel(type) {
   if (type === "lumin_event") return "Event Ember";
   if (type === "underground_entrance") return "Underground Entrance";
   if (type === "morphling_memory") return "Morphling Memory";
+  if (type === "document_pickup") return "Document Pickup";
   if (type === "lighthouse_book") return "Book";
   if (type === "research_note") return "Research Note";
   if (type === "astra_transit") return "Astra Transit";
@@ -568,6 +574,45 @@ function compareItems(a, b) {
   const nameCompare = compareText(a.display_name, b.display_name);
   if (nameCompare !== 0) return nameCompare;
   return compareText(a.item_id, b.item_id);
+}
+
+const MISC_GROUP_ORDER = [
+  "Collectibles",
+  "Chests",
+  "Challenges",
+  "Entrances",
+  "Locations & Services",
+  "Other",
+];
+
+function miscGroupForItem(item) {
+  if (item?.misc_group) return item.misc_group;
+  const type = String(item?.display_type_label || "").toLowerCase();
+  if (String(item?.item_id || "").startsWith("misc:document_pickups:") || item?.item_id === "misc:morphling_memory") {
+    return "Collectibles";
+  }
+  if (type === "chest") return "Chests";
+  if (type.includes("challenge")) return "Challenges";
+  if (type.includes("entrance")) return "Entrances";
+  if (String(item?.item_id || "").startsWith("misc:astra:") || item?.region_name === "Astra") {
+    return "Locations & Services";
+  }
+  return "Other";
+}
+
+function compareLayerItems(a, b, layerId) {
+  if (layerId === "misc") {
+    const groupA = miscGroupForItem(a);
+    const groupB = miscGroupForItem(b);
+    const rankA = MISC_GROUP_ORDER.indexOf(groupA);
+    const rankB = MISC_GROUP_ORDER.indexOf(groupB);
+    const safeRankA = rankA === -1 ? MISC_GROUP_ORDER.length : rankA;
+    const safeRankB = rankB === -1 ? MISC_GROUP_ORDER.length : rankB;
+    if (safeRankA !== safeRankB) return safeRankA - safeRankB;
+    const groupCompare = compareText(groupA, groupB);
+    if (groupCompare !== 0) return groupCompare;
+  }
+  return compareItems(a, b);
 }
 
 function currentMap() {
@@ -1218,7 +1263,10 @@ function closeSettings() {
 
 function renderGitHubChangelog(commits) {
   const fragment = document.createDocumentFragment();
-  commits.forEach((entry) => {
+  const publicCommits = commits
+    .filter((entry) => !CHANGELOG_INTERNAL_MARKER_RE.test(String(entry?.commit?.message || "")))
+    .slice(0, CHANGELOG_PUBLIC_ENTRY_LIMIT);
+  publicCommits.forEach((entry) => {
     const commit = entry?.commit || {};
     const subject = String(commit.message || "GitHub update").split(/\r?\n/, 1)[0];
     const sha = String(entry?.sha || "").slice(0, 7);
@@ -1246,6 +1294,11 @@ function renderGitHubChangelog(commits) {
     article.append(header, metadata);
     fragment.append(article);
   });
+  if (!publicCommits.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No published changes are available.";
+    fragment.append(empty);
+  }
   els.changelogContent.replaceChildren(fragment);
 }
 
@@ -1435,22 +1488,36 @@ function catalogEntriesForView(view = state.sidebarView) {
   return view === "aniilog" ? sortAniilogEntries(entries) : entries;
 }
 
-function aniilogSortOption() {
-  const activeId = state.catalogSort.aniilog || "aniilog-number";
+function aniilogSortOptions() {
   return [
     { id: "aniilog-number", label: "Aniilog number" },
+    {
+      ...ANIILOG_BASE_STAT_TOTAL_OPTION,
+      label: `${ANIILOG_BASE_STAT_TOTAL_OPTION.label} (high to low)`,
+    },
     ...visibleAniilogStatConfig().map((stat) => ({
       id: stat.id,
       label: `${stat.label} (high to low)`,
       sourceLabel: stat.sourceLabel,
     })),
-  ].find((option) => option.id === activeId) || { id: "aniilog-number", label: "Aniilog number" };
+  ];
+}
+
+function aniilogSortOption() {
+  const activeId = state.catalogSort.aniilog || "aniilog-number";
+  return aniilogSortOptions().find((option) => option.id === activeId)
+    || { id: "aniilog-number", label: "Aniilog number" };
 }
 
 function aniilogStatValue(entry, sourceLabel) {
   const value = (entry?.stats || []).find((stat) => stat.label === sourceLabel)?.value;
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function aniilogSortValue(entry, sort) {
+  if (sort?.id === ANIILOG_BASE_STAT_TOTAL_OPTION.id) return aniilogBaseStatTotal(entry);
+  return sort?.sourceLabel ? aniilogStatValue(entry, sort.sourceLabel) : null;
 }
 
 function compareAniilogEntries(left, right) {
@@ -1472,11 +1539,11 @@ function compareAniilogEntries(left, right) {
 function sortAniilogEntries(entries) {
   const sort = aniilogSortOption();
   const sorted = [...entries];
-  if (!sort.sourceLabel) return sorted.sort(compareAniilogEntries);
+  if (sort.id === "aniilog-number") return sorted.sort(compareAniilogEntries);
 
   return sorted.sort((left, right) => {
-    const leftValue = aniilogStatValue(left, sort.sourceLabel);
-    const rightValue = aniilogStatValue(right, sort.sourceLabel);
+    const leftValue = aniilogSortValue(left, sort);
+    const rightValue = aniilogSortValue(right, sort);
     if (leftValue === null && rightValue !== null) return 1;
     if (rightValue === null && leftValue !== null) return -1;
     if (leftValue !== null && rightValue !== null && rightValue !== leftValue) {
@@ -2028,7 +2095,7 @@ function createCatalogIndexRow(entry, selectedId, view, virtualIndex) {
   const meta = document.createElement("small");
   if (view === "aniilog") {
     const sort = aniilogSortOption();
-    const statValue = sort.sourceLabel ? aniilogStatValue(entry, sort.sourceLabel) : null;
+    const statValue = aniilogSortValue(entry, sort);
     meta.textContent = [
       `${entry.aniilog_number || "Special"} - ${entry.form_label || "Basic"}`,
       statValue === null ? "" : `${sort.label.replace(" (high to low)", "")} ${formatNumber(statValue, 0)}`,
@@ -2122,13 +2189,7 @@ function renderAniilogSortControl() {
   const select = document.createElement("select");
   select.className = "catalog-sort-select";
   select.setAttribute("aria-label", "Sort Aniimo results");
-  const options = [
-    { id: "aniilog-number", label: "Aniilog number" },
-    ...visibleAniilogStatConfig().map((stat) => ({
-      id: stat.id,
-      label: `${stat.label} (high to low)`,
-    })),
-  ];
+  const options = aniilogSortOptions();
   const activeSort = aniilogSortOption().id;
   options.forEach((option) => {
     const element = document.createElement("option");
@@ -5123,6 +5184,9 @@ function itemSearchText(item) {
     item.spawn_maps,
     item.book_names,
     item.marker_names,
+    item.document_groups,
+    item.document_uids,
+    item.misc_group,
     item.layer_id,
     item.inventory_label,
     item.reward_label,
@@ -5146,6 +5210,18 @@ function itemSearchText(item) {
   ]);
 }
 
+function itemDirectSearchText(item) {
+  return searchText([
+    item.item_id,
+    item.display_name,
+    item.subtitle,
+    item.layer_id,
+    item.inventory_label,
+    item.display_type_label,
+    item.misc_group,
+  ]);
+}
+
 function spawnSearchText(spawn) {
   return searchText([
     spawn.item_id,
@@ -5156,6 +5232,8 @@ function spawnSearchText(spawn) {
     spawn.form_name,
     spawn.form_label,
     spawn.display_name,
+    spawn.document_group,
+    spawn.document_uid,
     spawn.marker_type,
     spawn.layer_id,
     spawn.reward_label,
@@ -5180,6 +5258,7 @@ function spawnSearchText(spawn) {
 function spawnMatches(spawn) {
   if (!spawnOnActiveMap(spawn)) return false;
   if (!state.enabled.has(spawn.item_id)) return false;
+  if (state.disabledSpawnIds.has(spawnSelectionId(spawn))) return false;
   const item = state.data.itemsById.get(spawn.item_id);
   if (!itemPassesFilters(item)) return false;
   if (!state.search) return true;
@@ -5200,15 +5279,71 @@ function locatedSpawnEntry() {
   return { spawn, index: state.locatedSpawnIndex };
 }
 
+function spawnSelectionId(spawn) {
+  return [spawn.map_id, spawn.item_id, spawn.coordinate_key, spawn.display_name].join("::");
+}
+
+function itemSelectionState(itemId) {
+  const entries = activeMapSpawnEntries(itemId);
+  const enabled = state.enabled.has(itemId);
+  const selected = enabled
+    ? entries.filter((entry) => !state.disabledSpawnIds.has(spawnSelectionId(entry.spawn))).length
+    : 0;
+  return { entries, enabled, selected, total: entries.length };
+}
+
+function setItemSelection(itemId, selectAll) {
+  const entries = activeMapSpawnEntries(itemId);
+  entries.forEach((entry) => state.disabledSpawnIds.delete(spawnSelectionId(entry.spawn)));
+  if (selectAll) state.enabled.add(itemId);
+  else state.enabled.delete(itemId);
+}
+
+function toggleWholeItem(itemId) {
+  const selection = itemSelectionState(itemId);
+  setItemSelection(itemId, selection.selected < selection.total || !selection.enabled);
+}
+
+function toggleIndividualSpawn(entry) {
+  const { spawn } = entry;
+  const selection = itemSelectionState(spawn.item_id);
+  const selectedId = spawnSelectionId(spawn);
+  const currentlySelected = selection.enabled && !state.disabledSpawnIds.has(selectedId);
+
+  if (!selection.enabled) {
+    state.enabled.add(spawn.item_id);
+    selection.entries.forEach((sibling) => {
+      const siblingId = spawnSelectionId(sibling.spawn);
+      if (siblingId !== selectedId) state.disabledSpawnIds.add(siblingId);
+    });
+    state.disabledSpawnIds.delete(selectedId);
+    return;
+  }
+
+  if (currentlySelected) state.disabledSpawnIds.add(selectedId);
+  else state.disabledSpawnIds.delete(selectedId);
+
+  const remaining = selection.entries.filter((sibling) => (
+    !state.disabledSpawnIds.has(spawnSelectionId(sibling.spawn))
+  )).length;
+  if (remaining === 0) setItemSelection(spawn.item_id, false);
+}
+
 function visibleSpawnEntries() {
   const entries = [];
   for (const itemId of state.enabled) {
     const item = state.data.itemsById.get(itemId);
     if (!itemPassesFilters(item)) continue;
     const itemSpawns = activeMapSpawnEntries(itemId);
-    const itemMatchesSearch = !state.search || item.search_text.includes(state.search);
+    const directSearchText = item.item_id.startsWith("misc:document_pickups:")
+      ? item.direct_search_text
+      : item.search_text;
+    const itemMatchesSearch = !state.search || directSearchText.includes(state.search);
     itemSpawns.forEach((entry) => {
-      if (!state.search || itemMatchesSearch || entry.spawn.search_text.includes(state.search)) {
+      if (
+        !state.disabledSpawnIds.has(spawnSelectionId(entry.spawn))
+        && (!state.search || itemMatchesSearch || entry.spawn.search_text.includes(state.search))
+      ) {
         entries.push(entry);
       }
     });
@@ -5230,6 +5365,276 @@ function updateFilterCount() {
   els.filterCount.textContent = `${selectedCount} / ${activeItems.length}`;
 }
 
+function itemRowSubtitle(item) {
+  const parts = item.subtitle
+    ? [item.subtitle]
+    : item.is_aniimo
+      ? [aniimoListMeta(item)]
+      : isEggItem(item)
+        ? [item.region_name || item.area_name || item.display_type_label]
+        : [item.display_type_label, item.region_name];
+  return parts.filter(Boolean).join(" - ");
+}
+
+function createMapItemRow(item, { child = false, expandable = false } = {}) {
+  const tier = itemTier(item);
+  const row = document.createElement(expandable ? "div" : "button");
+  if (expandable) {
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+  } else {
+    row.type = "button";
+  }
+  row.className = [
+    "item-row",
+    child ? "map-group-child-row" : "",
+    item.is_elite_egg ? "elite-egg" : "",
+    item.is_alpha_egg ? "alpha-egg" : "",
+    item.is_aniimo ? "aniimo-row" : "",
+    tier ? `item-tier-${tier}` : "",
+    isEggItem(item) && !item.spawn_count ? "unplaced" : "",
+  ].filter(Boolean).join(" ");
+  row.dataset.itemId = item.item_id;
+  if (item.layer_id === "misc") row.dataset.miscGroup = miscGroupForItem(item);
+  row.addEventListener("mousedown", preventControlFocus);
+  row.addEventListener("click", (event) => {
+    event.preventDefault();
+    clearLocatedSpawn();
+    toggleWholeItem(item.item_id);
+    refreshVisibility();
+  });
+  if (expandable) {
+    row.addEventListener("keydown", (event) => {
+      if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      toggleWholeItem(item.item_id);
+      refreshVisibility();
+    });
+  }
+
+  const icon = makeIcon("item-icon", item.icon);
+  const text = document.createElement("span");
+  text.className = "item-text";
+  const strong = document.createElement("strong");
+  strong.textContent = item.is_aniimo ? aniimoListName(item) : item.display_name;
+  const small = document.createElement("small");
+  small.textContent = itemRowSubtitle(item);
+  strong.title = strong.textContent;
+  small.title = small.textContent;
+  text.append(strong, small);
+
+  const actions = document.createElement("span");
+  actions.className = "item-row-actions";
+  const count = document.createElement("span");
+  count.className = "item-count";
+  count.dataset.itemSelectionCount = "";
+  actions.append(count);
+
+  if (expandable) {
+    const expanded = state.expandedMapGroups.has(item.item_id);
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "map-group-toggle";
+    toggle.textContent = expanded ? "-" : "+";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${item.display_name}`);
+    toggle.addEventListener("mousedown", preventControlFocus);
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (expanded) state.expandedMapGroups.delete(item.item_id);
+      else state.expandedMapGroups.add(item.item_id);
+      renderItems();
+      refreshVisibility();
+    });
+    actions.append(toggle);
+  }
+
+  row.append(icon, text, actions);
+  return row;
+}
+
+function spawnChildDisplayName(spawn) {
+  if (spawn.marker_type !== "document_pickup") return spawn.display_name;
+  const title = String(spawn.display_name || "");
+  const parenthetical = title.match(/\((?:Part\s+)?([IVX]+|\d+)\)$/i);
+  if (parenthetical) return `Note ${parenthetical[1]}`;
+  const trailing = title.match(/(?:Research|Tale)\s+([IVX]+|\d+)$/i);
+  return trailing ? `Note ${trailing[1]}` : title;
+}
+
+function createSpawnChildRow(entry) {
+  const { spawn, index } = entry;
+  const item = state.data.itemsById.get(spawn.item_id);
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "item-spawn-child-row";
+  row.dataset.spawnIndex = String(index);
+  row.addEventListener("mousedown", preventControlFocus);
+  row.addEventListener("click", (event) => {
+    event.preventDefault();
+    clearLocatedSpawn();
+    toggleIndividualSpawn(entry);
+    refreshVisibility();
+  });
+
+  const icon = makeIcon("item-icon", spawn.icon || item?.icon);
+  const text = document.createElement("span");
+  text.className = "item-text";
+  const strong = document.createElement("strong");
+  strong.textContent = spawnChildDisplayName(spawn);
+  strong.title = spawn.display_name;
+  const small = document.createElement("small");
+  const area = areaDetailValue(spawn) || mapRegionForSpawn(spawn);
+  small.textContent = [area, `${formatCoordinate(spawn.x)}, ${formatCoordinate(spawn.y)}`].filter(Boolean).join(" - ");
+  small.title = `${spawn.display_name} - ${small.textContent}`;
+  text.append(strong, small);
+  row.append(icon, text);
+  return row;
+}
+
+const TELEPORT_GROUPS = [
+  { id: "bloom", label: "Blooms" },
+  { id: "sanctum", label: "Sanctums" },
+  { id: "branch", label: "Branches" },
+  { id: "outpost", label: "Outposts" },
+  { id: "nurture", label: "Nurture Sites" },
+  { id: "vein_abundance", label: "Vein Abundance Sites" },
+];
+
+function renderTeleportGroups(section, layerItems) {
+  TELEPORT_GROUPS.forEach(({ id, label }) => {
+    const items = layerItems.filter((item) => item.teleport_type === id);
+    if (!items.length) return;
+    const groupKey = `teleport-group:${id}`;
+    const expanded = state.expandedMapGroups.has(groupKey);
+    const group = document.createElement("section");
+    group.className = "map-item-group";
+    group.dataset.mapGroupKey = groupKey;
+
+    const parent = document.createElement("div");
+    parent.className = "map-group-row";
+    parent.dataset.mapGroupKey = groupKey;
+    parent.tabIndex = 0;
+    parent.setAttribute("role", "button");
+    parent.addEventListener("mousedown", preventControlFocus);
+    parent.addEventListener("click", (event) => {
+      event.preventDefault();
+      clearLocatedSpawn();
+      const selectAll = !items.every((item) => {
+        const selection = itemSelectionState(item.item_id);
+        return selection.total > 0 && selection.selected === selection.total;
+      });
+      items.forEach((item) => setItemSelection(item.item_id, selectAll));
+      refreshVisibility();
+    });
+    parent.addEventListener("keydown", (event) => {
+      if (event.target !== parent || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      const selectAll = !items.every((item) => {
+        const selection = itemSelectionState(item.item_id);
+        return selection.total > 0 && selection.selected === selection.total;
+      });
+      items.forEach((item) => setItemSelection(item.item_id, selectAll));
+      refreshVisibility();
+    });
+
+    const icon = makeIcon("item-icon", items.find((item) => item.icon)?.icon || "");
+    const text = document.createElement("span");
+    text.className = "item-text";
+    const strong = document.createElement("strong");
+    strong.textContent = label;
+    const small = document.createElement("small");
+    const total = items.reduce((sum, item) => sum + activeMapSpawnEntries(item.item_id).length, 0);
+    small.textContent = `${total} locations`;
+    text.append(strong, small);
+    const actions = document.createElement("span");
+    actions.className = "item-row-actions";
+    const count = document.createElement("span");
+    count.className = "item-count";
+    count.dataset.groupSelectionCount = "";
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "map-group-toggle";
+    toggle.textContent = expanded ? "-" : "+";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${label}`);
+    toggle.addEventListener("mousedown", preventControlFocus);
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (expanded) state.expandedMapGroups.delete(groupKey);
+      else state.expandedMapGroups.add(groupKey);
+      renderItems();
+      refreshVisibility();
+    });
+    actions.append(count, toggle);
+    parent.append(icon, text, actions);
+    group.append(parent);
+
+    if (expanded || state.search) {
+      const children = document.createElement("div");
+      children.className = "map-item-children";
+      items.forEach((item) => children.append(createMapItemRow(item, { child: true })));
+      group.append(children);
+    }
+    section.append(group);
+    state.renderedMapGroups.set(groupKey, { group, parent, items, label, count });
+  });
+}
+
+function refreshGroupedItemControls() {
+  for (const row of els.itemList.querySelectorAll(".item-row")) {
+    const item = state.data.itemsById.get(row.dataset.itemId);
+    if (!item) continue;
+    const selection = itemSelectionState(item.item_id);
+    const full = selection.total > 0 && selection.selected === selection.total;
+    const partial = selection.selected > 0 && !full;
+    row.classList.toggle("enabled", full);
+    row.classList.toggle("partially-enabled", partial);
+    row.setAttribute("aria-pressed", partial ? "mixed" : String(full));
+    const count = row.querySelector("[data-item-selection-count]");
+    if (count) {
+      count.textContent = partial
+        ? `${selection.selected}/${selection.total}`
+        : isEggItem(item) && !selection.total ? "No pin" : selection.total;
+    }
+  }
+
+  for (const row of els.itemList.querySelectorAll(".item-spawn-child-row")) {
+    const index = Number(row.dataset.spawnIndex);
+    const spawn = state.data.spawns[index];
+    const selected = spawn
+      && state.enabled.has(spawn.item_id)
+      && !state.disabledSpawnIds.has(spawnSelectionId(spawn));
+    row.classList.toggle("enabled", Boolean(selected));
+    row.setAttribute("aria-pressed", String(Boolean(selected)));
+    if (spawn && state.search) {
+      const item = state.data.itemsById.get(spawn.item_id);
+      const parentMatches = item?.direct_search_text.includes(state.search);
+      row.hidden = !parentMatches && !spawn.search_text.includes(state.search);
+    } else {
+      row.hidden = false;
+    }
+  }
+
+  state.renderedMapGroups.forEach(({ group, parent, items, label, count }) => {
+    const selections = items.map((item) => itemSelectionState(item.item_id));
+    const total = selections.reduce((sum, selection) => sum + selection.total, 0);
+    const selected = selections.reduce((sum, selection) => sum + selection.selected, 0);
+    const full = total > 0 && selected === total;
+    const partial = selected > 0 && !full;
+    parent.classList.toggle("enabled", full);
+    parent.classList.toggle("partially-enabled", partial);
+    parent.setAttribute("aria-pressed", partial ? "mixed" : String(full));
+    count.textContent = partial ? `${selected}/${total}` : total;
+    const matches = !state.search
+      || searchText([label]).includes(state.search)
+      || items.some((item) => itemMatches(item));
+    group.hidden = !matches;
+  });
+}
+
 function refreshVisibility() {
   const visibleEntries = visibleSpawnEntries();
   state.visibleEntries = visibleEntries;
@@ -5237,9 +5642,16 @@ function refreshVisibility() {
 
   for (const row of els.itemList.querySelectorAll(".item-row")) {
     const item = state.data.itemsById.get(row.dataset.itemId);
-    row.classList.toggle("enabled", state.enabled.has(item.item_id));
     row.hidden = !itemMatches(item) || !itemMatchesActiveEggSubfilter(item);
-    row.setAttribute("aria-pressed", String(state.enabled.has(item.item_id)));
+  }
+  refreshGroupedItemControls();
+
+  for (const heading of els.itemList.querySelectorAll(".misc-group-heading")) {
+    const section = heading.closest(".layer-panel");
+    const visibleGroupRows = [...section.querySelectorAll(".item-row")].some((row) => (
+      row.dataset.miscGroup === heading.dataset.miscGroup && !row.hidden
+    ));
+    heading.hidden = !visibleGroupRows;
   }
 
   for (const button of els.itemList.querySelectorAll(".egg-subfilter-tab")) {
@@ -5278,6 +5690,7 @@ function refreshVisibility() {
 function renderItems() {
   els.layerTabs.textContent = "";
   els.itemList.textContent = "";
+  state.renderedMapGroups.clear();
   const mapItems = activeMapItems();
   const layers = state.data.layers?.length
     ? state.data.layers
@@ -5288,7 +5701,9 @@ function renderItems() {
   }
 
   layersWithItems.forEach((layer) => {
-    const layerItems = mapItems.filter((item) => item.layer_id === layer.id);
+    const layerItems = mapItems
+      .filter((item) => item.layer_id === layer.id)
+      .sort((a, b) => compareLayerItems(a, b, layer.id));
 
     const tab = document.createElement("button");
     tab.type = "button";
@@ -5312,14 +5727,11 @@ function renderItems() {
       if (layer.id === "eggs") state.eggSubfilter = "all";
       const selectableItems = layerItems.filter((item) => itemPassesFilters(item));
       const allSelected = selectableItems.length > 0
-        && selectableItems.every((item) => state.enabled.has(item.item_id));
-      selectableItems.forEach((item) => {
-        if (allSelected) {
-          state.enabled.delete(item.item_id);
-        } else {
-          state.enabled.add(item.item_id);
-        }
-      });
+        && selectableItems.every((item) => {
+          const selection = itemSelectionState(item.item_id);
+          return selection.total > 0 && selection.selected === selection.total;
+        });
+      selectableItems.forEach((item) => setItemSelection(item.item_id, !allSelected));
       refreshVisibility();
     });
     const tabLabel = document.createElement("span");
@@ -5367,19 +5779,16 @@ function renderItems() {
           state.activeLayer = "eggs";
           state.eggSubfilter = subfilter.id;
           const allSelected = subtypeItems.length > 0
-            && subtypeItems.every((item) => state.enabled.has(item.item_id));
+            && subtypeItems.every((item) => {
+              const selection = itemSelectionState(item.item_id);
+              return selection.total > 0 && selection.selected === selection.total;
+            });
           layerItems.forEach((item) => {
             if (eggKindForItem(item) !== subfilter.id) {
-              state.enabled.delete(item.item_id);
+              setItemSelection(item.item_id, false);
             }
           });
-          subtypeItems.forEach((item) => {
-            if (allSelected) {
-              state.enabled.delete(item.item_id);
-            } else {
-              state.enabled.add(item.item_id);
-            }
-          });
+          subtypeItems.forEach((item) => setItemSelection(item.item_id, !allSelected));
           refreshVisibility();
         });
         subfilters.append(button);
@@ -5388,59 +5797,36 @@ function renderItems() {
       section.append(subfilters);
     }
 
+    if (layer.id === "teleports") {
+      renderTeleportGroups(section, layerItems);
+      els.itemList.append(section);
+      return;
+    }
+
+    let previousMiscGroup = "";
     layerItems.forEach((item) => {
-    const tier = itemTier(item);
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = [
-      "item-row",
-      state.enabled.has(item.item_id) ? "enabled" : "",
-      item.is_elite_egg ? "elite-egg" : "",
-      item.is_alpha_egg ? "alpha-egg" : "",
-      item.is_aniimo ? "aniimo-row" : "",
-      tier ? `item-tier-${tier}` : "",
-      isEggItem(item) && !item.spawn_count ? "unplaced" : "",
-    ].filter(Boolean).join(" ");
-    row.dataset.itemId = item.item_id;
-    row.setAttribute("aria-pressed", String(state.enabled.has(item.item_id)));
-    row.addEventListener("mousedown", preventControlFocus);
-    row.addEventListener("click", (event) => {
-      event.preventDefault();
-      clearLocatedSpawn();
-      if (state.enabled.has(item.item_id)) {
-        state.enabled.delete(item.item_id);
-      } else {
-        state.enabled.add(item.item_id);
+      if (layer.id === "misc") {
+        const miscGroup = miscGroupForItem(item);
+        if (miscGroup !== previousMiscGroup) {
+          const heading = document.createElement("h3");
+          heading.className = "misc-group-heading";
+          heading.dataset.miscGroup = miscGroup;
+          heading.textContent = miscGroup;
+          section.append(heading);
+          previousMiscGroup = miscGroup;
+        }
       }
-      refreshVisibility();
-    });
 
-    const icon = makeIcon("item-icon", item.icon);
-
-    const text = document.createElement("span");
-    text.className = "item-text";
-    const strong = document.createElement("strong");
-    strong.textContent = item.is_aniimo ? aniimoListName(item) : item.display_name;
-    const small = document.createElement("small");
-    const smallParts = item.subtitle
-      ? [item.subtitle]
-      : item.is_aniimo
-        ? [aniimoListMeta(item)]
-        : isEggItem(item)
-          ? [item.region_name || item.area_name || item.display_type_label]
-          : [item.display_type_label, item.region_name];
-    small.textContent = smallParts.filter(Boolean).join(" - ");
-    strong.title = strong.textContent;
-    small.title = small.textContent;
-    text.append(strong, small);
-
-    const count = document.createElement("span");
-    count.className = "item-count";
-    const mapSpawnCount = activeMapSpawnEntries(item.item_id).length;
-    count.textContent = isEggItem(item) && !mapSpawnCount ? "No pin" : mapSpawnCount;
-
-      row.append(icon, text, count);
+      const expandable = Boolean(item.expand_spawns && activeMapSpawnEntries(item.item_id).length);
+      const row = createMapItemRow(item, { expandable });
       section.append(row);
+
+      if (expandable && (state.expandedMapGroups.has(item.item_id) || state.search)) {
+        const children = document.createElement("div");
+        children.className = "map-item-children";
+        activeMapSpawnEntries(item.item_id).forEach((entry) => children.append(createSpawnChildRow(entry)));
+        section.append(children);
+      }
     });
 
     els.itemList.append(section);
@@ -5831,6 +6217,7 @@ function renderSelectionDetail(detail, spawn, item) {
   const regionValue = regionDetailValue(spawn);
   const rows = [
     ["Type", typeLabel],
+    spawn.document_group ? ["Series", spawn.document_group] : null,
     formValue ? ["Form", formValue] : null,
     ["X", formatCoordinate(spawn.x), formatCoordinate(spawn.x)],
     ["Y", formatCoordinate(spawn.y), formatCoordinate(spawn.y)],
@@ -5928,6 +6315,7 @@ function prepareData(data) {
     item.layer_id = item.layer_id || (isEggItem(item) ? "eggs" : "items");
     item.color = itemColor(item, index);
     item.search_text = itemSearchText(item);
+    item.direct_search_text = itemDirectSearchText(item);
     data.itemsById.set(item.item_id, item);
   });
   data.spawns.sort((a, b) => {
@@ -6181,6 +6569,7 @@ function bindEvents() {
   els.searchInput.addEventListener("input", () => {
     clearLocatedSpawn();
     state.search = normalizedSearch(els.searchInput.value);
+    renderItems();
     refreshVisibility();
   });
   els.checklistSearchInput.addEventListener("input", () => {
