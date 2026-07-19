@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260719-localization-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-localization-v001";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-item-icons-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-special-form-icons-v001";
-const APP_VERSION = "v0.3.79";
+const APP_VERSION = "v0.3.80";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
 const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
@@ -1351,6 +1351,7 @@ function ensureItemlogData() {
     })
     .finally(() => {
       state.itemlogLoadPromise = null;
+      if (state.itemlogData && state.data) updateMapMeta();
       if (state.sidebarView === "itemlog") renderCatalogPreview();
     });
 
@@ -6022,6 +6023,10 @@ function renderMapTabs() {
 }
 
 function headerCatalogCount(key, fallback) {
+  if (key === "items") {
+    const publicItemCount = Number(state.itemlogData?.totals?.named_items);
+    if (Number.isFinite(publicItemCount) && publicItemCount >= 0) return Math.round(publicItemCount);
+  }
   const value = Number(state.data?.catalog_counts?.[key]);
   return Number.isFinite(value) && value >= 0 ? Math.round(value) : fallback;
 }
