@@ -1962,6 +1962,14 @@ body.catalog-view-active .sidebar .detail-panel {
   max-width: 90ch;
 }
 
+.catalog-aniilog-record .catalog-description {
+  width: 100%;
+  max-width: none;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
 .catalog-core-effect {
   max-width: 72ch;
   margin: 0;

@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260717-geography-hierarchy-v001"
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260717-lumin-marking-icon-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260718-itemlog-icon-recovery-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260718-skill-variants-v002";
-const APP_VERSION = "v0.3.62";
+const APP_VERSION = "v0.3.63";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -1646,6 +1646,27 @@ function aniilogSkillFilterMatches(skills, filterValue) {
   return true;
 }
 
+const ANIILOG_BASE_STAT_TOTAL_OPTION = {
+  sourceLabel: null,
+  label: "Base stat total",
+  id: "base-stat-total",
+};
+
+const ANIILOG_BASE_STAT_IDS = new Set([
+  "hp",
+  "attack",
+  "break",
+  "defense",
+  "magic-defense",
+  "regen",
+]);
+
+function aniilogBaseStatTotal(entry) {
+  return visibleAniilogStatConfig()
+    .filter((stat) => ANIILOG_BASE_STAT_IDS.has(stat.id))
+    .reduce((total, stat) => total + (aniilogStatValue(entry, stat.sourceLabel) ?? 0), 0);
+}
+
 function aniilogEntryMatchesFilters(entry) {
   const filters = state.aniilogFilters || {};
   const classFilters = aniilogFilterSet("classes");
@@ -1673,10 +1694,14 @@ function aniilogEntryMatchesFilters(entry) {
   const formKey = normalizeFilterKey(entry?.form_label || entry?.form_key);
   if (formFilters.size && !formFilters.has(formKey)) return false;
 
-  const stat = visibleAniilogStatConfig().find((option) => option.id === filters.statId);
+  const stat = filters.statId === ANIILOG_BASE_STAT_TOTAL_OPTION.id
+    ? ANIILOG_BASE_STAT_TOTAL_OPTION
+    : visibleAniilogStatConfig().find((option) => option.id === filters.statId);
   const threshold = Number(filters.statValue);
   if (stat && filters.statValue !== "" && Number.isFinite(threshold)) {
-    const value = aniilogStatValue(entry, stat.sourceLabel);
+    const value = stat.id === ANIILOG_BASE_STAT_TOTAL_OPTION.id
+      ? aniilogBaseStatTotal(entry)
+      : aniilogStatValue(entry, stat.sourceLabel);
     if (value === null) return false;
     if ((filters.statComparator || ">") === "<") {
       if (!(value < threshold)) return false;
@@ -2151,7 +2176,7 @@ function renderAniilogStatFilter() {
   anyOption.textContent = "Any base stat";
   anyOption.selected = !filters.statId;
   statSelect.append(anyOption);
-  visibleAniilogStatConfig().forEach((stat) => {
+  [ANIILOG_BASE_STAT_TOTAL_OPTION, ...visibleAniilogStatConfig()].forEach((stat) => {
     const option = document.createElement("option");
     option.value = stat.id;
     option.textContent = stat.label;
@@ -2884,7 +2909,7 @@ function renderAniilogCatalogRecord(entry) {
     record.append(description);
   }
 
-  const statSection = createCatalogSection("Base stats");
+  const statSection = createCatalogSection(`Base stats · Total ${aniilogBaseStatTotal(entry)}`);
   statSection.append(renderAniilogStatComparison(entry));
   record.append(statSection);
 
