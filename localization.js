@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v011";
+  const ASSET_VERSION = "20260719-localization-v012";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -32,6 +32,16 @@
     ["Settings sections", "设置分区", "設定セクション", "설정 섹션"],
     ["General Settings", "常规设置", "一般設定", "일반 설정"],
     ["Themes", "主题", "テーマ", "테마"],
+    ["Filter shortcuts", "筛选快捷操作", "フィルターショートカット", "필터 단축키"],
+    ["Map shortcuts", "地图快捷操作", "マップショートカット", "지도 단축키"],
+    ["Double-click a filter tab to select every result currently shown in that tab.", "双击筛选标签，可选择该标签中当前显示的所有结果。", "フィルタータブをダブルクリックすると、そのタブに現在表示されているすべての結果を選択できます。", "필터 탭을 두 번 클릭하면 해당 탭에 현재 표시된 모든 결과를 선택합니다."],
+    ["Right-click a map icon to deselect that location and remove its pin.", "右键单击地图图标，可取消选择该地点并移除图钉。", "マップアイコンを右クリックすると、その場所の選択を解除してピンを削除できます。", "지도 아이콘을 마우스 오른쪽 버튼으로 클릭하면 해당 위치의 선택을 해제하고 핀을 제거합니다."],
+    ["Blessed Aniimo", "受赐福的伊莫", "祝福されたアニモ", "축복받은 애니모"],
+    ["Pathfinder Challenge", "联结者挑战", "トリッパーチャレンジ", "모험가 도전"],
+    ["Pathfinder Challengers", "联结者挑战", "トリッパーチャレンジ", "모험가 도전"],
+    ["Elite Pathfinder Challenge", "精英联结者挑战", "精鋭トリッパーチャレンジ", "엘리트 모험가 도전"],
+    ["Elite Pathfinder Challengers", "精英联结者挑战", "精鋭トリッパーチャレンジ", "엘리트 모험가 도전"],
+    ["Click the thread line to collapse", "点击分支线可收起", "スレッド線をクリックして折りたたむ", "스레드 선을 클릭하여 접기"],
     ["You have unapplied theme changes. Close Settings and discard this draft?", "您有尚未应用的主题更改。要关闭设置并放弃此草稿吗？", "未適用のテーマ変更があります。設定を閉じて、この下書きを破棄しますか？", "적용하지 않은 테마 변경 사항이 있습니다. 설정을 닫고 이 초안을 버리시겠습니까?"],
     ["Website theme", "网站主题", "ウェブサイトテーマ", "웹사이트 테마"],
     ["Preview UI colors and motifs here. Game artwork and rarity glows always keep their original colors.", "在此预览界面颜色和图案。游戏美术资源与稀有度光效始终保留原始颜色。", "ここでUIの色とモチーフをプレビューできます。ゲーム画像とレアリティの発光色は常に元のままです。", "여기에서 UI 색상과 모티프를 미리 볼 수 있습니다. 게임 이미지와 희귀도 광원은 항상 원래 색상을 유지합니다."],

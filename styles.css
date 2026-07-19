@@ -317,6 +317,70 @@ button[aria-pressed="true"] {
   letter-spacing: 0;
 }
 
+.filter-heading-title {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-shortcut-info {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  min-height: 0;
+  place-items: center;
+  border: 1px solid rgba(var(--accent-rgb), 0.58);
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), 0.1);
+  color: color-mix(in srgb, var(--accent) 42%, var(--text));
+  cursor: help;
+  font-family: Georgia, serif;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+}
+
+.filter-shortcut-info:hover,
+.filter-shortcut-info:focus-visible {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.2);
+  outline: none;
+}
+
+.filter-shortcut-tooltip {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 8px);
+  left: 0;
+  display: none;
+  width: min(244px, calc(100vw - 40px));
+  gap: 7px;
+  border: 1px solid rgba(var(--accent-rgb), 0.56);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel) 96%, black);
+  box-shadow: var(--shadow);
+  padding: 10px;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.filter-shortcut-tooltip strong {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.panel-heading .filter-shortcut-tooltip span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.filter-shortcut-info:hover + .filter-shortcut-tooltip,
+.filter-shortcut-info:focus-visible + .filter-shortcut-tooltip {
+  display: grid;
+}
+
 .panel-heading span {
   color: var(--muted);
   font-size: 12px;
@@ -1673,11 +1737,77 @@ html[data-theme="pawney"] .sidebar {
 
 .map-item-children {
   display: grid;
-  gap: 7px;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 5px;
   min-width: 0;
   margin-left: 22px;
-  padding-left: 11px;
-  border-left: 2px solid rgba(var(--accent-rgb), 0.3);
+}
+
+.map-group-collapse-rail {
+  position: relative;
+  width: 12px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.map-group-collapse-rail::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.3);
+  content: "";
+  transition: width 120ms ease, background 120ms ease, left 120ms ease;
+}
+
+.map-group-collapse-rail:hover::before,
+.map-group-collapse-rail:focus-visible::before {
+  left: 4px;
+  width: 4px;
+  background: var(--accent);
+}
+
+.map-group-collapse-rail:focus-visible {
+  outline: 1px solid rgba(var(--accent-rgb), 0.55);
+}
+
+.map-item-children-list {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.item-icon-stack {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 30px;
+}
+
+.item-icon-stacked {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.32);
+  object-fit: contain;
+}
+
+.item-icon-stacked:first-child {
+  top: 0;
+  left: 0;
+}
+
+.item-icon-stacked:last-child {
+  right: 0;
+  bottom: 0;
+  box-shadow: 0 0 0 1px rgba(var(--panel-rgb), 0.9);
 }
 
 .map-group-child-row,

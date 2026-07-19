@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260719-grouped-map-menus-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.3.87";
+const APP_VERSION = "v0.3.88";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -5647,7 +5647,8 @@ function itemPassesFilters(item) {
 function itemMatches(item) {
   if (!itemPassesFilters(item)) return false;
   if (!state.search) return true;
-  return item.search_text.includes(state.search);
+  return item.search_text.includes(state.search)
+    || activeMapSpawnEntries(item.item_id).some(({ spawn }) => spawn.search_text.includes(state.search));
 }
 
 function itemSearchText(item) {
@@ -5815,6 +5816,28 @@ function toggleIndividualSpawn(entry) {
   if (remaining === 0) setItemSelection(spawn.item_id, false);
 }
 
+function deselectIndividualSpawn(entry) {
+  const { spawn, index } = entry;
+  clearLocatedSpawn();
+  state.hoveredCanvasIndex = null;
+  hideCanvasTooltip();
+  if (state.enabled.has(spawn.item_id)) {
+    state.disabledSpawnIds.add(spawnSelectionId(spawn));
+    const remaining = activeMapSpawnEntries(spawn.item_id).filter((sibling) => (
+      !state.disabledSpawnIds.has(spawnSelectionId(sibling.spawn))
+    )).length;
+    if (remaining === 0) setItemSelection(spawn.item_id, false);
+  }
+  if (state.selectedSpawnIndex === index) {
+    state.selectedSpawnIndex = null;
+    state.selectedPin = null;
+    state.mobileSelectionMinimized = true;
+    clearSelectionDetails("No marker selected");
+    updateMobileSelectionPanel();
+  }
+  refreshVisibility();
+}
+
 function visibleSpawnEntries() {
   const entries = [];
   for (const itemId of state.enabled) {
@@ -5862,6 +5885,70 @@ function itemRowSubtitle(item) {
   return parts.filter(Boolean).join(" - ");
 }
 
+function uniqueIconSources(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function createStackedItemIcon(sources) {
+  const uniqueSources = uniqueIconSources(sources);
+  if (uniqueSources.length < 2) return makeIcon("item-icon", uniqueSources[0] || "");
+  const stack = document.createElement("span");
+  stack.className = "item-icon-stack";
+  uniqueSources.slice(0, 2).forEach((source) => {
+    stack.append(makeIcon("item-icon-stacked", source));
+  });
+  return stack;
+}
+
+function itemIconVisual(item, expandable) {
+  if (!expandable) return makeIcon("item-icon", item.icon);
+  const spawnIcons = activeMapSpawnEntries(item.item_id).map(({ spawn }) => spawn.icon);
+  const sources = uniqueIconSources(spawnIcons);
+  return createStackedItemIcon(sources.length ? sources : [item.icon]);
+}
+
+function groupIconVisual(items) {
+  return createStackedItemIcon(items.flatMap((item) => {
+    const spawnIcons = uniqueIconSources(activeMapSpawnEntries(item.item_id).map(({ spawn }) => spawn.icon));
+    return spawnIcons.length ? spawnIcons : [item.icon];
+  }));
+}
+
+function collapseMapGroup(groupKey) {
+  state.expandedMapGroups.delete(groupKey);
+  renderItems();
+  refreshVisibility();
+  window.requestAnimationFrame(() => {
+    const selector = `[data-map-group-key="${CSS.escape(groupKey)}"], [data-item-id="${CSS.escape(groupKey)}"]`;
+    els.itemList.querySelector(selector)?.focus();
+  });
+}
+
+function createMapChildrenContainer(groupKey, label) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "map-item-children";
+  const rail = document.createElement("button");
+  rail.type = "button";
+  rail.className = "map-group-collapse-rail";
+  rail.setAttribute("aria-label", `Collapse ${label}`);
+  rail.title = "Click the thread line to collapse";
+  rail.addEventListener("mousedown", preventControlFocus);
+  rail.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    collapseMapGroup(groupKey);
+  });
+  const list = document.createElement("div");
+  list.className = "map-item-children-list";
+  wrapper.append(rail, list);
+  return { wrapper, list };
+}
+
+function itemHasSpawnChildren(item) {
+  const count = activeMapSpawnEntries(item.item_id).length;
+  return count > 1 || (Boolean(item.expand_spawns) && count > 0);
+}
+
 function createMapItemRow(item, { child = false, expandable = false } = {}) {
   const tier = itemTier(item);
   const row = document.createElement(expandable ? "div" : "button");
@@ -5898,7 +5985,7 @@ function createMapItemRow(item, { child = false, expandable = false } = {}) {
     });
   }
 
-  const icon = makeIcon("item-icon", item.icon);
+  const icon = itemIconVisual(item, expandable);
   const text = document.createElement("span");
   text.className = "item-text";
   const strong = document.createElement("strong");
@@ -5940,16 +6027,21 @@ function createMapItemRow(item, { child = false, expandable = false } = {}) {
   return row;
 }
 
-function spawnChildDisplayName(spawn) {
-  if (spawn.marker_type !== "document_pickup") return spawn.display_name;
+function spawnChildDisplayParts(spawn, siblings = [], siblingIndex = 0) {
+  if (spawn.marker_type !== "document_pickup") {
+    const matchingNames = siblings.filter((entry) => entry.spawn.display_name === spawn.display_name);
+    if (matchingNames.length < 2) return { name: spawn.display_name, sequence: "" };
+    const duplicateIndex = matchingNames.findIndex((entry) => entry.index === siblings[siblingIndex]?.index);
+    return { name: spawn.display_name, sequence: String(Math.max(0, duplicateIndex) + 1) };
+  }
   const title = String(spawn.display_name || "");
   const parenthetical = title.match(/\((?:Part\s+)?([IVX]+|\d+)\)$/i);
-  if (parenthetical) return `Note ${parenthetical[1]}`;
+  if (parenthetical) return { name: `Note ${parenthetical[1]}`, sequence: "" };
   const trailing = title.match(/(?:Research|Tale)\s+([IVX]+|\d+)$/i);
-  return trailing ? `Note ${trailing[1]}` : title;
+  return { name: trailing ? `Note ${trailing[1]}` : title, sequence: "" };
 }
 
-function createSpawnChildRow(entry) {
+function createSpawnChildRow(entry, siblings = [], siblingIndex = 0) {
   const { spawn, index } = entry;
   const item = state.data.itemsById.get(spawn.item_id);
   const row = document.createElement("button");
@@ -5968,7 +6060,13 @@ function createSpawnChildRow(entry) {
   const text = document.createElement("span");
   text.className = "item-text";
   const strong = document.createElement("strong");
-  strong.textContent = spawnChildDisplayName(spawn);
+  const display = spawnChildDisplayParts(spawn, siblings, siblingIndex);
+  strong.append(document.createTextNode(display.name));
+  if (display.sequence) {
+    const sequence = document.createElement("span");
+    sequence.textContent = ` ${display.sequence}`;
+    strong.append(sequence);
+  }
   strong.title = spawn.display_name;
   const small = document.createElement("small");
   const area = areaDetailValue(spawn) || mapRegionForSpawn(spawn);
@@ -5977,6 +6075,96 @@ function createSpawnChildRow(entry) {
   text.append(strong, small);
   row.append(icon, text);
   return row;
+}
+
+function appendMapItemWithChildren(container, item, { child = false } = {}) {
+  const entries = activeMapSpawnEntries(item.item_id);
+  const expandable = itemHasSpawnChildren(item);
+  container.append(createMapItemRow(item, { child, expandable }));
+  if (!expandable || !state.expandedMapGroups.has(item.item_id)) return;
+  const { wrapper, list } = createMapChildrenContainer(item.item_id, item.display_name);
+  entries.forEach((entry, index) => list.append(createSpawnChildRow(entry, entries, index)));
+  container.append(wrapper);
+}
+
+function mapItemsFullySelected(items) {
+  return items.every((item) => {
+    const selection = itemSelectionState(item.item_id);
+    return selection.total > 0 && selection.selected === selection.total;
+  });
+}
+
+function renderMapCollectionGroup(section, { groupKey, label, items }) {
+  if (!items.length) return;
+  const expanded = state.expandedMapGroups.has(groupKey);
+  const group = document.createElement("section");
+  group.className = "map-item-group";
+  group.dataset.mapGroupKey = groupKey;
+
+  const parent = document.createElement("div");
+  parent.className = "map-group-row";
+  parent.dataset.mapGroupKey = groupKey;
+  parent.tabIndex = 0;
+  parent.setAttribute("role", "button");
+  const toggleSelection = () => {
+    clearLocatedSpawn();
+    const selectAll = !mapItemsFullySelected(items);
+    items.forEach((item) => setItemSelection(item.item_id, selectAll));
+    refreshVisibility();
+  };
+  parent.addEventListener("mousedown", preventControlFocus);
+  parent.addEventListener("click", (event) => {
+    event.preventDefault();
+    toggleSelection();
+  });
+  parent.addEventListener("keydown", (event) => {
+    if (event.target !== parent || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    toggleSelection();
+  });
+
+  const icon = groupIconVisual(items);
+  const text = document.createElement("span");
+  text.className = "item-text";
+  const strong = document.createElement("strong");
+  strong.textContent = label;
+  const small = document.createElement("small");
+  const total = items.reduce((sum, item) => sum + activeMapSpawnEntries(item.item_id).length, 0);
+  small.textContent = `${total} locations`;
+  text.append(strong, small);
+  const actions = document.createElement("span");
+  actions.className = "item-row-actions";
+  const count = document.createElement("span");
+  count.className = "item-count";
+  count.dataset.groupSelectionCount = "";
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "map-group-toggle";
+  toggle.textContent = expanded ? "-" : "+";
+  toggle.setAttribute("aria-expanded", String(expanded));
+  toggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${label}`);
+  toggle.addEventListener("mousedown", preventControlFocus);
+  toggle.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (expanded) collapseMapGroup(groupKey);
+    else {
+      state.expandedMapGroups.add(groupKey);
+      renderItems();
+      refreshVisibility();
+    }
+  });
+  actions.append(count, toggle);
+  parent.append(icon, text, actions);
+  group.append(parent);
+
+  if (expanded) {
+    const { wrapper, list } = createMapChildrenContainer(groupKey, label);
+    items.forEach((item) => appendMapItemWithChildren(list, item, { child: true }));
+    group.append(wrapper);
+  }
+  section.append(group);
+  state.renderedMapGroups.set(groupKey, { group, parent, items, label, count });
 }
 
 const TELEPORT_GROUPS = [
@@ -5991,81 +6179,11 @@ const TELEPORT_GROUPS = [
 function renderTeleportGroups(section, layerItems) {
   TELEPORT_GROUPS.forEach(({ id, label }) => {
     const items = layerItems.filter((item) => item.teleport_type === id);
-    if (!items.length) return;
-    const groupKey = `teleport-group:${id}`;
-    const expanded = state.expandedMapGroups.has(groupKey);
-    const group = document.createElement("section");
-    group.className = "map-item-group";
-    group.dataset.mapGroupKey = groupKey;
-
-    const parent = document.createElement("div");
-    parent.className = "map-group-row";
-    parent.dataset.mapGroupKey = groupKey;
-    parent.tabIndex = 0;
-    parent.setAttribute("role", "button");
-    parent.addEventListener("mousedown", preventControlFocus);
-    parent.addEventListener("click", (event) => {
-      event.preventDefault();
-      clearLocatedSpawn();
-      const selectAll = !items.every((item) => {
-        const selection = itemSelectionState(item.item_id);
-        return selection.total > 0 && selection.selected === selection.total;
-      });
-      items.forEach((item) => setItemSelection(item.item_id, selectAll));
-      refreshVisibility();
+    renderMapCollectionGroup(section, {
+      groupKey: `teleport-group:${id}`,
+      label,
+      items,
     });
-    parent.addEventListener("keydown", (event) => {
-      if (event.target !== parent || (event.key !== "Enter" && event.key !== " ")) return;
-      event.preventDefault();
-      const selectAll = !items.every((item) => {
-        const selection = itemSelectionState(item.item_id);
-        return selection.total > 0 && selection.selected === selection.total;
-      });
-      items.forEach((item) => setItemSelection(item.item_id, selectAll));
-      refreshVisibility();
-    });
-
-    const icon = makeIcon("item-icon", items.find((item) => item.icon)?.icon || "");
-    const text = document.createElement("span");
-    text.className = "item-text";
-    const strong = document.createElement("strong");
-    strong.textContent = label;
-    const small = document.createElement("small");
-    const total = items.reduce((sum, item) => sum + activeMapSpawnEntries(item.item_id).length, 0);
-    small.textContent = `${total} locations`;
-    text.append(strong, small);
-    const actions = document.createElement("span");
-    actions.className = "item-row-actions";
-    const count = document.createElement("span");
-    count.className = "item-count";
-    count.dataset.groupSelectionCount = "";
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "map-group-toggle";
-    toggle.textContent = expanded ? "-" : "+";
-    toggle.setAttribute("aria-expanded", String(expanded));
-    toggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${label}`);
-    toggle.addEventListener("mousedown", preventControlFocus);
-    toggle.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (expanded) state.expandedMapGroups.delete(groupKey);
-      else state.expandedMapGroups.add(groupKey);
-      renderItems();
-      refreshVisibility();
-    });
-    actions.append(count, toggle);
-    parent.append(icon, text, actions);
-    group.append(parent);
-
-    if (expanded || state.search) {
-      const children = document.createElement("div");
-      children.className = "map-item-children";
-      items.forEach((item) => children.append(createMapItemRow(item, { child: true })));
-      group.append(children);
-    }
-    section.append(group);
-    state.renderedMapGroups.set(groupKey, { group, parent, items, label, count });
   });
 }
 
@@ -6148,8 +6266,10 @@ function refreshVisibility() {
   }
 
   for (const section of els.itemList.querySelectorAll(".layer-panel")) {
-    const rows = [...section.querySelectorAll(".item-row")];
-    const visibleRows = rows.filter((row) => !row.hidden).length;
+    const rows = [...section.querySelectorAll(".item-row, .map-group-row")];
+    const visibleRows = rows.filter((row) => (
+      !row.hidden && !row.closest(".map-item-group")?.hidden
+    )).length;
     const tab = els.layerTabs.querySelector(`[data-layer-id="${section.dataset.layerId}"]`);
     section.hidden = section.dataset.layerId !== state.activeLayer;
     if (tab) {
@@ -6211,13 +6331,8 @@ function renderItems() {
       clearLocatedSpawn();
       state.activeLayer = layer.id;
       if (layer.id === "eggs") state.eggSubfilter = "all";
-      const selectableItems = layerItems.filter((item) => itemPassesFilters(item));
-      const allSelected = selectableItems.length > 0
-        && selectableItems.every((item) => {
-          const selection = itemSelectionState(item.item_id);
-          return selection.total > 0 && selection.selected === selection.total;
-        });
-      selectableItems.forEach((item) => setItemSelection(item.item_id, !allSelected));
+      const selectableItems = layerItems.filter((item) => itemMatches(item));
+      selectableItems.forEach((item) => setItemSelection(item.item_id, true));
       refreshVisibility();
     });
     const tabLabel = document.createElement("span");
@@ -6289,8 +6404,20 @@ function renderItems() {
       return;
     }
 
+    const groupedItemIds = new Set();
+    if (layer.id === "ambers") {
+      const blessedItems = layerItems.filter((item) => item.form_label === "Blessed");
+      blessedItems.forEach((item) => groupedItemIds.add(item.item_id));
+      renderMapCollectionGroup(section, {
+        groupKey: "amber-group:blessed-aniimo",
+        label: "Blessed Aniimo",
+        items: blessedItems,
+      });
+    }
+
     let previousMiscGroup = "";
     layerItems.forEach((item) => {
+      if (groupedItemIds.has(item.item_id)) return;
       if (layer.id === "misc") {
         const miscGroup = miscGroupForItem(item);
         if (miscGroup !== previousMiscGroup) {
@@ -6303,16 +6430,7 @@ function renderItems() {
         }
       }
 
-      const expandable = Boolean(item.expand_spawns && activeMapSpawnEntries(item.item_id).length);
-      const row = createMapItemRow(item, { expandable });
-      section.append(row);
-
-      if (expandable && (state.expandedMapGroups.has(item.item_id) || state.search)) {
-        const children = document.createElement("div");
-        children.className = "map-item-children";
-        activeMapSpawnEntries(item.item_id).forEach((entry) => children.append(createSpawnChildRow(entry)));
-        section.append(children);
-      }
+      appendMapItemWithChildren(section, item);
     });
 
     els.itemList.append(section);
@@ -7080,7 +7198,7 @@ function bindEvents() {
   });
   els.selectAllButton.addEventListener("click", () => {
     clearLocatedSpawn();
-    activeMapItems().forEach((item) => state.enabled.add(item.item_id));
+    activeMapItems().forEach((item) => setItemSelection(item.item_id, true));
     refreshVisibility();
   });
   els.selectNoneButton.addEventListener("click", () => {
@@ -7102,6 +7220,17 @@ function bindEvents() {
     const factor = event.deltaY < 0 ? 1.12 : 0.88;
     zoomAt(event.clientX, event.clientY, state.scale * factor);
   }, { passive: false });
+  els.mapViewport.addEventListener("contextmenu", (event) => {
+    const pin = event.target instanceof Element ? event.target.closest(".pin") : null;
+    const pinIndex = Number(pin?.dataset.spawnIndex);
+    const entry = Number.isInteger(pinIndex)
+      ? { spawn: state.data?.spawns[pinIndex], index: pinIndex }
+      : findCanvasHit(event.clientX, event.clientY);
+    if (!entry?.spawn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    deselectIndividualSpawn(entry);
+  });
   els.mapViewport.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     const pointer = rememberActivePointer(event, eventTargetsPin(event));
