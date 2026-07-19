@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v012";
+  const ASSET_VERSION = "20260719-localization-v013";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -189,7 +189,8 @@
     ["Ready now", "现在可用", "準備完了", "지금 준비됨"],
     ["Basic", "基础", "基本", "기본"],
     ["Legendary", "传奇", "レジェンダリー", "전설"],
-    ["Prismana", "Prismana", "Prismana", "Prismana"],
+    ["Prismana", "虹光", "虹色", "천휘"],
+    ["Blessed", "被赐福", "祝福を受けた", "축복받은"],
     ["Umbrabow", "Umbrabow", "Umbrabow", "Umbrabow"],
     ["Loading", "正在加载", "読み込み中", "불러오는 중"],
     ["Load failed", "加载失败", "読み込み失敗", "불러오기 실패"],
@@ -433,7 +434,7 @@
       };
       return translatedCounts.replace(/(\d+) Aniimo/g, `$1${aniimoCountTerms[activeLocale] || " Aniimo"}`);
     }
-    const formSuffix = text.match(/^(.*?)(\s[-–—]\s)([^-–—]+)$/);
+    const formSuffix = text.match(/^(.*?)(\s[-–—•]\s)([^-–—•]+)$/);
     if (formSuffix) {
       const localizedForm = UI_TRANSLATIONS[activeLocale].get(formSuffix[3]) || payload?.display?.[formSuffix[3]];
       if (localizedForm) return `${formSuffix[1]}${formSuffix[2]}${localizedForm}`;

@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260719-grouped-map-menus-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.3.88";
+const APP_VERSION = "v0.3.89";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
