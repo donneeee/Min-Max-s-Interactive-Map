@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v014";
+  const ASSET_VERSION = "20260719-localization-v015";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -28,6 +28,23 @@
     ["Outposts", "前哨站", "前哨基地", "전초기지"],
     ["Nurture Sites", "培育点", "育成地点", "육성 지점"],
     ["Vein Abundance Sites", "丰饶矿脉点", "豊穣の脈地点", "풍요의 맥 지점"],
+    ["Sanctum: All in Sight", "地宫·一目了然", "ダンジョン・一目瞭然", "지하 궁전·명확한 시야"],
+    ["Sanctum: Chasing Stormwinds", "地宫·逐电追风", "ダンジョン・疾風迅雷", "지하 궁전·번개와 바람의 질주"],
+    ["Sanctum: Courageous Wit", "地宫·智行勇跃", "ダンジョン・智勇兼備", "지하 궁전·지혜로운 도약"],
+    ["Sanctum: Double Vision", "地宫·眼观二路", "ダンジョン・二方に目をきかす", "지하 궁전·날카로운 시선"],
+    ["Sanctum: Electric Surge", "地宫·电光流转", "ダンジョン・電光流転", "지하 궁전·전류의 흐름"],
+    ["Sanctum: First Flame", "地宫·初生之火", "ダンジョン・初生の火", "지하 궁전·태초의 불꽃"],
+    ["Sanctum: Flaming Wings", "地宫·逐火之翼", "ダンジョン・逐火の翼", "지하 궁전·화염 속의 비상"],
+    ["Sanctum: Mistrider", "地宫·腾云驾雾", "ダンジョン・雲乗り", "지하 궁전·구름을 쫓아서"],
+    ["Sanctum: Rigged Maze", "地宫·盘根错节", "ダンジョン・盤根錯節", "지하 궁전·뒤엉킨 뿌리"],
+    ["Sanctum: Rising Flames", "地宫·烈火升腾", "ダンジョン・立ち上る炎", "지하 궁전·타오르는 불길"],
+    ["Sanctum: Rushing Rapids", "地宫·激流勇进", "ダンジョン・激流勇進", "지하 궁전·몰아치는 급류"],
+    ["Sanctum: Shatterstone", "地宫·冲岩裂石", "ダンジョン・ブラストロック", "지하 궁전·암석 파괴자"],
+    ["Sanctum: Sword in the Stone", "地宫·石中之剑", "ダンジョン・石中の剣", "지하 궁전·바위 속의 검"],
+    ["Sanctum: Through Flame and Thorn", "地宫·披荆燃棘", "ダンジョン・燃ゆるイバラ", "지하 궁전·가시덤불을 헤치고"],
+    ["Sanctum: Water to Ice", "地宫·凝水成冰", "ダンジョン・水から氷へ", "지하 궁전·얼어붙는 물결"],
+    ["Sanctum: Windborne", "地宫·乘风而起", "ダンジョン・風乗り", "지하 궁전·바람의 비상"],
+    ["Sanctum: Wings Unfurled", "地宫·展翼滑翔", "ダンジョン・翼の滑空", "지하 궁전·활강의 날개"],
     ["Settings", "设置", "設定", "설정"],
     ["Settings sections", "设置分区", "設定セクション", "설정 섹션"],
     ["General Settings", "常规设置", "一般設定", "일반 설정"],
