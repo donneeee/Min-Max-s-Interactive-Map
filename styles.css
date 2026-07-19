@@ -2492,9 +2492,9 @@ body.catalog-view-active .sidebar .detail-panel {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-top: 7px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, var(--accent));
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;

@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260719-rv-boss-icons-v002";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-rv-boss-icons-v002";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-rv-boss-icons-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-rv-boss-icons-v002";
-const APP_VERSION = "v0.3.71";
+const APP_VERSION = "v0.3.72";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
 const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
