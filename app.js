@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260719-grouped-map-menus-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.3.85";
+const APP_VERSION = "v0.3.86";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -226,6 +226,7 @@ const state = {
   settingsOpen: false,
   settingsFocusReturn: null,
   settingsThemeDraft: null,
+  settingsActiveTab: "general",
   changelogOpen: false,
   changelogFocusReturn: null,
   changelogLoadToken: 0,
@@ -1542,9 +1543,72 @@ function renderThemeSettingsCard() {
   return section;
 }
 
+function renderSettingsTabs() {
+  const tabs = document.createElement("div");
+  tabs.className = "settings-tabs";
+  tabs.setAttribute("role", "tablist");
+  tabs.setAttribute("aria-label", "Settings sections");
+  const options = [
+    { id: "general", label: "General Settings" },
+    { id: "themes", label: "Themes" },
+  ];
+  options.forEach((option, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = `settingsTab-${option.id}`;
+    button.className = "settings-tab";
+    button.dataset.settingsTab = option.id;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(state.settingsActiveTab === option.id));
+    button.setAttribute("aria-controls", "settingsTabPanel");
+    button.tabIndex = state.settingsActiveTab === option.id ? 0 : -1;
+    button.textContent = option.label;
+    button.addEventListener("click", () => {
+      state.settingsActiveTab = option.id;
+      renderSettings();
+      els.settingsContent.closest(".settings-dialog")?.scrollTo({ top: 0 });
+      els.settingsContent.querySelector(`[data-settings-tab="${option.id}"]`)?.focus();
+    });
+    button.addEventListener("keydown", (event) => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      event.preventDefault();
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const next = options[(index + direction + options.length) % options.length];
+      state.settingsActiveTab = next.id;
+      renderSettings();
+      els.settingsContent.querySelector(`[data-settings-tab="${next.id}"]`)?.focus();
+    });
+    tabs.append(button);
+  });
+  return tabs;
+}
+
+function appendSettingsStorageError(container) {
+  if (!state.localStorageError) return;
+  container.append(renderSyncCallout(
+    "Browser storage is unavailable",
+    "The browser did not allow the map to save tracking data.",
+    { label: "Retry browser storage", onClick: () => { loadLocalTracking(); refreshAccountViews(); }, danger: true },
+  ));
+}
+
 function renderSettings() {
   els.settingsContent.textContent = "";
-  els.settingsContent.append(renderThemeSettingsCard());
+  if (!['general', 'themes'].includes(state.settingsActiveTab)) state.settingsActiveTab = "general";
+  const tabs = renderSettingsTabs();
+  const settingsPanel = document.createElement("div");
+  settingsPanel.id = "settingsTabPanel";
+  settingsPanel.className = "settings-tab-panel";
+  settingsPanel.setAttribute("role", "tabpanel");
+  settingsPanel.setAttribute("aria-labelledby", `settingsTab-${state.settingsActiveTab}`);
+  els.settingsContent.append(tabs, settingsPanel);
+
+  if (state.settingsActiveTab === "themes") {
+    settingsPanel.append(renderThemeSettingsCard());
+    appendSettingsStorageError(settingsPanel);
+    return;
+  }
+
   const languageCard = document.createElement("section");
   languageCard.className = "settings-card settings-language-card";
   const languageCopy = document.createElement("div");
@@ -1577,7 +1641,7 @@ function renderSettings() {
   languageNote.className = "settings-language-note";
   languageNote.textContent = "Language changes apply after the page reloads.";
   languageCard.append(languageCopy, languageLabel, languageNote);
-  els.settingsContent.append(languageCard);
+  settingsPanel.append(languageCard);
 
   const account = document.createElement("div");
   account.className = "settings-card";
@@ -1617,7 +1681,7 @@ function renderSettings() {
   reset.addEventListener("click", resetLocalData);
   actions.append(reset);
   account.append(identity, stats, actions);
-  els.settingsContent.append(account);
+  settingsPanel.append(account);
 
   const aniilogDisplay = document.createElement("section");
   aniilogDisplay.className = "settings-card settings-display-card";
@@ -1651,15 +1715,8 @@ function renderSettings() {
   magicAttackCopy.append(magicAttackLabel, magicAttackDescription);
   magicAttackToggle.append(magicAttackInput, magicAttackCopy);
   aniilogDisplay.append(displayCopy, magicAttackToggle);
-  els.settingsContent.append(aniilogDisplay);
-
-  if (state.localStorageError) {
-    els.settingsContent.append(renderSyncCallout(
-      "Browser storage is unavailable",
-      "The browser did not allow the map to save tracking data.",
-      { label: "Retry browser storage", onClick: () => { loadLocalTracking(); refreshAccountViews(); }, danger: true },
-    ));
-  }
+  settingsPanel.append(aniilogDisplay);
+  appendSettingsStorageError(settingsPanel);
 }
 
 function openSettings() {

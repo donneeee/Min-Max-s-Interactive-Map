@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v009";
+  const ASSET_VERSION = "20260719-localization-v010";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -29,6 +29,9 @@
     ["Nurture Sites", "培育点", "育成地点", "육성 지점"],
     ["Vein Abundance Sites", "丰饶矿脉点", "豊穣の脈地点", "풍요의 맥 지점"],
     ["Settings", "设置", "設定", "설정"],
+    ["Settings sections", "设置分区", "設定セクション", "설정 섹션"],
+    ["General Settings", "常规设置", "一般設定", "일반 설정"],
+    ["Themes", "主题", "テーマ", "테마"],
     ["Website theme", "网站主题", "ウェブサイトテーマ", "웹사이트 테마"],
     ["Preview UI colors and motifs here. Game artwork and rarity glows always keep their original colors.", "在此预览界面颜色和图案。游戏美术资源与稀有度光效始终保留原始颜色。", "ここでUIの色とモチーフをプレビューできます。ゲーム画像とレアリティの発光色は常に元のままです。", "여기에서 UI 색상과 모티프를 미리 볼 수 있습니다. 게임 이미지와 희귀도 광원은 항상 원래 색상을 유지합니다."],
     ["The original cool mint and gold interface.", "原版的冷薄荷绿与金色界面。", "従来のクールなミントとゴールドの画面です。", "기존의 시원한 민트와 골드 인터페이스입니다."],

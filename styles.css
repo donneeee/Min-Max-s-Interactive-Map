@@ -709,6 +709,49 @@ button[aria-pressed="true"] {
   gap: 10px;
 }
 
+.settings-tabs {
+  position: sticky;
+  z-index: 3;
+  top: -16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: -4px -4px 2px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  padding: 4px 4px 10px;
+  backdrop-filter: blur(12px);
+}
+
+.settings-tab {
+  min-height: 40px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.settings-tab:hover,
+.settings-tab:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel-2));
+  color: var(--text);
+}
+
+.settings-tab[aria-selected="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel-2));
+  color: var(--text);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.settings-tab-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
 .settings-overlay {
   position: fixed;
   z-index: 20;
