@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260719-grouped-map-menus-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.3.84";
+const APP_VERSION = "v0.3.85";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -85,9 +85,83 @@ const ANIILOG_EVOLUTION_STAGES = Object.freeze([
   { id: "gamma", label: "Gamma" },
   { id: "nova", label: "Nova" },
 ]);
+const THEME_COLOR_FIELDS = Object.freeze([
+  { id: "background", label: "Page background", description: "The deepest page and map-workspace color." },
+  { id: "backgroundAlt", label: "Background glow", description: "The secondary tone used in page gradients." },
+  { id: "surface", label: "Surface", description: "Sidebar, dialogs, and main panel backgrounds." },
+  { id: "surfaceRaised", label: "Raised surface", description: "Cards, inputs, and elevated controls." },
+  { id: "border", label: "Borders", description: "Dividers, outlines, and inactive control edges." },
+  { id: "text", label: "Primary text", description: "Headings and important interface text." },
+  { id: "muted", label: "Muted text", description: "Descriptions, metadata, and secondary labels." },
+  { id: "primary", label: "Primary accent", description: "Active navigation, focus rings, and primary actions." },
+  { id: "secondary", label: "Ignited accent", description: "Hover states and the strong end of gradients." },
+  { id: "highlight", label: "Highlight", description: "Badges, sparks, version text, and small callouts." },
+]);
+const THEME_PRESETS = Object.freeze({
+  default: Object.freeze({
+    id: "default",
+    label: "Aniipedia",
+    description: "The original cool mint and gold interface.",
+    motif: "signal",
+    icon: "",
+    colors: Object.freeze({
+      background: "#111316",
+      backgroundAlt: "#181716",
+      surface: "#1a1f22",
+      surfaceRaised: "#22292d",
+      border: "#384248",
+      text: "#f4f1e9",
+      muted: "#9faaad",
+      primary: "#7fc6b2",
+      secondary: "#4f9d8c",
+      highlight: "#e8bf63",
+    }),
+  }),
+  emberpup: Object.freeze({
+    id: "emberpup",
+    label: "Emberpup",
+    description: "Coal-dark fur, glowing orange markings, and golden sparks.",
+    motif: "paw",
+    icon: "assets/icons/aniimo_10051_basic__10051_Emberpup_UI_PetHead_10051_Sprite_1694520572941008294.png",
+    colors: Object.freeze({
+      background: "#111218",
+      backgroundAlt: "#2b1815",
+      surface: "#1c1d27",
+      surfaceRaised: "#292a36",
+      border: "#4b4650",
+      text: "#fff4e8",
+      muted: "#bdb4b5",
+      primary: "#ff742e",
+      secondary: "#d9471d",
+      highlight: "#ffc857",
+    }),
+  }),
+  pawney: Object.freeze({
+    id: "pawney",
+    label: "Pawney",
+    description: "Gunmetal armor, cobalt energy, and a sharp magenta glint.",
+    motif: "armor",
+    icon: "assets/icons/aniimo_10026_basic__10026_Helm_UI_PetHead_10026_Sprite_-7789980316388748766.png",
+    colors: Object.freeze({
+      background: "#0e1120",
+      backgroundAlt: "#171b3a",
+      surface: "#171b2d",
+      surfaceRaised: "#232844",
+      border: "#444d76",
+      text: "#f5f4ff",
+      muted: "#aeb3cf",
+      primary: "#7a84f7",
+      secondary: "#4d57bc",
+      highlight: "#ee8bd4",
+    }),
+  }),
+});
+const DEFAULT_CUSTOM_THEME = Object.freeze({ ...THEME_PRESETS.emberpup.colors });
 const DEFAULT_PREFERENCES = Object.freeze({
   showMagicAttack: false,
   language: "en",
+  theme: "default",
+  customTheme: DEFAULT_CUSTOM_THEME,
 });
 const COLORS = [
   "#7fc6b2",
@@ -151,6 +225,7 @@ const state = {
   sidebarView: "map",
   settingsOpen: false,
   settingsFocusReturn: null,
+  settingsThemeDraft: null,
   changelogOpen: false,
   changelogFocusReturn: null,
   changelogLoadToken: 0,
@@ -211,7 +286,7 @@ const state = {
   pendingBossLocate: null,
   pendingReset: false,
   localStorageError: "",
-  preferences: { ...DEFAULT_PREFERENCES },
+  preferences: defaultPreferences(),
 };
 
 const els = {
@@ -866,6 +941,85 @@ function updateLocalStorageError(error) {
     : String(error || "Browser storage is unavailable.");
 }
 
+function normalizeThemeId(value, { allowCustom = true } = {}) {
+  const id = String(value || "").trim().toLowerCase();
+  if (Object.hasOwn(THEME_PRESETS, id)) return id;
+  if (allowCustom && id === "custom") return id;
+  return "default";
+}
+
+function normalizeHexColor(value, fallback) {
+  const source = String(value || "").trim();
+  const expanded = source.match(/^#([0-9a-f]{3})$/i)
+    ? `#${source.slice(1).split("").map((part) => part + part).join("")}`
+    : source;
+  return /^#[0-9a-f]{6}$/i.test(expanded) ? expanded.toLowerCase() : fallback;
+}
+
+function normalizeThemeColors(value, fallback = DEFAULT_CUSTOM_THEME) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries(THEME_COLOR_FIELDS.map((field) => [
+    field.id,
+    normalizeHexColor(source[field.id], fallback[field.id]),
+  ]));
+}
+
+function defaultPreferences() {
+  return {
+    ...DEFAULT_PREFERENCES,
+    customTheme: normalizeThemeColors(DEFAULT_CUSTOM_THEME),
+  };
+}
+
+function hexColorRgb(value) {
+  const normalized = normalizeHexColor(value, "#000000");
+  return [1, 3, 5].map((offset) => Number.parseInt(normalized.slice(offset, offset + 2), 16));
+}
+
+function themeColorsFor(id, customColors = state.preferences.customTheme) {
+  const themeId = normalizeThemeId(id);
+  if (themeId === "custom") return normalizeThemeColors(customColors);
+  return normalizeThemeColors(THEME_PRESETS[themeId].colors, THEME_PRESETS.default.colors);
+}
+
+function setThemeVariables(element, colors) {
+  const normalized = normalizeThemeColors(colors, THEME_PRESETS.default.colors);
+  const [backgroundR, backgroundG, backgroundB] = hexColorRgb(normalized.background);
+  const [panelR, panelG, panelB] = hexColorRgb(normalized.surface);
+  const [primaryR, primaryG, primaryB] = hexColorRgb(normalized.primary);
+  const [highlightR, highlightG, highlightB] = hexColorRgb(normalized.highlight);
+  const properties = {
+    "--background": normalized.background,
+    "--background-2": normalized.backgroundAlt,
+    "--background-rgb": `${backgroundR}, ${backgroundG}, ${backgroundB}`,
+    "--panel": normalized.surface,
+    "--panel-2": normalized.surfaceRaised,
+    "--line": normalized.border,
+    "--text": normalized.text,
+    "--muted": normalized.muted,
+    "--accent": normalized.primary,
+    "--accent-strong": normalized.secondary,
+    "--accent-2": normalized.highlight,
+    "--panel-rgb": `${panelR}, ${panelG}, ${panelB}`,
+    "--accent-rgb": `${primaryR}, ${primaryG}, ${primaryB}`,
+    "--accent-2-rgb": `${highlightR}, ${highlightG}, ${highlightB}`,
+  };
+  Object.entries(properties).forEach(([property, value]) => element.style.setProperty(property, value));
+  return normalized;
+}
+
+function applyThemePreference() {
+  const id = normalizeThemeId(state.preferences.theme);
+  const colors = themeColorsFor(id, state.preferences.customTheme);
+  state.preferences.theme = id;
+  state.preferences.customTheme = normalizeThemeColors(state.preferences.customTheme);
+  document.documentElement.dataset.theme = id;
+  document.documentElement.dataset.themeMotif = id === "custom" ? "custom" : THEME_PRESETS[id].motif;
+  setThemeVariables(document.documentElement, colors);
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = colors.surface;
+}
+
 function loadLocalTracking() {
   state.localStorageError = "";
   try {
@@ -883,14 +1037,16 @@ function loadLocalTracking() {
       ? completedEntries.map((entry) => String(entry || "").trim()).filter(Boolean)
       : []);
     state.preferences = {
-      ...DEFAULT_PREFERENCES,
+      ...defaultPreferences(),
       showMagicAttack: Boolean(preferences?.showMagicAttack),
       language: window.AniipediaI18n.normalizeLocale(preferences?.language),
+      theme: normalizeThemeId(preferences?.theme),
+      customTheme: normalizeThemeColors(preferences?.customTheme),
     };
   } catch (error) {
     state.tracking = new Map();
     state.completed = new Set();
-    state.preferences = { ...DEFAULT_PREFERENCES };
+    state.preferences = defaultPreferences();
     updateLocalStorageError(error);
   }
 }
@@ -984,7 +1140,9 @@ function resetLocalData() {
   try {
     state.tracking = new Map();
     state.completed = new Set();
-    state.preferences = { ...DEFAULT_PREFERENCES };
+    state.preferences = defaultPreferences();
+    applyThemePreference();
+    state.settingsThemeDraft = themeDraftFromPreferences();
     clearLocalTracking();
   } finally {
     state.pendingReset = false;
@@ -1122,8 +1280,271 @@ function renderTracking() {
   updateTrackingCountdowns();
 }
 
+function themeDraftFromPreferences() {
+  return {
+    id: normalizeThemeId(state.preferences.theme),
+    customColors: normalizeThemeColors(state.preferences.customTheme),
+  };
+}
+
+function themeDraftMatchesPreferences(draft) {
+  if (!draft || normalizeThemeId(draft.id) !== normalizeThemeId(state.preferences.theme)) return false;
+  return THEME_COLOR_FIELDS.every((field) => (
+    normalizeThemeColors(draft.customColors)[field.id] === normalizeThemeColors(state.preferences.customTheme)[field.id]
+  ));
+}
+
+function themeDraftColors(draft) {
+  return themeColorsFor(draft?.id, draft?.customColors);
+}
+
+function updateThemePreview(preview, draft) {
+  if (!preview || !draft) return;
+  const colors = setThemeVariables(preview, themeDraftColors(draft));
+  const preset = draft.id === "custom" ? null : THEME_PRESETS[normalizeThemeId(draft.id)];
+  preview.dataset.themePreview = draft.id;
+  preview.dataset.themeMotif = preset?.motif || "custom";
+  const name = preview.querySelector("[data-theme-preview-name]");
+  if (name) name.textContent = preset?.label || "Custom";
+  preview.querySelectorAll("[data-theme-preview-swatch]").forEach((swatch) => {
+    const color = colors[swatch.dataset.themePreviewSwatch];
+    if (color) swatch.style.background = color;
+  });
+}
+
+function renderThemePreview(draft) {
+  const preview = document.createElement("div");
+  preview.className = "theme-preview";
+  preview.setAttribute("aria-label", "Live theme preview");
+
+  const header = document.createElement("div");
+  header.className = "theme-preview-header";
+  const heading = document.createElement("div");
+  const eyebrow = document.createElement("small");
+  eyebrow.textContent = "Live preview";
+  const title = document.createElement("strong");
+  title.dataset.themePreviewName = "";
+  heading.append(eyebrow, title);
+  const unchangedAssets = document.createElement("div");
+  unchangedAssets.className = "theme-preview-assets";
+  [THEME_PRESETS.emberpup, THEME_PRESETS.pawney].forEach((preset) => {
+    const image = document.createElement("img");
+    image.src = preset.icon;
+    image.alt = `${preset.label} game asset (unchanged)`;
+    image.title = "Game assets keep their original colors";
+    unchangedAssets.append(image);
+  });
+  header.append(heading, unchangedAssets);
+
+  const nav = document.createElement("div");
+  nav.className = "theme-preview-nav";
+  const motif = document.createElement("span");
+  motif.className = "theme-preview-motif";
+  motif.setAttribute("aria-hidden", "true");
+  const navLabel = document.createElement("strong");
+  navLabel.textContent = "Aniimo index";
+  const active = document.createElement("span");
+  active.className = "theme-preview-active";
+  active.textContent = "Active";
+  nav.append(motif, navLabel, active);
+
+  const card = document.createElement("div");
+  card.className = "theme-preview-card";
+  const badge = document.createElement("span");
+  badge.className = "theme-preview-badge";
+  badge.textContent = "Highlight";
+  const cardTitle = document.createElement("strong");
+  cardTitle.textContent = "Raised card and border";
+  const copy = document.createElement("p");
+  copy.textContent = "Primary and muted text remain readable across every surface.";
+  const divider = document.createElement("div");
+  divider.className = "theme-preview-divider";
+  const actions = document.createElement("div");
+  actions.className = "theme-preview-actions";
+  const primary = document.createElement("button");
+  primary.type = "button";
+  primary.textContent = "Primary action";
+  primary.tabIndex = -1;
+  const hovered = document.createElement("button");
+  hovered.type = "button";
+  hovered.className = "theme-preview-hover";
+  hovered.textContent = "Hover state";
+  hovered.tabIndex = -1;
+  actions.append(primary, hovered);
+  card.append(badge, cardTitle, copy, divider, actions);
+
+  const swatches = document.createElement("div");
+  swatches.className = "theme-preview-swatches";
+  THEME_COLOR_FIELDS.forEach((field) => {
+    const swatch = document.createElement("span");
+    swatch.dataset.themePreviewSwatch = field.id;
+    swatch.title = field.label;
+    swatches.append(swatch);
+  });
+  const rarity = document.createElement("div");
+  rarity.className = "theme-preview-rarity";
+  const rarityLabel = document.createElement("small");
+  rarityLabel.textContent = "Rarity glows stay unchanged";
+  const rarityTiers = document.createElement("div");
+  ["Grey", "Blue", "Purple", "Gold"].forEach((tier) => {
+    const chip = document.createElement("span");
+    chip.className = `theme-preview-rarity-chip theme-preview-rarity-chip--${tier.toLowerCase()}`;
+    chip.textContent = tier;
+    rarityTiers.append(chip);
+  });
+  rarity.append(rarityLabel, rarityTiers);
+  preview.append(header, nav, card, swatches, rarity);
+  updateThemePreview(preview, draft);
+  return preview;
+}
+
+function renderThemeSettingsCard() {
+  if (!state.settingsThemeDraft) state.settingsThemeDraft = themeDraftFromPreferences();
+  const draft = state.settingsThemeDraft;
+  const section = document.createElement("section");
+  section.className = "settings-card settings-theme-card";
+
+  const copy = document.createElement("div");
+  copy.className = "settings-account";
+  const title = document.createElement("strong");
+  title.textContent = "Website theme";
+  const detail = document.createElement("small");
+  detail.textContent = "Preview UI colors and motifs here. Game artwork and rarity glows always keep their original colors.";
+  copy.append(title, detail);
+
+  const choices = document.createElement("div");
+  choices.className = "theme-preset-grid";
+  [...Object.values(THEME_PRESETS), { id: "custom", label: "Custom", description: "Build and save your own palette.", icon: "" }]
+    .forEach((preset) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "theme-preset";
+      button.dataset.themeChoice = preset.id;
+      button.setAttribute("aria-pressed", String(draft.id === preset.id));
+      if (preset.icon) {
+        const image = document.createElement("img");
+        image.src = preset.icon;
+        image.alt = "";
+        button.append(image);
+      } else {
+        const glyph = document.createElement("span");
+        glyph.className = `theme-preset-glyph theme-preset-glyph--${preset.id}`;
+        glyph.setAttribute("aria-hidden", "true");
+        button.append(glyph);
+      }
+      const text = document.createElement("span");
+      const name = document.createElement("strong");
+      name.textContent = preset.label;
+      const description = document.createElement("small");
+      description.textContent = preset.description;
+      text.append(name, description);
+      button.append(text);
+      button.addEventListener("click", () => {
+        draft.id = preset.id;
+        renderSettings();
+      });
+      choices.append(button);
+    });
+
+  const preview = renderThemePreview(draft);
+  section.append(copy, choices, preview);
+
+  if (draft.id === "custom") {
+    const customHeader = document.createElement("div");
+    customHeader.className = "theme-custom-heading";
+    const customTitle = document.createElement("strong");
+    customTitle.textContent = "Custom colors";
+    const customHint = document.createElement("small");
+    customHint.textContent = "Changes update the example above immediately and remain a draft until Apply theme.";
+    customHeader.append(customTitle, customHint);
+
+    const starters = document.createElement("div");
+    starters.className = "theme-starter-actions";
+    Object.values(THEME_PRESETS).forEach((preset) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `Start from ${preset.label}`;
+      button.addEventListener("click", () => {
+        draft.customColors = normalizeThemeColors(preset.colors);
+        renderSettings();
+      });
+      starters.append(button);
+    });
+
+    const editor = document.createElement("div");
+    editor.className = "theme-color-editor";
+    THEME_COLOR_FIELDS.forEach((field) => {
+      const row = document.createElement("label");
+      row.className = "theme-color-field";
+      const rowCopy = document.createElement("span");
+      const fieldName = document.createElement("strong");
+      fieldName.textContent = field.label;
+      const fieldDescription = document.createElement("small");
+      fieldDescription.textContent = field.description;
+      rowCopy.append(fieldName, fieldDescription);
+      const controls = document.createElement("span");
+      controls.className = "theme-color-controls";
+      const picker = document.createElement("input");
+      picker.type = "color";
+      picker.value = normalizeThemeColors(draft.customColors)[field.id];
+      picker.setAttribute("aria-label", field.label);
+      const value = document.createElement("input");
+      value.type = "text";
+      value.value = picker.value;
+      value.maxLength = 7;
+      value.spellcheck = false;
+      value.dataset.i18nSkip = "";
+      value.setAttribute("aria-label", `${field.label} hex color`);
+      const update = (nextValue) => {
+        const valid = /^#[0-9a-f]{6}$/i.test(nextValue);
+        value.setAttribute("aria-invalid", String(!valid));
+        if (!valid) return;
+        const color = nextValue.toLowerCase();
+        draft.customColors[field.id] = color;
+        picker.value = color;
+        value.value = color;
+        updateThemePreview(preview, draft);
+      };
+      picker.addEventListener("input", () => update(picker.value));
+      value.addEventListener("input", () => update(value.value.trim()));
+      controls.append(picker, value);
+      row.append(rowCopy, controls);
+      editor.append(row);
+    });
+    section.append(customHeader, starters, editor);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "theme-apply-actions";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.textContent = "Reset preview";
+  cancel.disabled = themeDraftMatchesPreferences(draft);
+  cancel.addEventListener("click", () => {
+    state.settingsThemeDraft = themeDraftFromPreferences();
+    renderSettings();
+  });
+  const apply = document.createElement("button");
+  apply.type = "button";
+  apply.className = "theme-apply-button";
+  apply.textContent = themeDraftMatchesPreferences(draft) ? "Theme applied" : "Apply theme";
+  apply.disabled = themeDraftMatchesPreferences(draft);
+  apply.addEventListener("click", () => {
+    state.preferences.theme = normalizeThemeId(draft.id);
+    state.preferences.customTheme = normalizeThemeColors(draft.customColors);
+    persistLocalTracking();
+    applyThemePreference();
+    state.settingsThemeDraft = themeDraftFromPreferences();
+    renderSettings();
+  });
+  actions.append(cancel, apply);
+  section.append(actions);
+  return section;
+}
+
 function renderSettings() {
   els.settingsContent.textContent = "";
+  els.settingsContent.append(renderThemeSettingsCard());
   const languageCard = document.createElement("section");
   languageCard.className = "settings-card settings-language-card";
   const languageCopy = document.createElement("div");
@@ -1245,6 +1666,7 @@ function openSettings() {
   if (state.settingsOpen) return;
   state.settingsOpen = true;
   state.settingsFocusReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  state.settingsThemeDraft = themeDraftFromPreferences();
   renderSettings();
   els.settingsOverlay.hidden = false;
   els.settingsButton.setAttribute("aria-expanded", "true");
@@ -1254,6 +1676,7 @@ function openSettings() {
 function closeSettings() {
   if (!state.settingsOpen) return;
   state.settingsOpen = false;
+  state.settingsThemeDraft = null;
   els.settingsOverlay.hidden = true;
   els.settingsButton.setAttribute("aria-expanded", "false");
   const focusTarget = state.settingsFocusReturn || els.settingsButton;
@@ -6705,6 +7128,7 @@ function bindEvents() {
 
 async function init() {
   loadLocalTracking();
+  applyThemePreference();
   try {
     await window.AniipediaI18n.load(state.preferences.language);
   } catch (error) {
