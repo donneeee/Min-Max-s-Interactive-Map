@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v010";
+  const ASSET_VERSION = "20260719-localization-v011";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -32,6 +32,7 @@
     ["Settings sections", "设置分区", "設定セクション", "설정 섹션"],
     ["General Settings", "常规设置", "一般設定", "일반 설정"],
     ["Themes", "主题", "テーマ", "테마"],
+    ["You have unapplied theme changes. Close Settings and discard this draft?", "您有尚未应用的主题更改。要关闭设置并放弃此草稿吗？", "未適用のテーマ変更があります。設定を閉じて、この下書きを破棄しますか？", "적용하지 않은 테마 변경 사항이 있습니다. 설정을 닫고 이 초안을 버리시겠습니까?"],
     ["Website theme", "网站主题", "ウェブサイトテーマ", "웹사이트 테마"],
     ["Preview UI colors and motifs here. Game artwork and rarity glows always keep their original colors.", "在此预览界面颜色和图案。游戏美术资源与稀有度光效始终保留原始颜色。", "ここでUIの色とモチーフをプレビューできます。ゲーム画像とレアリティの発光色は常に元のままです。", "여기에서 UI 색상과 모티프를 미리 볼 수 있습니다. 게임 이미지와 희귀도 광원은 항상 원래 색상을 유지합니다."],
     ["The original cool mint and gold interface.", "原版的冷薄荷绿与金色界面。", "従来のクールなミントとゴールドの画面です。", "기존의 시원한 민트와 골드 인터페이스입니다."],
