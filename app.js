@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260719-localization-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-rv-loot-v003";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-sand-rush-icon-v001";
-const APP_VERSION = "v0.3.83";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
+const APP_VERSION = "v0.3.84";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
 const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
@@ -1308,6 +1308,7 @@ function ensureAniilogData() {
       if (!Array.isArray(payload?.entries) || !payload?.totals) {
         throw new Error("Aniilog data has an invalid format");
       }
+      window.AniipediaI18n.registerDisplay(payload.localizations);
       state.aniilogData = payload;
       state.aniilogLoadError = "";
       return payload;

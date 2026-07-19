@@ -1,34 +1,42 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "fallback_locale": "en",
   "locales": {
     "en": {
       "file": "en.json",
       "uid_count": 92954,
       "display_count": 0,
+      "template_count": 0,
       "missing_english_uid_count": 0,
-      "ambiguous_display_sources": 0
+      "ambiguous_display_sources": 0,
+      "ambiguous_template_sources": 0
     },
     "zh-CN": {
       "file": "zh-CN.json",
       "uid_count": 92952,
       "display_count": 41075,
+      "template_count": 696,
       "missing_english_uid_count": 4,
-      "ambiguous_display_sources": 830
+      "ambiguous_display_sources": 830,
+      "ambiguous_template_sources": 20
     },
     "ja": {
       "file": "ja.json",
       "uid_count": 92954,
       "display_count": 41231,
+      "template_count": 705,
       "missing_english_uid_count": 0,
-      "ambiguous_display_sources": 724
+      "ambiguous_display_sources": 724,
+      "ambiguous_template_sources": 11
     },
     "ko": {
       "file": "ko.json",
       "uid_count": 92954,
       "display_count": 41120,
+      "template_count": 709,
       "missing_english_uid_count": 0,
-      "ambiguous_display_sources": 771
+      "ambiguous_display_sources": 771,
+      "ambiguous_template_sources": 7
     }
   }
 }

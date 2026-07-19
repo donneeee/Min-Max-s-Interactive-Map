@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v001";
+  const ASSET_VERSION = "20260719-localization-v003";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -180,6 +180,29 @@
     ["Research topic", "研究主题", "リサーチ項目", "연구 주제"],
     ["Research level rewards", "研究等级奖励", "リサーチレベル報酬", "연구 레벨 보상"],
     ["Accessory slot", "饰品栏位", "アクセサリースロット", "액세서리 슬롯"],
+    ["Unlock by obtaining", "获取以下伊莫后解锁", "次のAniimoを入手すると解放", "다음 Aniimo 획득 시 해금"],
+    ["and", "和", "と", "및"],
+    ["habitat areas", "栖息区域", "生息エリア", "서식 지역"],
+    ["The Lost Islets", "失落群岛", "失われた群島", "잃어버린 군도"],
+    ["Temporary skill-based evolution", "技能触发的临时进化", "スキルによる一時進化", "스킬로 발동하는 임시 진화"],
+    ["BREAK", "破韧", "ブレイク", "브레이크"],
+    ["Bay", "海湾", "湾", "만"],
+    ["Beach", "沙滩", "浜辺", "해변"],
+    ["Cloudmist", "云雾", "雲霧", "운무"],
+    ["Forest", "森林", "森林", "숲"],
+    ["Grassland", "草原", "草原", "초원"],
+    ["Highland", "高地", "高地", "고지"],
+    ["Mountain", "山地", "山岳", "산악"],
+    ["Mountain Woods", "山林", "山林", "산림"],
+    ["Mudflat", "滩涂", "干潟", "갯벌"],
+    ["Nighttime", "夜间", "夜間", "야간"],
+    ["Plateau", "高原", "高原", "고원"],
+    ["Rainstorm", "暴雨", "暴雨", "폭우"],
+    ["Sea of Flowers", "花海", "花畑", "꽃바다"],
+    ["Snowfield", "雪原", "雪原", "설원"],
+    ["Special", "特殊", "特殊", "특수"],
+    ["Thunderstorm", "雷暴", "雷雨", "뇌우"],
+    ["Towerwood", "塔林", "塔の森", "탑의 숲"],
   );
 
   const UI_TRANSLATIONS = Object.fromEntries(Object.keys(SUPPORTED_LANGUAGES).map((locale) => [locale, new Map()]));
@@ -193,6 +216,34 @@
   let activeLocale = "en";
   let payload = null;
   let observer = null;
+  let registeredDisplay = new Map();
+  let templateMatchers = [];
+
+  function escapePattern(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function compileTemplateMatchers(templates) {
+    return Object.entries(templates || {}).map(([source, target]) => {
+      const segments = source.split("{value}").map((segment) => escapePattern(segment).replace(/\s+/g, "\\s*"));
+      return {
+        pattern: new RegExp(`^${segments.join("([+-]?\\d+(?:\\.\\d+)?)")}$`),
+        prefix: source.split("{value}", 1)[0],
+        target,
+      };
+    });
+  }
+
+  function translateTemplate(text) {
+    for (const matcher of templateMatchers) {
+      if (matcher.prefix && !text.startsWith(matcher.prefix)) continue;
+      const match = text.match(matcher.pattern);
+      if (!match) continue;
+      let valueIndex = 1;
+      return matcher.target.replace(/\{value\}/g, () => match[valueIndex++] || "");
+    }
+    return "";
+  }
 
   function normalizeLocale(value) {
     const locale = String(value || "").trim();
@@ -200,6 +251,30 @@
   }
 
   function translatePattern(text) {
+    const templated = translateTemplate(text);
+    if (templated) return templated;
+    const statSort = text.match(/^(.+) \(high to low\)$/);
+    if (statSort) {
+      const translatedStat = translate(statSort[1]);
+      const suffix = UI_TRANSLATIONS[activeLocale].get("high to low") || "high to low";
+      return `${translatedStat} (${suffix})`;
+    }
+    const locationMeta = text.match(/^(\d+) spawns?(?: · (\d+) habitats?)?$/);
+    if (locationMeta) {
+      if (activeLocale === "zh-CN") return `${locationMeta[1]} 个刷新点${locationMeta[2] ? ` · ${locationMeta[2]} 个栖息区域` : ""}`;
+      if (activeLocale === "ja") return `${locationMeta[1]} 出現地点${locationMeta[2] ? ` · ${locationMeta[2]} 生息エリア` : ""}`;
+      if (activeLocale === "ko") return `출현 지점 ${locationMeta[1]}개${locationMeta[2] ? ` · 서식 지역 ${locationMeta[2]}개` : ""}`;
+    }
+    const habitatAreas = text.match(/^(.+) habitat areas$/);
+    if (habitatAreas) {
+      return `${translate(habitatAreas[1])} ${UI_TRANSLATIONS[activeLocale].get("habitat areas")}`;
+    }
+    const unlock = text.match(/^Unlock by obtaining (.+)$/);
+    if (unlock) {
+      const conjunction = UI_TRANSLATIONS[activeLocale].get("and") || "and";
+      const labels = unlock[1].split(" and ").map((label) => translate(label));
+      return `${UI_TRANSLATIONS[activeLocale].get("Unlock by obtaining")} ${labels.join(` ${conjunction} `)}`;
+    }
     const patterns = {
       "zh-CN": [
         [/^(\d+) tracked$/, "$1 个已追踪"],
@@ -212,7 +287,6 @@
         [/^Level (\d+)$/, "等级 $1"],
         [/^(\d+) research topics$/, "$1 个研究主题"],
         [/^(\d+) total research points$/, "研究点数总计 $1"],
-        [/^(.+) \(high to low\)$/, "$1（从高到低）"],
       ],
       ja: [
         [/^(\d+) tracked$/, "$1 件追跡中"],
@@ -225,7 +299,6 @@
         [/^Level (\d+)$/, "レベル $1"],
         [/^(\d+) research topics$/, "$1 件のリサーチ項目"],
         [/^(\d+) total research points$/, "合計リサーチポイント $1"],
-        [/^(.+) \(high to low\)$/, "$1（高い順）"],
       ],
       ko: [
         [/^(\d+) tracked$/, "$1개 추적 중"],
@@ -238,7 +311,6 @@
         [/^Level (\d+)$/, "레벨 $1"],
         [/^(\d+) research topics$/, "연구 주제 $1개"],
         [/^(\d+) total research points$/, "총 연구 포인트 $1"],
-        [/^(.+) \(high to low\)$/, "$1 (높은 순)"],
       ],
     };
     for (const [pattern, replacement] of patterns[activeLocale] || []) {
@@ -267,15 +339,20 @@
         text,
       );
     }
-    const formSuffix = text.match(/^(.*?)(\s[-–—]\s)(Basic|Legendary|Prismana|Umbrabow)$/);
+    const formSuffix = text.match(/^(.*?)(\s[-–—]\s)([^-–—]+)$/);
     if (formSuffix) {
-      return `${formSuffix[1]}${formSuffix[2]}${UI_TRANSLATIONS[activeLocale].get(formSuffix[3]) || formSuffix[3]}`;
+      const localizedForm = UI_TRANSLATIONS[activeLocale].get(formSuffix[3]) || payload?.display?.[formSuffix[3]];
+      if (localizedForm) return `${formSuffix[1]}${formSuffix[2]}${localizedForm}`;
     }
-    const parentheticalForm = text.match(/^(.*?)\s\((Basic|Legendary|Prismana|Umbrabow)\)$/);
+    const parentheticalForm = text.match(/^(.*?)\s\(([^()]+)\)$/);
     if (parentheticalForm) {
       const localizedName = payload?.display?.[parentheticalForm[1]] || parentheticalForm[1];
-      const localizedForm = UI_TRANSLATIONS[activeLocale].get(parentheticalForm[2]) || parentheticalForm[2];
-      return `${localizedName} (${localizedForm})`;
+      const localizedForm = UI_TRANSLATIONS[activeLocale].get(parentheticalForm[2])
+        || payload?.display?.[parentheticalForm[2]]
+        || parentheticalForm[2];
+      if (localizedName !== parentheticalForm[1] || localizedForm !== parentheticalForm[2]) {
+        return `${localizedName} (${localizedForm})`;
+      }
     }
     return text;
   }
@@ -283,7 +360,8 @@
   function translate(value) {
     const source = String(value ?? "");
     if (activeLocale === "en" || !source) return source;
-    const direct = UI_TRANSLATIONS[activeLocale].get(source)
+    const direct = registeredDisplay.get(source)
+      || UI_TRANSLATIONS[activeLocale].get(source)
       || payload?.display?.[source];
     if (direct) return direct;
     const punctuated = source.match(/^(.*?)([.!?])$/);
@@ -295,8 +373,14 @@
     const labeled = source.match(/^(Class|Type):\s*(.+)$/);
     if (labeled) {
       const label = UI_TRANSLATIONS[activeLocale].get(labeled[1]) || labeled[1];
-      const content = UI_TRANSLATIONS[activeLocale].get(labeled[2]) || payload?.display?.[labeled[2]] || labeled[2];
+      const content = translate(labeled[2]);
       return `${label}: ${content}`;
+    }
+    const composite = source.match(/^(.+?):\s+(.+)$/);
+    if (composite) {
+      const left = translate(composite[1]);
+      const right = translate(composite[2]);
+      if (left !== composite[1] || right !== composite[2]) return `${left}: ${right}`;
     }
     return translatePattern(source);
   }
@@ -345,6 +429,8 @@
     activeLocale = normalizeLocale(locale);
     document.documentElement.lang = SUPPORTED_LANGUAGES[activeLocale].htmlLang;
     payload = null;
+    registeredDisplay = new Map();
+    templateMatchers = [];
     if (activeLocale !== "en") {
       const response = await fetch(`./data/i18n/${activeLocale}.json?v=${ASSET_VERSION}`);
       if (!response.ok) throw new Error(`Could not load localization for ${activeLocale}`);
@@ -352,6 +438,7 @@
       if (payload?.locale !== activeLocale || !payload?.texts || !payload?.display) {
         throw new Error(`Localization data has an invalid format for ${activeLocale}`);
       }
+      templateMatchers = compileTemplateMatchers(payload.templates);
     }
     window.__aniipediaI18nDiagnostics = {
       locale: activeLocale,
@@ -359,7 +446,17 @@
       uidCount: Number(payload?.uid_count || 0),
       missingEnglishUidCount: Array.isArray(payload?.missing_english_uids) ? payload.missing_english_uids.length : 0,
       displayCount: payload?.display ? Object.keys(payload.display).length : 0,
+      templateCount: payload?.templates ? Object.keys(payload.templates).length : 0,
     };
+  }
+
+  function registerDisplay(localizations) {
+    const additions = localizations?.[activeLocale];
+    if (!additions || typeof additions !== "object") return;
+    Object.entries(additions).forEach(([source, target]) => {
+      if (source && target) registeredDisplay.set(source, target);
+    });
+    translateTree(document.body);
   }
 
   function start() {
@@ -393,6 +490,7 @@
     languages: SUPPORTED_LANGUAGES,
     load,
     normalizeLocale,
+    registerDisplay,
     searchAlias,
     start,
     translate,
