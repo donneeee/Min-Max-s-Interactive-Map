@@ -1458,6 +1458,12 @@ button[aria-pressed="true"] {
   text-transform: uppercase;
 }
 
+.catalog-category-label--source {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(80, 96, 103, 0.56);
+}
+
 .catalog-category-toolbar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2063,6 +2069,53 @@ body.catalog-view-active .sidebar .detail-panel {
   display: grid;
   gap: 8px;
   max-width: 72ch;
+}
+
+.catalog-expedition-list {
+  display: grid;
+  gap: 8px;
+}
+
+.catalog-expedition-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) minmax(100px, 0.9fr) minmax(115px, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(104, 149, 157, 0.48);
+  border-radius: 7px;
+  background: rgba(34, 50, 53, 0.48);
+}
+
+.catalog-expedition-row strong {
+  color: var(--text);
+}
+
+.catalog-expedition-trip,
+.catalog-expedition-kind {
+  color: var(--muted);
+}
+
+.catalog-expedition-quantity {
+  justify-self: end;
+  color: #d7fff4;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .catalog-expedition-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .catalog-expedition-kind {
+    grid-column: 1;
+  }
+
+  .catalog-expedition-quantity {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }
 
 .catalog-itemlog-record .catalog-obtain-list,

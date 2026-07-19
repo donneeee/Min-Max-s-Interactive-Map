@@ -1,8 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260719-rv-boss-icons-v002";
-const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-rv-boss-icons-v002";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-rv-boss-icons-v002";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-rv-boss-icons-v002";
-const APP_VERSION = "v0.3.72";
+const DATA_URL = "./data/map_site_data.json?v=20260719-rv-expeditions-v003";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-rv-expeditions-v003";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-rv-expeditions-v003";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-rv-expeditions-v003";
+const APP_VERSION = "v0.3.73";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
 const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
@@ -178,6 +178,11 @@ const state = {
   catalogCategory: {
     aniilog: "all",
     itemlog: "all",
+  },
+  itemlogFilters: {
+    source: "all",
+    park: "all",
+    tier: "all",
   },
   aniilogFiltersOpen: true,
   aniilogFilterSectionsOpen: new Set(["classes"]),
@@ -1355,6 +1360,20 @@ function catalogCategoriesForView(view = state.sidebarView) {
   return ["all", ...categories];
 }
 
+function itemlogExpeditionSources(entry) {
+  return Array.isArray(entry?.rv_expedition_sources) ? entry.rv_expedition_sources : [];
+}
+
+function itemlogEntryMatchesFilters(entry) {
+  if (state.itemlogFilters.source !== "rv-expedition") return true;
+  const park = state.itemlogFilters.park;
+  const tier = state.itemlogFilters.tier;
+  return itemlogExpeditionSources(entry).some((source) => (
+    (park === "all" || source?.park === park)
+    && (tier === "all" || String(source?.duration_hours) === tier)
+  ));
+}
+
 function catalogEntriesForView(view = state.sidebarView) {
   let entries = allCatalogEntriesForView(view);
   if (view === "aniilog") {
@@ -1364,6 +1383,7 @@ function catalogEntriesForView(view = state.sidebarView) {
     entries = category === "all"
       ? entries
       : entries.filter((entry) => catalogCategoryForEntry(entry, view) === category);
+    if (view === "itemlog") entries = entries.filter(itemlogEntryMatchesFilters);
   }
   const query = catalogSearchForView(view).trim().toLowerCase();
   if (query) {
@@ -1455,6 +1475,12 @@ function catalogEntrySearchText(entry) {
     entry?.quality,
     entry?.description,
     entry?.obtain_methods?.flatMap((method) => [method?.label, method?.detail]),
+    entry?.rv_expedition_sources?.flatMap((source) => [
+      source?.park,
+      source?.mode,
+      source?.reward_kind,
+      source?.duration_hours ? `${source.duration_hours}h` : "",
+    ]),
     entry?.carried_effects?.base_attributes,
     entry?.carried_effects?.core_effects,
     entry?.carried_effects?.advanced_effects?.flatMap((effect) => effect?.effects),
@@ -2433,6 +2459,14 @@ function renderCatalogCategoryToolbar(view) {
   const categories = catalogCategoriesForView(view);
 
   if (view === "itemlog") {
+    const refreshItemlogFilters = () => {
+      state.catalogIndexScroll[view] = 0;
+      const visibleEntries = catalogEntriesForView(view);
+      if (!visibleEntries.some((entry) => entry.id === state.catalogSelection[view])) {
+        state.catalogSelection[view] = visibleEntries[0]?.id || "";
+      }
+      renderCatalogPreview();
+    };
     const select = document.createElement("select");
     select.className = "catalog-category-select";
     select.setAttribute("aria-label", "Item categories");
@@ -2449,14 +2483,84 @@ function renderCatalogCategoryToolbar(view) {
     });
     select.addEventListener("change", () => {
       state.catalogCategory[view] = select.value;
-      state.catalogIndexScroll[view] = 0;
-      const visibleEntries = catalogEntriesForView(view);
-      if (!visibleEntries.some((entry) => entry.id === state.catalogSelection[view])) {
-        state.catalogSelection[view] = visibleEntries[0]?.id || "";
-      }
-      renderCatalogPreview();
+      refreshItemlogFilters();
     });
     group.append(label, select);
+
+    const sourceLabel = document.createElement("p");
+    sourceLabel.className = "catalog-category-label catalog-category-label--source";
+    sourceLabel.textContent = "Source";
+    const sourceSelect = document.createElement("select");
+    sourceSelect.className = "catalog-category-select";
+    sourceSelect.setAttribute("aria-label", "Item source");
+    const sourceOptions = [
+      { id: "all", label: `All sources (${formatNumber(allCatalogEntriesForView(view).length)})` },
+      {
+        id: "rv-expedition",
+        label: `RV Park Expeditions (${formatNumber(state.itemlogData?.totals?.rv_expedition_items || 0)})`,
+      },
+    ];
+    sourceOptions.forEach((source) => {
+      const option = document.createElement("option");
+      option.value = source.id;
+      option.textContent = source.label;
+      option.selected = state.itemlogFilters.source === source.id;
+      sourceSelect.append(option);
+    });
+    sourceSelect.addEventListener("change", () => {
+      state.itemlogFilters.source = sourceSelect.value;
+      if (sourceSelect.value === "rv-expedition") state.catalogCategory[view] = "all";
+      if (sourceSelect.value !== "rv-expedition") {
+        state.itemlogFilters.park = "all";
+        state.itemlogFilters.tier = "all";
+      }
+      refreshItemlogFilters();
+    });
+    group.append(sourceLabel, sourceSelect);
+
+    if (state.itemlogFilters.source === "rv-expedition") {
+      const parkLabel = document.createElement("p");
+      parkLabel.className = "catalog-category-label";
+      parkLabel.textContent = "RV Park";
+      const parkSelect = document.createElement("select");
+      parkSelect.className = "catalog-category-select";
+      parkSelect.setAttribute("aria-label", "RV Park");
+      ["all", ...(state.itemlogData?.rv_expedition_filters?.parks || [])].forEach((park) => {
+        const option = document.createElement("option");
+        option.value = park;
+        option.textContent = park === "all" ? "All RV Parks" : park;
+        option.selected = state.itemlogFilters.park === park;
+        parkSelect.append(option);
+      });
+      parkSelect.addEventListener("change", () => {
+        state.itemlogFilters.park = parkSelect.value;
+        refreshItemlogFilters();
+      });
+
+      const tierLabel = document.createElement("p");
+      tierLabel.className = "catalog-category-label";
+      tierLabel.textContent = "Expedition tier";
+      const tierSelect = document.createElement("select");
+      tierSelect.className = "catalog-category-select";
+      tierSelect.setAttribute("aria-label", "Expedition tier");
+      const tierOptions = [
+        { duration_hours: "all", mode: "All tiers" },
+        ...(state.itemlogData?.rv_expedition_filters?.tiers || []),
+      ];
+      tierOptions.forEach((tier) => {
+        const value = String(tier.duration_hours);
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value === "all" ? tier.mode : `${value}h ${tier.mode}`;
+        option.selected = state.itemlogFilters.tier === value;
+        tierSelect.append(option);
+      });
+      tierSelect.addEventListener("change", () => {
+        state.itemlogFilters.tier = tierSelect.value;
+        refreshItemlogFilters();
+      });
+      group.append(parkLabel, parkSelect, tierLabel, tierSelect);
+    }
     return group;
   }
 
@@ -3183,6 +3287,47 @@ function renderItemLogObtainMethods(methods) {
   return section;
 }
 
+function visibleRvExpeditionSources(entry) {
+  const sources = itemlogExpeditionSources(entry);
+  if (state.itemlogFilters.source !== "rv-expedition") return sources;
+  return sources.filter((source) => (
+    (state.itemlogFilters.park === "all" || source?.park === state.itemlogFilters.park)
+    && (state.itemlogFilters.tier === "all" || String(source?.duration_hours) === state.itemlogFilters.tier)
+  ));
+}
+
+function renderRvExpeditionSources(entry) {
+  const sources = visibleRvExpeditionSources(entry);
+  if (!sources.length) return null;
+
+  const section = createCatalogSection("RV Park expeditions");
+  const list = document.createElement("div");
+  list.className = "catalog-expedition-list";
+  sources.forEach((source) => {
+    const row = document.createElement("div");
+    row.className = "catalog-expedition-row";
+
+    const park = document.createElement("strong");
+    park.textContent = source.park;
+    const trip = document.createElement("span");
+    trip.className = "catalog-expedition-trip";
+    trip.textContent = `${source.duration_hours}h ${source.mode}`;
+    const kind = document.createElement("span");
+    kind.className = "catalog-expedition-kind";
+    kind.textContent = source.reward_kind;
+    const quantity = document.createElement("span");
+    quantity.className = "catalog-expedition-quantity";
+    quantity.textContent = Number.isFinite(Number(source.quantity_min))
+      && Number.isFinite(Number(source.quantity_max))
+      ? `x${formatNumber(source.quantity_min)}–${formatNumber(source.quantity_max)}`
+      : "Possible reward";
+    row.append(park, trip, kind, quantity);
+    list.append(row);
+  });
+  section.append(list);
+  return section;
+}
+
 function appendCarriedEffectRow(list, label, effects, unlockLevel = 0) {
   const values = Array.isArray(effects) ? effects.filter(Boolean) : [];
   if (!values.length) return false;
@@ -3282,7 +3427,13 @@ function renderItemLogCatalogRecord(entry) {
 
   const requirements = renderItemLogRequirements(entry.requirements);
   if (requirements) record.append(requirements);
-  const obtainMethods = renderItemLogObtainMethods(entry.obtain_methods);
+  const expeditionSources = renderRvExpeditionSources(entry);
+  if (expeditionSources) record.append(expeditionSources);
+  const obtainMethods = renderItemLogObtainMethods(
+    Array.isArray(entry.obtain_methods)
+      ? entry.obtain_methods.filter((method) => method?.label !== "RV Park Expedition")
+      : [],
+  );
   if (obtainMethods) record.append(obtainMethods);
   const carriedEffects = renderCarriedItemEffects(entry.carried_effects);
   if (carriedEffects) record.append(carriedEffects);
