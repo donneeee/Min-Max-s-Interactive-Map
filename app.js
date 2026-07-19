@@ -1,8 +1,10 @@
-const DATA_URL = "./data/map_site_data.json?v=20260717-geography-hierarchy-v001";
-const CHECKLIST_URL = "./data/checklist_data.json?v=20260717-lumin-marking-icon-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260718-itemlog-icon-recovery-v002";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260718-skill-variants-v002";
-const APP_VERSION = "v0.3.63";
+const DATA_URL = "./data/map_site_data.json?v=20260719-rv-boss-icons-v002";
+const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-rv-boss-icons-v002";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-rv-boss-icons-v002";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-rv-boss-icons-v002";
+const APP_VERSION = "v0.3.68";
+const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
+const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
 const LOCAL_COMPLETION_STORAGE_KEY = "minmax-map:completed:v1";
@@ -142,6 +144,9 @@ const state = {
   sidebarView: "map",
   settingsOpen: false,
   settingsFocusReturn: null,
+  changelogOpen: false,
+  changelogFocusReturn: null,
+  changelogLoadToken: 0,
   tracking: new Map(),
   completed: new Set(),
   checklistData: null,
@@ -211,6 +216,9 @@ const els = {
   settingsButton: document.querySelector("#settingsButton"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
   settingsCloseButton: document.querySelector("#settingsCloseButton"),
+  changelogOverlay: document.querySelector("#changelogOverlay"),
+  changelogCloseButton: document.querySelector("#changelogCloseButton"),
+  changelogContent: document.querySelector("#changelogContent"),
   mapWorkspace: document.querySelector("#mapWorkspace"),
   trackingWorkspace: document.querySelector("#trackingWorkspace"),
   checklistWorkspace: document.querySelector("#checklistWorkspace"),
@@ -1165,6 +1173,81 @@ function closeSettings() {
   els.settingsButton.setAttribute("aria-expanded", "false");
   const focusTarget = state.settingsFocusReturn || els.settingsButton;
   state.settingsFocusReturn = null;
+  focusTarget.focus();
+}
+
+function renderGitHubChangelog(commits) {
+  const fragment = document.createDocumentFragment();
+  commits.forEach((entry) => {
+    const commit = entry?.commit || {};
+    const subject = String(commit.message || "GitHub update").split(/\r?\n/, 1)[0];
+    const sha = String(entry?.sha || "").slice(0, 7);
+    const url = String(entry?.html_url || "");
+    const dateValue = commit?.committer?.date || commit?.author?.date || "";
+    const date = dateValue ? new Date(dateValue) : null;
+    const article = document.createElement("article");
+    article.className = "changelog-release";
+    const header = document.createElement("header");
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.textContent = subject;
+    link.title = "View this commit diff on GitHub";
+    const time = document.createElement("time");
+    if (date && !Number.isNaN(date.getTime())) {
+      time.dateTime = date.toISOString();
+      time.textContent = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
+    }
+    header.append(link, time);
+    const metadata = document.createElement("p");
+    metadata.className = "changelog-commit-sha";
+    metadata.textContent = sha ? `Commit ${sha}` : "GitHub commit";
+    article.append(header, metadata);
+    fragment.append(article);
+  });
+  els.changelogContent.replaceChildren(fragment);
+}
+
+async function loadGitHubChangelog() {
+  const token = ++state.changelogLoadToken;
+  els.changelogContent.textContent = "Loading GitHub changes...";
+  try {
+    const response = await fetch(GITHUB_COMMITS_URL, {
+      cache: "no-store",
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
+    const commits = await response.json();
+    if (token !== state.changelogLoadToken) return;
+    if (!Array.isArray(commits) || !commits.length) throw new Error("No commits were returned");
+    renderGitHubChangelog(commits);
+  } catch (error) {
+    if (token !== state.changelogLoadToken) return;
+    els.changelogContent.textContent = "The GitHub changelog could not be loaded. Use the commit-history link below to view the current diffs.";
+    els.changelogContent.classList.add("changelog-error");
+  }
+}
+
+function openChangelog() {
+  if (state.changelogOpen) return;
+  state.changelogOpen = true;
+  state.changelogFocusReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  els.changelogOverlay.hidden = false;
+  els.appVersion.setAttribute("aria-expanded", "true");
+  els.changelogContent.classList.remove("changelog-error");
+  void loadGitHubChangelog();
+  window.requestAnimationFrame(() => els.changelogCloseButton.focus());
+}
+
+function closeChangelog() {
+  if (!state.changelogOpen) return;
+  state.changelogOpen = false;
+  state.changelogLoadToken += 1;
+  els.changelogOverlay.hidden = true;
+  els.appVersion.setAttribute("aria-expanded", "false");
+  const focusTarget = state.changelogFocusReturn || els.appVersion;
+  state.changelogFocusReturn = null;
   focusTarget.focus();
 }
 
@@ -3129,6 +3212,138 @@ function renderItemLogCatalogRecord(entry) {
   return record;
 }
 
+function getAniilogExpandedGroups() {
+  if (state.aniilogExpandedGroups instanceof Set) return state.aniilogExpandedGroups;
+
+  let saved = [];
+  try {
+    saved = JSON.parse(localStorage.getItem(ANIILOG_EXPANDED_GROUPS_STORAGE_KEY) || "[]");
+  } catch {
+    saved = [];
+  }
+
+  state.aniilogExpandedGroups = new Set(
+    Array.isArray(saved) ? saved.filter((value) => typeof value === "string") : []
+  );
+  return state.aniilogExpandedGroups;
+}
+
+function persistAniilogExpandedGroups(expandedGroups) {
+  try {
+    localStorage.setItem(
+      ANIILOG_EXPANDED_GROUPS_STORAGE_KEY,
+      JSON.stringify([...expandedGroups])
+    );
+  } catch {
+    // Local storage can be unavailable in private browsing modes.
+  }
+}
+
+function getAniilogEntryName(entry) {
+  return String(entry?.name || entry?.displayName || entry?.title || "").trim();
+}
+
+function getAniilogEntryForm(entry) {
+  const direct = String(entry?.form || entry?.formName || entry?.variant || "").trim();
+  if (direct) return direct;
+
+  return String(entry?.subtitle || "")
+    .replace(/^#\d+\s*[-\u2022]\s*/u, "")
+    .trim();
+}
+
+function getAniilogEntryNumber(entry) {
+  const direct = String(
+    entry?.aniilogNumber
+      || entry?.aniilogNo
+      || entry?.aniilog_number
+      || entry?.number
+      || ""
+  ).trim();
+  if (direct) return direct.replace(/^#/, "");
+  return String(entry?.subtitle || "").match(/#?(\d{1,3})/)?.[1] || "";
+}
+
+function getAniilogGroupKey(entry) {
+  const number = getAniilogEntryNumber(entry).toLowerCase();
+  const name = getAniilogEntryName(entry)
+    .replace(/\s+\([^)]+\)$/u, "")
+    .trim()
+    .toLowerCase();
+  return `${number || "unknown"}::${name || String(entry?.id || "")}`;
+}
+
+function isAniilogBasicForm(entry) {
+  const form = getAniilogEntryForm(entry);
+  return /^(basic|basic form)$/i.test(form)
+    || /\((?:basic|basic form)\)$/i.test(getAniilogEntryName(entry));
+}
+
+function renderAniilogGroupedIndex(entries, selectedId, title) {
+  const index = document.createElement("div");
+  index.className = "catalog-index catalog-grouped-index";
+  const groups = new Map();
+
+  entries.forEach((entry) => {
+    const key = getAniilogGroupKey(entry);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
+  });
+
+  const expandedGroups = getAniilogExpandedGroups();
+  groups.forEach((groupEntries, groupKey) => {
+    const baseEntry = groupEntries.find(isAniilogBasicForm) || groupEntries[0];
+    const childEntries = groupEntries.filter((entry) => entry !== baseEntry);
+    const group = document.createElement("section");
+    group.className = "catalog-form-group";
+    group.dataset.aniilogGroup = groupKey;
+
+    const baseIndex = renderCatalogIndex([baseEntry], selectedId, "aniilog", title);
+    const baseRow = baseIndex.firstElementChild;
+    if (!baseRow) return;
+    baseRow.classList.add("catalog-form-base");
+    group.append(baseRow);
+
+    if (childEntries.length) {
+      const expanded = expandedGroups.has(groupKey);
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "catalog-form-toggle";
+      toggle.setAttribute(
+        "aria-label",
+        `${expanded ? "Collapse" : "Expand"} ${getAniilogEntryName(baseEntry)} forms`
+      );
+      toggle.setAttribute("aria-expanded", String(expanded));
+      toggle.textContent = expanded ? "-" : "+";
+      toggle.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (expandedGroups.has(groupKey)) expandedGroups.delete(groupKey);
+        else expandedGroups.add(groupKey);
+        persistAniilogExpandedGroups(expandedGroups);
+        renderCatalogPreview();
+      });
+      group.append(toggle);
+
+      if (expanded) {
+        const children = document.createElement("div");
+        children.className = "catalog-form-children";
+        const childIndex = renderCatalogIndex(childEntries, selectedId, "aniilog", title);
+        while (childIndex.firstElementChild) {
+          const child = childIndex.firstElementChild;
+          child.classList.add("catalog-form-child");
+          children.append(child);
+        }
+        group.append(children);
+      }
+    }
+
+    index.append(group);
+  });
+
+  return index;
+}
+
 function renderCatalogSidebar(view, title, allEntries, entries, selectedId, statusMessage = "", allowControls = true, options = {}) {
   const fragment = document.createDocumentFragment();
   let index = null;
@@ -3178,7 +3393,15 @@ function renderCatalogSidebar(view, title, allEntries, entries, selectedId, stat
   }
 
   if (entries.length) {
-    index = renderCatalogIndex(entries, selectedId, view, title);
+    const hasAniilogSearch = Boolean(
+      view === "aniilog" && String(state.catalogSearch?.aniilog || "").trim()
+    );
+    const shouldGroupAniilog = view === "aniilog"
+      && !hasAniilogSearch
+      && entries.length === allEntries.length;
+    index = shouldGroupAniilog
+      ? renderAniilogGroupedIndex(entries, selectedId, title)
+      : renderCatalogIndex(entries, selectedId, view, title);
     index.dataset.catalogView = view;
     index.addEventListener("scroll", () => {
       state.catalogIndexScroll[view] = index.scrollTop;
@@ -4722,7 +4945,7 @@ function createMarkerPin(entry) {
     `${spawn.display_name} ${areaDetailValue(spawn) || mapRegionForSpawn(spawn) || regionDetailValue(spawn)} ${formatCoordinate(spawn.x)} ${formatCoordinate(spawn.y)}${spawn.is_underground ? " underground" : ""}${availabilityLabelForSpawn(spawn) ? ` ${availabilityLabelForSpawn(spawn)}` : ""}`,
   );
 
-  const icon = makeIcon("pin-icon", item.icon);
+  const icon = makeIcon("pin-icon", spawn.icon || item.icon);
   const undergroundBadge = spawn.is_underground && state.data.underground_badge_icon
     ? makeIcon("pin-underground-badge", state.data.underground_badge_icon)
     : null;
@@ -4910,7 +5133,7 @@ function renderCanvasPins() {
     if (x < -screenPadding || x > width + screenPadding || y < -screenPadding || y > height + screenPadding) return;
 
     const item = state.data.itemsById.get(spawn.item_id);
-    const icon = canvasIcon(item?.icon);
+    const icon = canvasIcon(spawn.icon || item?.icon);
     if (icon) {
       context.drawImage(icon, x - size / 2, y - size / 2, size, size);
     } else {
@@ -5022,7 +5245,7 @@ function renderSelectionDetail(detail, spawn, item) {
 
   const title = document.createElement("div");
   title.className = "selection-title";
-  const icon = makeIcon("", item.icon);
+  const icon = makeIcon("", spawn.icon || item.icon);
   const titleText = document.createElement("div");
   const strong = document.createElement("strong");
   strong.className = "selection-name copyable-detail";
@@ -5383,10 +5606,15 @@ function bindEvents() {
   els.checklistWorkspaceTab.addEventListener("click", () => setSidebarView("checklist"));
   els.aniilogWorkspaceTab.addEventListener("click", () => setSidebarView("aniilog"));
   els.itemlogWorkspaceTab.addEventListener("click", () => setSidebarView("itemlog"));
+  els.appVersion.addEventListener("click", openChangelog);
   els.settingsButton.addEventListener("click", openSettings);
   els.settingsCloseButton.addEventListener("click", closeSettings);
   els.settingsOverlay.addEventListener("click", (event) => {
     if (event.target === els.settingsOverlay) closeSettings();
+  });
+  els.changelogCloseButton.addEventListener("click", closeChangelog);
+  els.changelogOverlay.addEventListener("click", (event) => {
+    if (event.target === els.changelogOverlay) closeChangelog();
   });
   els.workspaceTabs.addEventListener("keydown", (event) => {
     if (!new Set(["ArrowLeft", "ArrowRight", "Home", "End"]).has(event.key)) return;
@@ -5403,6 +5631,7 @@ function bindEvents() {
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && state.settingsOpen) closeSettings();
+    if (event.key === "Escape" && state.changelogOpen) closeChangelog();
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) updateTrackingCountdowns();

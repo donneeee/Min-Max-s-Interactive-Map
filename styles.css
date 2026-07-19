@@ -115,6 +115,28 @@ button[aria-pressed="true"] {
   font-weight: 700;
 }
 
+.app-version-button {
+  display: block;
+  width: fit-content;
+  min-width: 0;
+  min-height: 0;
+  margin: 5px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.app-version-button:hover,
+.app-version-button:focus-visible {
+  color: #ffe59a;
+  text-decoration: underline;
+  outline: none;
+}
+
 .brand .database-meta {
   max-width: 280px;
   line-height: 1.35;
@@ -714,6 +736,69 @@ button[aria-pressed="true"] {
 .settings-dialog-heading h2 {
   margin: 0;
   font-size: 18px;
+}
+
+.changelog-dialog {
+  width: min(620px, 100%);
+}
+
+.changelog-content {
+  display: grid;
+  gap: 14px;
+}
+
+.changelog-note {
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.changelog-release {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-2);
+  padding: 14px;
+}
+
+.changelog-release header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--accent-2);
+}
+
+.changelog-release header a {
+  color: var(--accent-2);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.changelog-release header a:hover,
+.changelog-release header a:focus-visible {
+  text-decoration: underline;
+}
+
+.changelog-release time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.changelog-commit-sha {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+.changelog-history-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--accent);
+}
+
+.changelog-error {
+  color: #ffc3ba;
 }
 
 .settings-close-button {
@@ -3763,5 +3848,87 @@ body.catalog-view-active .sidebar .detail-panel {
     grid-column: 1 / -1;
     justify-self: start;
     margin-left: 0;
+  }
+}
+
+/* Aniilog grouped form hierarchy */
+.catalog-form-group {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+  min-width: 0;
+  margin: 0 0 10px !important;
+}
+
+.catalog-form-group > .catalog-index-row:first-child {
+  width: 100%;
+  min-width: 0;
+}
+
+.catalog-form-group:has(> .catalog-form-toggle) > .catalog-index-row:first-child {
+  padding-right: 58px;
+}
+
+.catalog-form-group > .catalog-index-row:first-child,
+.catalog-form-group > .catalog-form-toggle {
+  grid-area: 1 / 1;
+}
+
+.catalog-form-group > .catalog-form-toggle {
+  align-self: center;
+  justify-self: end;
+  margin-right: 12px;
+}
+
+.catalog-form-toggle {
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 6px;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text);
+  font: inherit;
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.catalog-form-toggle:hover,
+.catalog-form-toggle:focus-visible {
+  background: rgba(126, 198, 179, 0.08) !important;
+  color: var(--accent);
+  outline: 1px solid rgba(126, 198, 179, 0.42);
+  outline-offset: 0;
+}
+
+.catalog-form-children,
+.catalog-form-group > .catalog-form-children {
+  grid-area: 2 / 1;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 0 24px !important;
+  padding: 0 0 0 12px !important;
+  border-left: 2px solid rgba(126, 198, 179, 0.28);
+}
+
+.catalog-form-children > .catalog-index-row,
+.catalog-form-child {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .catalog-form-children,
+  .catalog-form-group > .catalog-form-children {
+    margin-left: 18px !important;
+    padding-left: 10px !important;
   }
 }

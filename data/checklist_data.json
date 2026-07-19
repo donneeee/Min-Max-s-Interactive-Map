@@ -6502,7 +6502,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Highland",
@@ -6521,7 +6521,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Highland",
         "MAPCOORDINATE_-1089_1622"
       ],
@@ -6551,7 +6551,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Highland",
@@ -6570,7 +6570,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Highland",
         "MAPCOORDINATE_-1203_1393"
       ],
@@ -6600,7 +6600,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Highland",
@@ -6619,7 +6619,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Highland",
         "MAPCOORDINATE_-1210_1444"
       ],
@@ -6649,7 +6649,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Highland",
@@ -6668,7 +6668,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Highland",
         "MAPCOORDINATE_-1316_1586"
       ],
@@ -6698,7 +6698,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Mountain Woods",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Mountain Woods",
@@ -6717,7 +6717,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Mountain Woods",
         "MAPCOORDINATE_-1142_1236"
       ],
@@ -6747,7 +6747,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Mountain Woods",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Mountain Woods",
@@ -6766,7 +6766,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Mountain Woods",
         "MAPCOORDINATE_-1158_1202"
       ],
@@ -6796,7 +6796,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Mountain Woods",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Mountain Woods",
@@ -6815,7 +6815,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Mountain Woods",
         "MAPCOORDINATE_-1292_1110"
       ],
@@ -6845,7 +6845,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Mountain Woods",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Mountain Woods",
@@ -6864,7 +6864,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Mountain Woods",
         "MAPCOORDINATE_-1317_1197"
       ],
@@ -6894,7 +6894,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Beast Fang Ridge / Mountain Woods",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge / Mountain Woods",
@@ -6913,7 +6913,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge / Mountain Woods",
         "MAPCOORDINATE_-1389_1308"
       ],
@@ -6943,7 +6943,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Forest",
@@ -6962,7 +6962,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Forest",
         "MAPCOORDINATE_-0772_1324"
       ],
@@ -6992,7 +6992,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Forest",
@@ -7011,7 +7011,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Forest",
         "MAPCOORDINATE_-0807_1421"
       ],
@@ -7041,7 +7041,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Forest",
@@ -7060,7 +7060,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Forest",
         "MAPCOORDINATE_-0835_1354"
       ],
@@ -7090,7 +7090,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Forest",
@@ -7109,7 +7109,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Forest",
         "MAPCOORDINATE_-0860_1362"
       ],
@@ -7139,7 +7139,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Highland",
@@ -7158,7 +7158,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Highland",
         "MAPCOORDINATE_-1107_1737"
       ],
@@ -7188,7 +7188,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Highland",
@@ -7207,7 +7207,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Highland",
         "MAPCOORDINATE_-1162_1680"
       ],
@@ -7237,7 +7237,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Highland",
@@ -7256,7 +7256,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Highland",
         "MAPCOORDINATE_-1234_1654"
       ],
@@ -7286,7 +7286,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Berylline Causeway / Mountain Woods",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway / Mountain Woods",
@@ -7305,7 +7305,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway / Mountain Woods",
         "MAPCOORDINATE_-0954_1606"
       ],
@@ -7335,7 +7335,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Highland",
@@ -7354,7 +7354,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Highland",
         "MAPCOORDINATE_-0713_0682"
       ],
@@ -7384,7 +7384,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Highland",
@@ -7403,7 +7403,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Highland",
         "MAPCOORDINATE_-0716_0654"
       ],
@@ -7433,7 +7433,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Highland",
@@ -7452,7 +7452,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Highland",
         "MAPCOORDINATE_-0761_0649"
       ],
@@ -7482,7 +7482,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Highland",
@@ -7501,7 +7501,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Highland",
         "MAPCOORDINATE_-0827_0623"
       ],
@@ -7531,7 +7531,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Highland",
@@ -7550,7 +7550,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Highland",
         "MAPCOORDINATE_-0869_0504"
       ],
@@ -7580,7 +7580,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Mountain",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Mountain",
@@ -7599,7 +7599,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Mountain",
         "MAPCOORDINATE_-0752_0395"
       ],
@@ -7629,7 +7629,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Blitzwood / Mountain",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood / Mountain",
@@ -7648,7 +7648,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood / Mountain",
         "MAPCOORDINATE_-0789_0346"
       ],
@@ -7678,7 +7678,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Driftwise Meadow / Plateau",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Driftwise Meadow / Plateau",
@@ -7697,7 +7697,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Driftwise Meadow / Plateau",
         "MAPCOORDINATE_-0579_1130"
       ],
@@ -7727,7 +7727,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Driftwise Meadow / Snowfield",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Driftwise Meadow / Snowfield",
@@ -7746,7 +7746,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Driftwise Meadow / Snowfield",
         "MAPCOORDINATE_-0206_1442"
       ],
@@ -7776,7 +7776,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Driftwise Meadow / Snowfield",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Driftwise Meadow / Snowfield",
@@ -7795,7 +7795,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Driftwise Meadow / Snowfield",
         "MAPCOORDINATE_-0348_1375"
       ],
@@ -7825,7 +7825,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Echoback Landing / Beach",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing / Beach",
@@ -7844,7 +7844,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing / Beach",
         "MAPCOORDINATE_-1206_1771"
       ],
@@ -7874,7 +7874,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Echoback Landing / Beach",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing / Beach",
@@ -7893,7 +7893,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing / Beach",
         "MAPCOORDINATE_-1271_1676"
       ],
@@ -7923,7 +7923,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Echoback Landing / Beach",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing / Beach",
@@ -7942,7 +7942,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing / Beach",
         "MAPCOORDINATE_-1305_1793"
       ],
@@ -7972,7 +7972,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Echoback Landing / Beach",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing / Beach",
@@ -7991,7 +7991,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing / Beach",
         "MAPCOORDINATE_-1350_1747"
       ],
@@ -8021,7 +8021,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Echoback Landing / Beach",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing / Beach",
@@ -8040,7 +8040,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing / Beach",
         "MAPCOORDINATE_-1759_1521"
       ],
@@ -8070,7 +8070,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Echoback Landing / Beach",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing / Beach",
@@ -8089,7 +8089,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing / Beach",
         "MAPCOORDINATE_-1759_1524"
       ],
@@ -8119,7 +8119,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Forest of Falling Stars / Flower Sea",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars / Flower Sea",
@@ -8138,7 +8138,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars / Flower Sea",
         "MAPCOORDINATE_-1475_0982"
       ],
@@ -8168,7 +8168,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Forest of Falling Stars / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars / Forest",
@@ -8187,7 +8187,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars / Forest",
         "MAPCOORDINATE_-1562_1117"
       ],
@@ -8217,7 +8217,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Forest of Falling Stars / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars / Forest",
@@ -8236,7 +8236,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars / Forest",
         "MAPCOORDINATE_-1588_0951"
       ],
@@ -8266,7 +8266,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Forest of Falling Stars / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars / Forest",
@@ -8285,7 +8285,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars / Forest",
         "MAPCOORDINATE_-1690_1123"
       ],
@@ -8315,7 +8315,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Forest of Falling Stars / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars / Forest",
@@ -8334,7 +8334,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars / Forest",
         "MAPCOORDINATE_-1811_0911"
       ],
@@ -8364,7 +8364,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Forest",
@@ -8383,7 +8383,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Forest",
         "MAPCOORDINATE_-0965_1307"
       ],
@@ -8413,7 +8413,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Forest",
@@ -8432,7 +8432,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Forest",
         "MAPCOORDINATE_-0980_1403"
       ],
@@ -8462,7 +8462,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Forest",
@@ -8481,7 +8481,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Forest",
         "MAPCOORDINATE_-1020_1134"
       ],
@@ -8511,7 +8511,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Forest",
@@ -8530,7 +8530,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Forest",
         "MAPCOORDINATE_-1027_1145"
       ],
@@ -8560,7 +8560,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Forest",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Forest",
@@ -8579,7 +8579,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Forest",
         "MAPCOORDINATE_-1033_1201"
       ],
@@ -8609,7 +8609,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Grassland",
@@ -8628,7 +8628,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Grassland",
         "MAPCOORDINATE_-0810_0930"
       ],
@@ -8658,7 +8658,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Grassland",
@@ -8677,7 +8677,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Grassland",
         "MAPCOORDINATE_-0813_0826"
       ],
@@ -8707,7 +8707,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Grassland",
@@ -8726,7 +8726,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Grassland",
         "MAPCOORDINATE_-1074_0990"
       ],
@@ -8756,7 +8756,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Mistwoods / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods / Grassland",
@@ -8775,7 +8775,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods / Grassland",
         "MAPCOORDINATE_-1134_1026"
       ],
@@ -8805,7 +8805,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Grassland",
@@ -8824,7 +8824,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Grassland",
         "MAPCOORDINATE_-1393_0813"
       ],
@@ -8854,7 +8854,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Grassland",
@@ -8873,7 +8873,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Grassland",
         "MAPCOORDINATE_-1502_0790"
       ],
@@ -8903,7 +8903,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -8922,7 +8922,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-0921_0833"
       ],
@@ -8952,7 +8952,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -8971,7 +8971,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-0951_0703"
       ],
@@ -9001,7 +9001,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9020,7 +9020,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1046_0798"
       ],
@@ -9050,7 +9050,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9069,7 +9069,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1056_0861"
       ],
@@ -9099,7 +9099,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9118,7 +9118,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1094_0761"
       ],
@@ -9148,7 +9148,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9167,7 +9167,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1135_0832"
       ],
@@ -9197,7 +9197,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9216,7 +9216,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1138_0659"
       ],
@@ -9246,7 +9246,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9265,7 +9265,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1239_0779"
       ],
@@ -9295,7 +9295,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Nimbus Field / Nimbus Fields / Grassland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field / Nimbus Fields / Grassland",
@@ -9314,7 +9314,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field / Nimbus Fields / Grassland",
         "MAPCOORDINATE_-1343_0946"
       ],
@@ -9344,7 +9344,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9363,7 +9363,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0060_0975"
       ],
@@ -9393,7 +9393,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9412,7 +9412,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0138_0979"
       ],
@@ -9442,7 +9442,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9461,7 +9461,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0140_1022"
       ],
@@ -9491,7 +9491,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9510,7 +9510,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0167_0962"
       ],
@@ -9540,7 +9540,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9559,7 +9559,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0185_0744"
       ],
@@ -9589,7 +9589,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9608,7 +9608,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0228_0739"
       ],
@@ -9638,7 +9638,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9657,7 +9657,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0258_0979"
       ],
@@ -9687,7 +9687,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9706,7 +9706,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0265_0822"
       ],
@@ -9736,7 +9736,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9755,7 +9755,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0373_1053"
       ],
@@ -9785,7 +9785,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9804,7 +9804,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0461_0757"
       ],
@@ -9834,7 +9834,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9853,7 +9853,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0524_0771"
       ],
@@ -9883,7 +9883,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9902,7 +9902,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0555_0789"
       ],
@@ -9932,7 +9932,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Rosetower Woods / Towerwood",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods / Towerwood",
@@ -9951,7 +9951,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods / Towerwood",
         "MAPCOORDINATE_0571_0752"
       ],
@@ -9981,7 +9981,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -10000,7 +10000,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0064_1700"
       ],
@@ -10030,7 +10030,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -10049,7 +10049,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0129_1754"
       ],
@@ -10079,7 +10079,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Highland",
@@ -10098,7 +10098,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Highland",
         "MAPCOORDINATE_-0383_1580"
       ],
@@ -10128,7 +10128,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Highland",
@@ -10147,7 +10147,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Highland",
         "MAPCOORDINATE_-0389_1704"
       ],
@@ -10177,7 +10177,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Highland",
@@ -10196,7 +10196,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Highland",
         "MAPCOORDINATE_-0406_1775"
       ],
@@ -10226,7 +10226,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Highland",
@@ -10245,7 +10245,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Highland",
         "MAPCOORDINATE_-0649_1526"
       ],
@@ -10275,7 +10275,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Highland",
@@ -10294,7 +10294,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Highland",
         "MAPCOORDINATE_-0651_1977"
       ],
@@ -10324,7 +10324,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Snowfield",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Snowfield",
@@ -10343,7 +10343,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Snowfield",
         "MAPCOORDINATE_-0575_1601"
       ],
@@ -10373,7 +10373,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Russet Highlands / Snowfield",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands / Snowfield",
@@ -10392,7 +10392,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands / Snowfield",
         "MAPCOORDINATE_-0609_1651"
       ],
@@ -10422,7 +10422,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Sea of Flowers / Flower Sea",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers / Flower Sea",
@@ -10441,7 +10441,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers / Flower Sea",
         "MAPCOORDINATE_-0021_0763"
       ],
@@ -10471,7 +10471,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Sea of Flowers / Flower Sea",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers / Flower Sea",
@@ -10490,7 +10490,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers / Flower Sea",
         "MAPCOORDINATE_-0118_0694"
       ],
@@ -10520,7 +10520,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Sea of Flowers / Flower Sea",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers / Flower Sea",
@@ -10539,7 +10539,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers / Flower Sea",
         "MAPCOORDINATE_-0491_0893"
       ],
@@ -10569,7 +10569,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Sea of Flowers / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers / Highland",
@@ -10588,7 +10588,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers / Highland",
         "MAPCOORDINATE_-0219_0718"
       ],
@@ -10618,7 +10618,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Sea of Flowers / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers / Highland",
@@ -10637,7 +10637,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers / Highland",
         "MAPCOORDINATE_-0600_0978"
       ],
@@ -10667,7 +10667,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait",
@@ -10686,7 +10686,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait",
         "MAPCOORDINATE_-1554_0710"
       ],
@@ -10716,7 +10716,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait",
@@ -10735,7 +10735,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait",
         "MAPCOORDINATE_-1649_0613"
       ],
@@ -10765,7 +10765,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait / Bay",
@@ -10784,7 +10784,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait / Bay",
         "MAPCOORDINATE_-1020_0530"
       ],
@@ -10814,7 +10814,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait / Bay",
@@ -10833,7 +10833,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait / Bay",
         "MAPCOORDINATE_-1026_0595"
       ],
@@ -10863,7 +10863,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait / Bay",
@@ -10882,7 +10882,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait / Bay",
         "MAPCOORDINATE_-1132_0523"
       ],
@@ -10912,7 +10912,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait / Bay",
@@ -10931,7 +10931,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait / Bay",
         "MAPCOORDINATE_-1178_0391"
       ],
@@ -10961,7 +10961,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Argent Strait / Bay",
@@ -10980,7 +10980,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Argent Strait / Bay",
         "MAPCOORDINATE_-1222_0505"
       ],
@@ -11010,7 +11010,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Bay",
@@ -11029,7 +11029,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Bay",
         "MAPCOORDINATE_-1287_0692"
       ],
@@ -11059,7 +11059,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Bay",
@@ -11078,7 +11078,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Bay",
         "MAPCOORDINATE_-1299_0589"
       ],
@@ -11108,7 +11108,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: The Argent Strait / Bay",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait / Bay",
@@ -11127,7 +11127,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait / Bay",
         "MAPCOORDINATE_-1315_0449"
       ],
@@ -11157,7 +11157,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Tideblossom Coast / Tidal Flat",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Tideblossom Coast / Tidal Flat",
@@ -11176,7 +11176,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Tideblossom Coast / Tidal Flat",
         "MAPCOORDINATE_-0108_0061"
       ],
@@ -11206,7 +11206,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Tideblossom Coast / Tidal Flat",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Tideblossom Coast / Tidal Flat",
@@ -11225,7 +11225,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Tideblossom Coast / Tidal Flat",
         "MAPCOORDINATE_-0233_0204"
       ],
@@ -11255,7 +11255,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Tideblossom Coast / Tidal Flat",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Tideblossom Coast / Tidal Flat",
@@ -11274,7 +11274,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Tideblossom Coast / Tidal Flat",
         "MAPCOORDINATE_0151_0166"
       ],
@@ -11304,7 +11304,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Zephyrus Landbridge",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -11323,7 +11323,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0572_1525"
       ],
@@ -11353,7 +11353,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Zephyrus Landbridge",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -11372,7 +11372,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0579_1457"
       ],
@@ -11402,7 +11402,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Zephyrus Landbridge",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -11421,7 +11421,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0581_1479"
       ],
@@ -11451,7 +11451,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Zephyrus Landbridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge / Highland",
@@ -11470,7 +11470,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge / Highland",
         "MAPCOORDINATE_0273_1781"
       ],
@@ -11500,7 +11500,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Zephyrus Landbridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge / Highland",
@@ -11519,7 +11519,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge / Highland",
         "MAPCOORDINATE_0276_1731"
       ],
@@ -11549,7 +11549,7 @@
       "name": "Lumin Amber",
       "source_type": "overworld",
       "source_label": "Overworld pickup: Zephyrus Landbridge / Highland",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge / Highland",
@@ -11568,7 +11568,7 @@
       ],
       "sort_key": [
         0,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge / Highland",
         "MAPCOORDINATE_0323_1772"
       ],
@@ -11941,7 +11941,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Veiled Truth",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -11960,7 +11960,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1150_1399"
       ],
@@ -11978,7 +11978,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Crumbling Stonewalls",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -11997,7 +11997,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1184_1608"
       ],
@@ -12015,7 +12015,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Frozen Stone",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -12034,7 +12034,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1293_1512"
       ],
@@ -12052,7 +12052,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Cliff Mark",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -12071,7 +12071,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0716_0600"
       ],
@@ -12089,7 +12089,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Cliff Vista",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -12108,7 +12108,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0926_0543"
       ],
@@ -12126,7 +12126,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Pillar Puzzle",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -12145,7 +12145,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1354_1729"
       ],
@@ -12163,7 +12163,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Keyhole Sight",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -12182,7 +12182,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1477_1544"
       ],
@@ -12200,7 +12200,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Fragment Restoration",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -12219,7 +12219,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1565_1392"
       ],
@@ -12237,7 +12237,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Whale Bone",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -12256,7 +12256,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1610_1542"
       ],
@@ -12274,7 +12274,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Nest of Stars",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars",
@@ -12293,7 +12293,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars",
         "MAPCOORDINATE_-1519_0934"
       ],
@@ -12311,7 +12311,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Shaded Stone",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
@@ -12330,7 +12330,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-1152_1087"
       ],
@@ -12348,7 +12348,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Gate of Ruins",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -12367,7 +12367,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1342_0821"
       ],
@@ -12385,7 +12385,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Frostlit Trace",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods",
@@ -12404,7 +12404,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods",
         "MAPCOORDINATE_0034_0988"
       ],
@@ -12422,7 +12422,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Northern Woodland of the Flower Sea",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods",
@@ -12441,7 +12441,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods",
         "MAPCOORDINATE_0132_0834"
       ],
@@ -12459,7 +12459,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Dragon’s Vision",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -12478,7 +12478,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0242_1695"
       ],
@@ -12496,7 +12496,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Ruins of Flowers",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers",
@@ -12515,7 +12515,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers",
         "MAPCOORDINATE_-0211_0677"
       ],
@@ -12533,7 +12533,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Amber: Floral Moment",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers",
@@ -12552,7 +12552,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers",
         "MAPCOORDINATE_-0655_0796"
       ],
@@ -12570,7 +12570,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Chirpi Songs Over the Fjord",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait",
@@ -12589,7 +12589,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait",
         "MAPCOORDINATE_-1249_0612"
       ],
@@ -12607,7 +12607,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Green Shade",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait",
@@ -12626,7 +12626,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait",
         "MAPCOORDINATE_-1701_0534"
       ],
@@ -12644,7 +12644,7 @@
       "name": "Lumin Amber",
       "source_type": "lumin_marking",
       "source_label": "Lumin Marking: Petal Shores",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Tideblossom Coast",
@@ -12663,7 +12663,7 @@
       ],
       "sort_key": [
         1,
-        "Idyll",
+        "Breezy Plains",
         "Tideblossom Coast",
         "MAPCOORDINATE_0030_0217"
       ],
@@ -12755,7 +12755,7 @@
       "name": "Sanctum: Rising Flames",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -12774,7 +12774,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1069_1481"
       ],
@@ -12792,7 +12792,7 @@
       "name": "Sanctum: Water to Ice",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -12811,7 +12811,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1413_1398"
       ],
@@ -12829,7 +12829,7 @@
       "name": "Sanctum: Chasing Stormwinds",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway",
@@ -12848,7 +12848,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway",
         "MAPCOORDINATE_-0874_1664"
       ],
@@ -12866,7 +12866,7 @@
       "name": "Sanctum: Electric Surge",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -12885,7 +12885,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0703_0559"
       ],
@@ -12903,7 +12903,7 @@
       "name": "Sanctum: Rushing Rapids",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -12922,7 +12922,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1636_1864"
       ],
@@ -12940,7 +12940,7 @@
       "name": "Sanctum: Wings Unfurled",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars",
@@ -12959,7 +12959,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars",
         "MAPCOORDINATE_-1537_1178"
       ],
@@ -12977,7 +12977,7 @@
       "name": "Sanctum: Through Flame and Thorn",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
@@ -12996,7 +12996,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-0886_0902"
       ],
@@ -13014,7 +13014,7 @@
       "name": "Sanctum: Rigged Maze",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
@@ -13033,7 +13033,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-0922_1222"
       ],
@@ -13051,7 +13051,7 @@
       "name": "Sanctum: Mistrider",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -13070,7 +13070,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1096_0644"
       ],
@@ -13088,7 +13088,7 @@
       "name": "Sanctum: First Flame",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -13107,7 +13107,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1098_0632"
       ],
@@ -13125,7 +13125,7 @@
       "name": "Sanctum: Double Vision",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -13144,7 +13144,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0041_1791"
       ],
@@ -13162,7 +13162,7 @@
       "name": "Sanctum: Sword in the Stone",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -13181,7 +13181,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0322_1884"
       ],
@@ -13199,7 +13199,7 @@
       "name": "Sanctum: All in Sight",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -13218,7 +13218,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0550_1615"
       ],
@@ -13236,7 +13236,7 @@
       "name": "Sanctum: Flaming Wings",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers",
@@ -13255,7 +13255,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers",
         "MAPCOORDINATE_-0228_0983"
       ],
@@ -13273,7 +13273,7 @@
       "name": "Sanctum: Windborne",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait",
@@ -13292,7 +13292,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait",
         "MAPCOORDINATE_-1135_0365"
       ],
@@ -13310,7 +13310,7 @@
       "name": "Sanctum: Courageous Wit",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -13329,7 +13329,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0276_1778"
       ],
@@ -13347,7 +13347,7 @@
       "name": "Sanctum: Shatterstone",
       "source_type": "sanctum",
       "source_label": "Lumen Seed reward",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -13366,7 +13366,7 @@
       ],
       "sort_key": [
         2,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0561_1556"
       ],
@@ -13391,7 +13391,7 @@
       "coordinate_key": "",
       "x": "",
       "y": "",
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13441,7 +13441,7 @@
       "coordinate_key": "",
       "x": "",
       "y": "",
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13484,14 +13484,14 @@
       "name": "Alpha Aniimo: Minespine",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
       "coordinate_key": "MAPCOORDINATE_-1220_1144",
       "x": -1220.2,
       "y": 1144.37,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13503,7 +13503,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1220_1144"
       ],
@@ -13535,14 +13535,14 @@
       "name": "Alpha Aniimo: Scorchhowl",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
       "coordinate_key": "MAPCOORDINATE_-1295_1374",
       "x": -1295.2,
       "y": 1373.9,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13554,7 +13554,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1295_1374"
       ],
@@ -13586,14 +13586,14 @@
       "name": "Alpha Aniimo: Glynsera",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
       "coordinate_key": "MAPCOORDINATE_-1425_1307",
       "x": -1425.27,
       "y": 1307.29,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13605,7 +13605,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1425_1307"
       ],
@@ -13637,14 +13637,14 @@
       "name": "Alpha Aniimo: Ignitis",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway",
       "coordinate_key": "MAPCOORDINATE_-0687_1330",
       "x": -687.02,
       "y": 1330.29,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13656,7 +13656,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway",
         "MAPCOORDINATE_-0687_1330"
       ],
@@ -13688,14 +13688,14 @@
       "name": "Alpha Aniimo: Bouldus",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Berylline Causeway",
       "coordinate_key": "MAPCOORDINATE_-1019_1795",
       "x": -1018.88,
       "y": 1794.76,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13707,7 +13707,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Berylline Causeway",
         "MAPCOORDINATE_-1019_1795"
       ],
@@ -13739,14 +13739,14 @@
       "name": "Alpha Aniimo: Blazen",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
       "coordinate_key": "MAPCOORDINATE_-0758_0467",
       "x": -757.64,
       "y": 467.21,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13758,7 +13758,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0758_0467"
       ],
@@ -13790,14 +13790,14 @@
       "name": "Omega Aniimo: Sherro",
       "source_type": "quest",
       "source_label": "Boss clear reward: 2 Lumin Ambers",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
       "coordinate_key": "MAPCOORDINATE_-1340_1965",
       "x": -1339.74,
       "y": 1964.76,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_omega__UI_Event_SchoolGuide_Omega.png",
       "reward_amount": 2,
       "counts_toward_total": true,
       "completion_states": [
@@ -13809,7 +13809,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1340_1965"
       ],
@@ -13841,14 +13841,14 @@
       "name": "Alpha Aniimo: Panpanta",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
       "coordinate_key": "MAPCOORDINATE_-1584_1643",
       "x": -1584.34,
       "y": 1643.15,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13860,7 +13860,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1584_1643"
       ],
@@ -13892,14 +13892,14 @@
       "name": "Alpha Aniimo: Stellarys",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars",
       "coordinate_key": "MAPCOORDINATE_-1620_0979",
       "x": -1619.96,
       "y": 979.16,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -13911,7 +13911,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars",
         "MAPCOORDINATE_-1620_0979"
       ],
@@ -13943,14 +13943,14 @@
       "name": "Omega Aniimo: Tuckin",
       "source_type": "quest",
       "source_label": "Boss clear reward: 2 Lumin Ambers",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
       "coordinate_key": "MAPCOORDINATE_-0920_1233",
       "x": -919.83,
       "y": 1233.23,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_omega__UI_Event_SchoolGuide_Omega.png",
       "reward_amount": 2,
       "counts_toward_total": true,
       "completion_states": [
@@ -13962,7 +13962,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-0920_1233"
       ],
@@ -13994,14 +13994,14 @@
       "name": "Alpha Aniimo: Leafy",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
       "coordinate_key": "MAPCOORDINATE_-1114_1038",
       "x": -1114.05,
       "y": 1038.48,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14013,7 +14013,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-1114_1038"
       ],
@@ -14045,14 +14045,14 @@
       "name": "Alpha Aniimo: Turbo",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
       "coordinate_key": "MAPCOORDINATE_-1009_0764",
       "x": -1009.17,
       "y": 763.71,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14064,7 +14064,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1009_0764"
       ],
@@ -14096,14 +14096,14 @@
       "name": "Alpha Aniimo: Geoclaw",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
       "coordinate_key": "MAPCOORDINATE_-1241_0982",
       "x": -1241.38,
       "y": 982.12,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14115,7 +14115,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1241_0982"
       ],
@@ -14147,14 +14147,14 @@
       "name": "Aniimo Alpha: Grizbo",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods",
       "coordinate_key": "MAPCOORDINATE_0067_1101",
       "x": 66.56,
       "y": 1101.34,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14166,7 +14166,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods",
         "MAPCOORDINATE_0067_1101"
       ],
@@ -14198,14 +14198,14 @@
       "name": "Omega Aniimo: Infergon",
       "source_type": "quest",
       "source_label": "Boss clear reward: 2 Lumin Ambers",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
       "coordinate_key": "MAPCOORDINATE_-0156_1635",
       "x": -155.89,
       "y": 1635.1,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_omega__UI_Event_SchoolGuide_Omega.png",
       "reward_amount": 2,
       "counts_toward_total": true,
       "completion_states": [
@@ -14217,7 +14217,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0156_1635"
       ],
@@ -14249,14 +14249,14 @@
       "name": "Alpha Aniimo: Rookey",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
       "coordinate_key": "MAPCOORDINATE_-0445_1588",
       "x": -445.35,
       "y": 1587.51,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14268,7 +14268,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0445_1588"
       ],
@@ -14300,14 +14300,14 @@
       "name": "Alpha Aniimo: Irisal",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers",
       "coordinate_key": "MAPCOORDINATE_-0135_0626",
       "x": -134.62,
       "y": 625.69,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14319,7 +14319,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers",
         "MAPCOORDINATE_-0135_0626"
       ],
@@ -14351,14 +14351,14 @@
       "name": "Alpha Aniimo: Tubster",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait",
       "coordinate_key": "MAPCOORDINATE_-1139_0575",
       "x": -1138.93,
       "y": 575.45,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14370,7 +14370,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait",
         "MAPCOORDINATE_-1139_0575"
       ],
@@ -14402,14 +14402,14 @@
       "name": "Alpha Aniimo: Luminelle",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Tideblossom Coast",
       "coordinate_key": "MAPCOORDINATE_-0011_0108",
       "x": -11.27,
       "y": 107.94,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14421,7 +14421,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Tideblossom Coast",
         "MAPCOORDINATE_-0011_0108"
       ],
@@ -14453,14 +14453,14 @@
       "name": "Alpha Aniimo: Magmarex",
       "source_type": "quest",
       "source_label": "Boss clear reward: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
       "coordinate_key": "MAPCOORDINATE_0653_1532",
       "x": 653.02,
       "y": 1532.49,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_alpha__UI_Event_SchoolGuide_Alpha.png",
       "reward_amount": 1,
       "counts_toward_total": true,
       "completion_states": [
@@ -14472,7 +14472,7 @@
       ],
       "sort_key": [
         3,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0653_1532"
       ],
@@ -14511,7 +14511,7 @@
       "coordinate_key": "MAPCOORDINATE_-0005_0849",
       "x": -4.73,
       "y": 848.66,
-      "icon": "assets/icons/amber_quest_lumen_seed__UI_Icon_MarkPoint_MythicalAnimals_Sprite_2528846401555149030.png",
+      "icon": "assets/icons/amber_quest_lumen_seed_omega__UI_Event_SchoolGuide_Omega.png",
       "reward_amount": 2,
       "counts_toward_total": true,
       "completion_states": [
@@ -14555,7 +14555,7 @@
       "name": "Lumin Collection: Fire By Wind",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -14574,7 +14574,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1143_1433"
       ],
@@ -14606,7 +14606,7 @@
       "name": "Runaway Amber: Sonic Glide",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -14625,7 +14625,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1306_1225"
       ],
@@ -14657,7 +14657,7 @@
       "name": "Lumin Collection: Sprint Uphill",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Beast Fang Ridge",
@@ -14676,7 +14676,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Beast Fang Ridge",
         "MAPCOORDINATE_-1363_1083"
       ],
@@ -14708,7 +14708,7 @@
       "name": "Runaway Amber: Into the Sea of Flowers",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -14727,7 +14727,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0693_0679"
       ],
@@ -14759,7 +14759,7 @@
       "name": "Runaway Amber: Quick Dive",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -14778,7 +14778,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0727_0542"
       ],
@@ -14810,7 +14810,7 @@
       "name": "Lumin Collection: Pillar Jump",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -14829,7 +14829,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0822_0707"
       ],
@@ -14861,7 +14861,7 @@
       "name": "Runaway Amber: Woods Glide",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -14880,7 +14880,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0875_0495"
       ],
@@ -14912,7 +14912,7 @@
       "name": "Runaway Amber: Race Toward the Yellow",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Blitzwood",
@@ -14931,7 +14931,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Blitzwood",
         "MAPCOORDINATE_-0993_0609"
       ],
@@ -14963,7 +14963,7 @@
       "name": "Lumin Energy Collection: Springy Tuftball",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Driftwise Meadow",
@@ -14982,7 +14982,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Driftwise Meadow",
         "MAPCOORDINATE_-0513_1162"
       ],
@@ -15014,7 +15014,7 @@
       "name": "Lumin Collection: Rolling Shells",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -15033,7 +15033,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1416_1685"
       ],
@@ -15065,7 +15065,7 @@
       "name": "Lumin Collection: Aquatic Jump",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -15084,7 +15084,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1508_1749"
       ],
@@ -15116,7 +15116,7 @@
       "name": "Lumin Collection: Echoback Hop",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Echoback Landing",
@@ -15135,7 +15135,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Echoback Landing",
         "MAPCOORDINATE_-1524_1710"
       ],
@@ -15167,7 +15167,7 @@
       "name": "Lumin Collection: Across the Canyon",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars",
@@ -15186,7 +15186,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars",
         "MAPCOORDINATE_-1500_1186"
       ],
@@ -15218,7 +15218,7 @@
       "name": "Runaway Amber: Amethyst Glide",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Forest of Falling Stars",
@@ -15237,7 +15237,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Forest of Falling Stars",
         "MAPCOORDINATE_-1623_1000"
       ],
@@ -15269,7 +15269,7 @@
       "name": "Lumin Collection: Into the Mist",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
@@ -15288,7 +15288,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-1049_0980"
       ],
@@ -15320,7 +15320,7 @@
       "name": "Lumin Collection: Starry Flow",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
@@ -15339,7 +15339,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-1119_0921"
       ],
@@ -15371,7 +15371,7 @@
       "name": "Runaway Amber: Float Down",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Mistwoods",
@@ -15390,7 +15390,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Mistwoods",
         "MAPCOORDINATE_-1119_1087"
       ],
@@ -15422,7 +15422,7 @@
       "name": "Runaway Amber: Crystal Cavern",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -15441,7 +15441,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1057_0816"
       ],
@@ -15473,7 +15473,7 @@
       "name": "Lumin Collection",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -15492,7 +15492,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1114_0751"
       ],
@@ -15524,7 +15524,7 @@
       "name": "Lumin Collection: Run, Emberpup!",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -15543,7 +15543,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1161_0759"
       ],
@@ -15575,7 +15575,7 @@
       "name": "Lumin Collection: Collapsed Corridor",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -15594,7 +15594,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1182_0817"
       ],
@@ -15626,7 +15626,7 @@
       "name": "Lumin Collection: Core Descent",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Nimbus Field",
@@ -15645,7 +15645,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Nimbus Field",
         "MAPCOORDINATE_-1288_0920"
       ],
@@ -15677,7 +15677,7 @@
       "name": "Lumin Collection: Into the Valley",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods",
@@ -15696,7 +15696,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods",
         "MAPCOORDINATE_0024_0861"
       ],
@@ -15728,7 +15728,7 @@
       "name": "Lumin Collection: Snowy Mountainside",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods",
@@ -15747,7 +15747,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods",
         "MAPCOORDINATE_0097_1077"
       ],
@@ -15779,7 +15779,7 @@
       "name": "Lumin Collection: Among the Ruins",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Rosetower Woods",
@@ -15798,7 +15798,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Rosetower Woods",
         "MAPCOORDINATE_0101_0773"
       ],
@@ -15830,7 +15830,7 @@
       "name": "Lumin Collection: To Twister Peaks",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -15849,7 +15849,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0199_1809"
       ],
@@ -15881,7 +15881,7 @@
       "name": "Lumin Collection: Stone Tree Climb",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Russet Highlands",
@@ -15900,7 +15900,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Russet Highlands",
         "MAPCOORDINATE_-0344_1735"
       ],
@@ -15932,7 +15932,7 @@
       "name": "Lumin Collection: Surfing in the Sea of Flowers",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers",
@@ -15951,7 +15951,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers",
         "MAPCOORDINATE_-0216_1002"
       ],
@@ -15983,7 +15983,7 @@
       "name": "Lumin Collection: Village Vistas",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Sea of Flowers",
@@ -16002,7 +16002,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Sea of Flowers",
         "MAPCOORDINATE_-0446_0828"
       ],
@@ -16034,7 +16034,7 @@
       "name": "Runaway Amber: Island Landing",
       "source_type": "event",
       "source_label": "Runaway Amber Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait",
@@ -16053,7 +16053,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait",
         "MAPCOORDINATE_-1085_0528"
       ],
@@ -16085,7 +16085,7 @@
       "name": "Lumin Collection: Rumbling Stones",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "The Argent Strait",
@@ -16104,7 +16104,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "The Argent Strait",
         "MAPCOORDINATE_-1622_0689"
       ],
@@ -16136,7 +16136,7 @@
       "name": "Lumin Collection: Shortcut to the Castle",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -16155,7 +16155,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0200_1741"
       ],
@@ -16187,7 +16187,7 @@
       "name": "Lumin Collection",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -16206,7 +16206,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0260_1721"
       ],
@@ -16238,7 +16238,7 @@
       "name": "Lumin Collection: Breaking Through",
       "source_type": "event",
       "source_label": "Lumin Collection Lumin reward event: 1 Lumin Amber",
-      "map_label": "Idyll",
+      "map_label": "Breezy Plains",
       "map_id": "country-of-time",
       "scene_id": "3000",
       "area_name": "Zephyrus Landbridge",
@@ -16257,7 +16257,7 @@
       ],
       "sort_key": [
         4,
-        "Idyll",
+        "Breezy Plains",
         "Zephyrus Landbridge",
         "MAPCOORDINATE_0529_1481"
       ],

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MinMax's Aniipedia</title>
-    <link rel="stylesheet" href="./styles.css?v=20260718-stat-total-v001">
+    <link rel="stylesheet" href="./styles.css?v=20260719-changelog-v001">
   </head>
   <body>
     <main class="app-shell">
@@ -12,7 +12,7 @@
         <header class="brand">
           <div class="brand-copy">
             <h1>MinMax's Aniipedia</h1>
-            <p id="appVersion" class="app-version">Version loading</p>
+            <button id="appVersion" class="app-version app-version-button" type="button" aria-haspopup="dialog" aria-controls="changelogOverlay" aria-expanded="false">Version loading</button>
             <p id="mapMeta" class="database-meta">Database loading</p>
           </div>
           <button id="settingsButton" class="settings-gear-button" type="button" aria-haspopup="dialog" aria-controls="settingsOverlay" aria-expanded="false" aria-label="Open settings" title="Settings">
@@ -123,6 +123,18 @@
       </section>
     </div>
 
-  <script defer src="./app.js?v=20260718-stat-total-v001"></script>
+    <div id="changelogOverlay" class="settings-overlay" hidden>
+      <section class="settings-dialog changelog-dialog" role="dialog" aria-modal="true" aria-labelledby="changelogTitle">
+        <div class="settings-dialog-heading">
+          <h2 id="changelogTitle">Changelog</h2>
+          <button id="changelogCloseButton" class="settings-close-button" type="button" aria-label="Close changelog" title="Close changelog">&times;</button>
+        </div>
+        <p class="changelog-note">This list is loaded from the commits on GitHub. Local-only work does not appear until it is committed and pushed.</p>
+        <div id="changelogContent" class="changelog-content" aria-live="polite">Loading GitHub changes...</div>
+        <a class="changelog-history-link" href="https://github.com/donneeee/MinMax-Aniipedia/commits/main/" target="_blank" rel="noreferrer">View all commits and diffs on GitHub</a>
+      </section>
+    </div>
+
+  <script defer src="./app.js?v=20260719-changelog-v001"></script>
   </body>
 </html>
