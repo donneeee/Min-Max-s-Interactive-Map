@@ -1224,7 +1224,7 @@ async function loadGitHubChangelog() {
     renderGitHubChangelog(commits);
   } catch (error) {
     if (token !== state.changelogLoadToken) return;
-    els.changelogContent.textContent = "The GitHub changelog could not be loaded. Use the commit-history link below to view the current diffs.";
+    els.changelogContent.textContent = "The changelog is unavailable right now. You can still view all changes on GitHub.";
     els.changelogContent.classList.add("changelog-error");
   }
 }

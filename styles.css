@@ -747,12 +747,6 @@ button[aria-pressed="true"] {
   gap: 14px;
 }
 
-.changelog-note {
-  margin: 0 0 14px;
-  color: var(--muted);
-  line-height: 1.45;
-}
-
 .changelog-release {
   border: 1px solid var(--line);
   border-radius: 7px;
