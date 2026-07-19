@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260719-localization-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-localization-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-localization-v001";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-break-power-v001";
-const APP_VERSION = "v0.3.77";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-aniimo-research-v001";
+const APP_VERSION = "v0.3.78";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=12";
 const ANIILOG_EXPANDED_GROUPS_STORAGE_KEY = "minmax-aniilog-expanded-groups-v1";
 const TRACKING_TICK_MS = 1000;
@@ -3195,6 +3195,95 @@ function renderAniimoProgression(entry, progression) {
   return section;
 }
 
+function makeResearchTopicIcon(kind) {
+  const icon = document.createElement("span");
+  icon.className = `catalog-research-topic-icon is-${kind || "research"}`;
+  icon.setAttribute("aria-hidden", "true");
+  const paths = {
+    combat: '<path d="M5 4l6 6m8-6l-6 6M4 20l5-5m11 5l-5-5"/><path d="M4 3l4 1 9 9-4 4-9-9zM20 3l-4 1-4 4"/>',
+    catch: '<path d="M12 3l8 5v8l-8 5-8-5V8z"/><circle cx="12" cy="12" r="3"/>',
+    evolve: '<path d="M5 19V9m0 0l-3 3m3-3l3 3M12 19V5m0 0L9 8m3-3l3 3M19 19v-7m0 0l-3 3m3-3l3 3"/>',
+    cultivate: '<path d="M12 21v-9m0 2c-5 0-8-3-8-7 5 0 8 3 8 7zm0 3c5 0 8-3 8-7-5 0-8 3-8 7z"/>',
+    research: '<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L21 21"/>',
+  };
+  icon.innerHTML = `<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">${paths[kind] || paths.research}</svg>`;
+  return icon;
+}
+
+function renderAniimoResearch(entry, researchData) {
+  const researchId = String(entry.research_id || entry.form_id || "");
+  const definition = researchData?.definitions?.[researchId];
+  const topics = Array.isArray(definition?.topics) ? definition.topics : [];
+  if (!topics.length) return null;
+
+  const section = createCatalogSection("Aniimo Research");
+  section.classList.add("catalog-research-section");
+  const intro = document.createElement("div");
+  intro.className = "catalog-research-intro";
+  const summary = document.createElement("span");
+  summary.textContent = `${topics.length} research topics`;
+  const points = document.createElement("strong");
+  points.textContent = `${definition.total_research_points || 0} total research points`;
+  intro.append(summary, points);
+
+  const topicList = document.createElement("div");
+  topicList.className = "catalog-research-topics";
+  topics.forEach((topic) => {
+    const card = document.createElement("article");
+    card.className = "catalog-research-topic";
+    const icon = makeResearchTopicIcon(topic.icon_kind);
+    const content = document.createElement("div");
+    content.className = "catalog-research-topic-content";
+    const heading = document.createElement("strong");
+    heading.className = "catalog-research-topic-title";
+    heading.textContent = topic.label || "Research topic";
+    const milestones = document.createElement("div");
+    milestones.className = "catalog-research-milestones";
+    (topic.milestones || []).forEach((milestone) => {
+      const chip = document.createElement("span");
+      chip.className = "catalog-research-milestone";
+      const threshold = document.createElement("b");
+      threshold.textContent = String(milestone.required ?? "-");
+      const rewardPoints = document.createElement("span");
+      rewardPoints.textContent = `+${milestone.research_points ?? 0}`;
+      chip.append(threshold, rewardPoints);
+      milestones.append(chip);
+
+      if (milestone.bonus?.item) {
+        const bonus = document.createElement("span");
+        bonus.className = "catalog-research-bonus";
+        const bonusIcon = makeIcon("catalog-research-bonus-icon", milestone.bonus.item.icon);
+        bonusIcon.alt = `${milestone.bonus.item.name} icon`;
+        const bonusName = document.createElement("span");
+        bonusName.textContent = `${milestone.bonus.item.name} x${milestone.bonus.quantity ?? 1}`;
+        bonus.append(bonusIcon, bonusName);
+        milestones.append(bonus);
+      }
+    });
+    content.append(heading, milestones);
+    card.append(icon, content);
+    topicList.append(card);
+  });
+
+  section.append(intro, topicList);
+  const levelRewards = Array.isArray(definition.level_rewards) ? definition.level_rewards : [];
+  if (levelRewards.length) {
+    const rewards = document.createElement("div");
+    rewards.className = "catalog-research-level-rewards";
+    const label = document.createElement("strong");
+    label.textContent = "Research level rewards";
+    const rewardList = document.createElement("div");
+    levelRewards.forEach((reward) => {
+      const chip = document.createElement("span");
+      chip.textContent = `Lv. ${reward.level} · ${reward.label} +${reward.quantity ?? 1}`;
+      rewardList.append(chip);
+    });
+    rewards.append(label, rewardList);
+    section.append(rewards);
+  }
+  return section;
+}
+
 function renderBossRewardTier(tier) {
   const block = document.createElement("section");
   block.className = "catalog-boss-tier";
@@ -3396,7 +3485,14 @@ function renderAniilogCatalogRecord(entry) {
   const evolution = renderCatalogEvolution(entry);
   if (evolution) record.append(evolution);
   const progression = renderAniimoProgression(entry, state.aniilogData?.aniimo_progression);
-  if (progression) record.append(progression);
+  const research = renderAniimoResearch(entry, state.aniilogData?.aniimo_research);
+  if (progression || research) {
+    const lowerGrid = document.createElement("div");
+    lowerGrid.className = "catalog-progression-research-grid";
+    if (progression) lowerGrid.append(progression);
+    if (research) lowerGrid.append(research);
+    record.append(lowerGrid);
+  }
   return record;
 }
 

@@ -175,6 +175,13 @@
     ["Try fewer filters or a different combination", "请减少筛选条件或尝试其他组合", "条件を減らすか、別の組み合わせを試してください", "필터 수를 줄이거나 다른 조합을 시도하세요"],
   ];
 
+  UI_ROWS.push(
+    ["Aniimo Research", "Aniimo 研究", "Aniimo リサーチ", "Aniimo 연구"],
+    ["Research topic", "研究主题", "リサーチ項目", "연구 주제"],
+    ["Research level rewards", "研究等级奖励", "リサーチレベル報酬", "연구 레벨 보상"],
+    ["Accessory slot", "饰品栏位", "アクセサリースロット", "액세서리 슬롯"],
+  );
+
   const UI_TRANSLATIONS = Object.fromEntries(Object.keys(SUPPORTED_LANGUAGES).map((locale) => [locale, new Map()]));
   UI_ROWS.forEach(([english, chinese, japanese, korean]) => {
     UI_TRANSLATIONS.en.set(english, english);
@@ -203,6 +210,8 @@
         [/^(\d+) misc$/, "$1 个其他"],
         [/^Tier (\d+)$/, "阶级 $1"],
         [/^Level (\d+)$/, "等级 $1"],
+        [/^(\d+) research topics$/, "$1 个研究主题"],
+        [/^(\d+) total research points$/, "研究点数总计 $1"],
         [/^(.+) \(high to low\)$/, "$1（从高到低）"],
       ],
       ja: [
@@ -214,6 +223,8 @@
         [/^(\d+) misc$/, "$1 その他"],
         [/^Tier (\d+)$/, "ティア $1"],
         [/^Level (\d+)$/, "レベル $1"],
+        [/^(\d+) research topics$/, "$1 件のリサーチ項目"],
+        [/^(\d+) total research points$/, "合計リサーチポイント $1"],
         [/^(.+) \(high to low\)$/, "$1（高い順）"],
       ],
       ko: [
@@ -225,6 +236,8 @@
         [/^(\d+) misc$/, "기타 $1개"],
         [/^Tier (\d+)$/, "티어 $1"],
         [/^Level (\d+)$/, "레벨 $1"],
+        [/^(\d+) research topics$/, "연구 주제 $1개"],
+        [/^(\d+) total research points$/, "총 연구 포인트 $1"],
         [/^(.+) \(high to low\)$/, "$1 (높은 순)"],
       ],
     };

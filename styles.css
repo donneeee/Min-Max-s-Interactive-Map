@@ -3163,10 +3163,18 @@ body.catalog-view-active .sidebar .detail-panel {
   font-weight: 700;
 }
 
-.catalog-progression-section {
-  gap: 12px;
+.catalog-progression-research-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+  align-items: start;
+  gap: 18px;
   border-top: 1px solid rgba(80, 96, 103, 0.72);
   padding-top: 16px;
+}
+
+.catalog-progression-section,
+.catalog-research-section {
+  gap: 12px;
 }
 
 .catalog-progression-intro {
@@ -3234,9 +3242,174 @@ body.catalog-view-active .sidebar .detail-panel {
 
 .catalog-progression-stages {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 8px;
+}
+
+.catalog-research-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.catalog-research-intro strong {
+  border: 1px solid rgba(157, 129, 236, 0.5);
+  border-radius: 999px;
+  background: rgba(126, 93, 218, 0.12);
+  padding: 4px 8px;
+  color: #cfc1ff;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.catalog-research-topics {
+  display: grid;
+  gap: 7px;
+}
+
+.catalog-research-topic {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  border: 1px solid rgba(98, 84, 166, 0.64);
+  border-left: 3px solid #8067df;
+  border-radius: 7px;
+  background: linear-gradient(90deg, rgba(96, 76, 171, 0.13), rgba(16, 20, 22, 0.55) 38%);
+  padding: 8px 9px;
+}
+
+.catalog-research-topic-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(126, 100, 215, 0.15);
+  color: #bdaeff;
+}
+
+.catalog-research-topic-icon.is-catch {
+  background: rgba(86, 145, 214, 0.14);
+  color: #9bcaff;
+}
+
+.catalog-research-topic-icon.is-evolve,
+.catalog-research-topic-icon.is-cultivate {
+  background: rgba(105, 179, 148, 0.14);
+  color: #9fe1c5;
+}
+
+.catalog-research-topic-icon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.catalog-research-topic-content {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.catalog-research-topic-title {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.catalog-research-milestones {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.catalog-research-milestone {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(102, 116, 125, 0.68);
+  border-radius: 4px;
+  background: rgba(9, 13, 15, 0.5);
+  font-size: 10px;
+}
+
+.catalog-research-milestone b {
+  min-width: 28px;
+  padding: 3px 5px;
+  color: var(--text);
+  text-align: center;
+}
+
+.catalog-research-milestone span {
+  border-left: 1px solid rgba(102, 116, 125, 0.5);
+  background: rgba(126, 100, 215, 0.14);
+  padding: 3px 5px;
+  color: #cfc1ff;
+  font-weight: 700;
+}
+
+.catalog-research-bonus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(232, 191, 99, 0.5);
+  border-radius: 4px;
+  background: rgba(232, 191, 99, 0.08);
+  padding: 2px 6px 2px 2px;
+  color: #f1d791;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.catalog-research-bonus-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  object-fit: contain;
+}
+
+.catalog-research-level-rewards {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid rgba(80, 96, 103, 0.58);
+  padding-top: 9px;
+}
+
+.catalog-research-level-rewards > strong {
+  color: var(--accent-2);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.catalog-research-level-rewards > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.catalog-research-level-rewards span {
+  border: 1px solid rgba(157, 129, 236, 0.42);
+  border-radius: 5px;
+  background: rgba(126, 93, 218, 0.1);
+  padding: 5px 7px;
+  color: #d5caff;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .catalog-progression-stage {
