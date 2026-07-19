@@ -1,7 +1,7 @@
 const DATA_URL = "./data/map_site_data.json?v=20260717-geography-hierarchy-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260717-lumin-marking-icon-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260718-itemlog-icon-recovery-v002";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260718-core-skills-v001";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260718-skill-variants-v002";
 const APP_VERSION = "v0.3.61";
 const TRACKING_TICK_MS = 1000;
 const LOCAL_TRACKING_STORAGE_KEY = "minmax-map:tracking:v1";
@@ -70,6 +70,16 @@ const CATALOG_HOMELAND_META = Object.freeze({
   1102: { slug: "leisure", icon: `${ANIILOG_BADGE_ASSET_ROOT}/homeland-leisure.png`, color: "#e77894" },
   1103: { slug: "incense-making", icon: `${ANIILOG_BADGE_ASSET_ROOT}/homeland-incense-making.png`, color: "#b579dc" },
 });
+const HOMELAND_ELEMENT_IDS = new Set(["1000", "1001", "1002", "1003", "1004", "1005", "1006", "1007", "1008"]);
+const ANIILOG_SPECIAL_FORM_FILTERS = Object.freeze([
+  { id: "prismana", label: "Prismana" },
+  { id: "umbrabow", label: "Umbrabow" },
+]);
+const ANIILOG_EVOLUTION_STAGES = Object.freeze([
+  { id: "lumin", label: "Lumin" },
+  { id: "gamma", label: "Gamma" },
+  { id: "nova", label: "Nova" },
+]);
 const DEFAULT_PREFERENCES = Object.freeze({
   showMagicAttack: false,
 });
@@ -164,9 +174,26 @@ const state = {
     aniilog: "all",
     itemlog: "all",
   },
+  aniilogFiltersOpen: true,
+  aniilogFilterSectionsOpen: new Set(["classes"]),
+  aniilogFilterScroll: 0,
+  aniilogFilters: {
+    classes: new Set(),
+    elements: new Set(),
+    homeland: new Set(),
+    stages: new Set(),
+    forms: new Set(),
+    statId: "",
+    statComparator: ">",
+    statValue: "",
+    mobility: "any",
+    exploration: "any",
+    coreSkill: "any",
+  },
   trackingTicker: 0,
   pendingTrackingIds: new Set(),
   pendingAniilogLocate: null,
+  pendingBossLocate: null,
   pendingReset: false,
   localStorageError: "",
   preferences: { ...DEFAULT_PREFERENCES },
@@ -649,6 +676,64 @@ function locateAniilogEntry(entry) {
   if (datasetForMap(mapId)) applyPendingAniilogLocate(true);
 }
 
+function applyBossLocate(boss, finalAttempt = false) {
+  const item = activeMapItems().find((candidate) => (
+    candidate.item_id === boss?.item_id
+    && candidate.is_aniimo
+    && String(candidate.special_type || "").toLowerCase() === String(boss?.tier || "").toLowerCase()
+  ));
+  if (!item) {
+    if (finalAttempt) {
+      state.pendingBossLocate = null;
+      clearSelectionDetails("No confirmed map marker is available for this boss encounter.");
+    }
+    return false;
+  }
+
+  activeMapItems().filter((candidate) => candidate.is_aniimo).forEach((candidate) => {
+    state.enabled.delete(candidate.item_id);
+  });
+  state.enabled.add(item.item_id);
+  state.activeLayer = "aniimo";
+  state.search = "";
+  els.searchInput.value = "";
+  renderItems();
+  refreshVisibility();
+
+  const spawnEntries = activeMapSpawnEntries(item.item_id);
+  const spawnEntry = spawnEntries.find(({ spawn }) => (
+    boss.coordinate_key && spawn.coordinate_key === boss.coordinate_key
+  )) || spawnEntries.find(({ spawn }) => (
+    Number.isFinite(Number(boss.x))
+    && Number.isFinite(Number(boss.y))
+    && Math.abs(Number(spawn.x) - Number(boss.x)) < 1
+    && Math.abs(Number(spawn.y) - Number(boss.y)) < 1
+  )) || spawnEntries[0];
+
+  if (spawnEntry) {
+    state.locatedSpawnIndex = spawnEntry.index;
+    selectSpawn(spawnEntry.index);
+    focusSpawn(spawnEntry.spawn);
+  }
+  state.pendingBossLocate = null;
+  return true;
+}
+
+function applyPendingBossLocate(finalAttempt = false) {
+  if (!state.pendingBossLocate) return false;
+  return applyBossLocate(state.pendingBossLocate, finalAttempt);
+}
+
+function locateBossVariant(boss) {
+  if (!boss?.map_id || !boss?.item_id) return;
+  state.pendingBossLocate = boss;
+  setSidebarView("map");
+  if (boss.map_id !== state.activeMapId) {
+    switchMap(boss.map_id);
+  }
+  if (datasetForMap(boss.map_id)) applyPendingBossLocate(true);
+}
+
 function areaDetailValue(spawn) {
   return cleanGeographicName(
     spawn.large_area_name || spawn.level_area_name || spawn.area_name || "",
@@ -1117,6 +1202,10 @@ function ensureAniilogData() {
   return state.aniilogLoadPromise;
 }
 
+function preloadAniilogData() {
+  void ensureAniilogData().catch(() => {});
+}
+
 function ensureItemlogData() {
   if (state.itemlogData) return Promise.resolve(state.itemlogData);
   if (state.itemlogLoadPromise) return state.itemlogLoadPromise;
@@ -1187,7 +1276,9 @@ function catalogCategoriesForView(view = state.sidebarView) {
 
 function catalogEntriesForView(view = state.sidebarView) {
   let entries = allCatalogEntriesForView(view);
-  if (isCatalogView(view)) {
+  if (view === "aniilog") {
+    entries = entries.filter(aniilogEntryMatchesFilters);
+  } else if (isCatalogView(view)) {
     const category = state.catalogCategory[view] || "all";
     entries = category === "all"
       ? entries
@@ -1299,9 +1390,309 @@ function catalogEntrySearchText(entry) {
       ability?.description,
       ability?.level,
     ]),
+    aniilogEvolutionStage(entry)?.label,
     entry?.locations?.flatMap((location) => [location?.map_label, location?.areas]),
     entry?.spawn_requirements,
   ]);
+}
+
+function normalizeFilterKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function aniilogFilterSet(name) {
+  const filters = state.aniilogFilters || {};
+  if (!(filters[name] instanceof Set)) {
+    filters[name] = new Set(Array.isArray(filters[name]) ? filters[name] : []);
+  }
+  return filters[name];
+}
+
+function aniilogFilterSectionSet() {
+  if (!(state.aniilogFilterSectionsOpen instanceof Set)) {
+    state.aniilogFilterSectionsOpen = new Set(Array.isArray(state.aniilogFilterSectionsOpen)
+      ? state.aniilogFilterSectionsOpen
+      : ["classes"]);
+  }
+  return state.aniilogFilterSectionsOpen;
+}
+
+function hasActiveAniilogFilters() {
+  const filters = state.aniilogFilters || {};
+  return ["classes", "elements", "homeland", "stages", "forms"].some((name) => aniilogFilterSet(name).size)
+    || Boolean(filters.statId && filters.statValue !== "")
+    || (filters.mobility && filters.mobility !== "any")
+    || (filters.exploration && filters.exploration !== "any")
+    || (filters.coreSkill && filters.coreSkill !== "any");
+}
+
+function resetAniilogFilters() {
+  ["classes", "elements", "homeland", "stages", "forms"].forEach((name) => aniilogFilterSet(name).clear());
+  state.aniilogFilters.statId = "";
+  state.aniilogFilters.statComparator = ">";
+  state.aniilogFilters.statValue = "";
+  state.aniilogFilters.mobility = "any";
+  state.aniilogFilters.exploration = "any";
+  state.aniilogFilters.coreSkill = "any";
+  updateAniilogFilterResults();
+}
+
+function toggleAniilogFilter(name, id) {
+  const set = aniilogFilterSet(name);
+  if (set.has(id)) {
+    set.delete(id);
+  } else {
+    set.add(id);
+  }
+  updateAniilogFilterResults();
+}
+
+function addAniilogFilter(name, id) {
+  if (!id) return;
+  const set = aniilogFilterSet(name);
+  if (set.has(id)) return;
+  set.add(id);
+  updateAniilogFilterResults();
+}
+
+function addAniilogTierFilter(name, id) {
+  if (!id) return;
+  const set = aniilogFilterSet(name);
+  const separator = id.lastIndexOf(":");
+  const baseId = separator === -1 ? id : id.slice(0, separator);
+  const tier = separator === -1 ? "any" : id.slice(separator + 1);
+  [...set].forEach((activeId) => {
+    if (activeId === `${baseId}:any` || (tier === "any" && activeId.startsWith(`${baseId}:`))) {
+      set.delete(activeId);
+    }
+  });
+  if (!set.has(id)) set.add(id);
+  updateAniilogFilterResults();
+}
+
+function setAniilogScalarFilter(name, value) {
+  state.aniilogFilters[name] = value;
+  updateAniilogFilterResults();
+}
+
+function toggleAniilogFilterSection(id) {
+  const openSections = aniilogFilterSectionSet();
+  if (openSections.has(id)) {
+    openSections.delete(id);
+  } else {
+    openSections.add(id);
+  }
+  renderCatalogPreview();
+}
+
+function updateAniilogFilterResults() {
+  state.catalogIndexScroll.aniilog = 0;
+  const visibleEntries = catalogEntriesForView("aniilog");
+  if (!visibleEntries.some((entry) => entry.id === state.catalogSelection.aniilog)) {
+    state.catalogSelection.aniilog = visibleEntries[0]?.id || "";
+  }
+  renderCatalogPreview();
+}
+
+function aniilogEvolutionStage(entry) {
+  const existing = entry?.evolution_stage;
+  if (existing?.id || existing?.label) {
+    const label = existing.label || existing.id;
+    return { id: normalizeFilterKey(existing.id || label), label };
+  }
+  const evolution = entry?.evolution && typeof entry.evolution === "object" ? entry.evolution : {};
+  const hasFrom = Array.isArray(evolution.from) && evolution.from.length > 0;
+  const hasTo = Array.isArray(evolution.to) && evolution.to.length > 0;
+  if (!hasFrom && hasTo) return { id: "lumin", label: "Lumin" };
+  if (hasFrom && hasTo) return { id: "gamma", label: "Gamma" };
+  if (hasFrom && !hasTo) return { id: "nova", label: "Nova" };
+  return null;
+}
+
+function aniilogElementOption(element) {
+  const meta = catalogElementMeta(element);
+  const label = catalogElementLabel(element);
+  const level = Number(element?.level) || 0;
+  return {
+    id: `${meta.slug}:${level}`,
+    label: level ? `${label} ${level}` : label,
+    meta,
+    level,
+  };
+}
+
+function isElementalHomelandAbility(ability) {
+  return HOMELAND_ELEMENT_IDS.has(String(ability?.id || ""));
+}
+
+function aniilogHomelandOption(ability) {
+  const meta = catalogHomelandMeta(ability);
+  const label = ability?.name || meta.label || meta.slug || "Home ability";
+  const level = Number(ability?.level) || 0;
+  return {
+    id: `${normalizeFilterKey(label)}:${level}`,
+    label: level ? `${label} ${level}` : label,
+    meta,
+    level,
+  };
+}
+
+function aniilogSkillFilterId(skill) {
+  return `skill:${normalizeFilterKey(skill?.name)}`;
+}
+
+function aniilogSkillFilterOption(skill) {
+  return {
+    id: aniilogSkillFilterId(skill),
+    label: skill?.name || "Unknown skill",
+  };
+}
+
+function sortedOptionValues(map) {
+  return [...map.values()].sort((left, right) => compareText(left.label, right.label));
+}
+
+function groupedAniilogTierOptions(options) {
+  const groups = new Map();
+  options.forEach((option) => {
+    const separator = option.id.lastIndexOf(":");
+    const id = separator === -1 ? option.id : option.id.slice(0, separator);
+    if (!groups.has(id)) {
+      groups.set(id, {
+        id,
+        label: option.level ? option.label.replace(/\s+\d+$/, "") : option.label,
+        meta: option.meta,
+        levels: [],
+      });
+    }
+    if (option.level && !groups.get(id).levels.includes(option.level)) {
+      groups.get(id).levels.push(option.level);
+    }
+  });
+  return [...groups.values()]
+    .map((group) => ({ ...group, levels: group.levels.sort((left, right) => left - right) }))
+    .sort((left, right) => compareText(left.label, right.label));
+}
+
+function aniilogTierFilterMatches(filters, option) {
+  const separator = option.id.lastIndexOf(":");
+  const baseId = separator === -1 ? option.id : option.id.slice(0, separator);
+  return filters.has(option.id) || filters.has(`${baseId}:any`);
+}
+
+function collectAniilogFilterOptions(entries) {
+  const classes = new Map();
+  const elements = new Map();
+  const homeland = new Map();
+  const mobility = new Map();
+  const exploration = new Map();
+  const stages = new Map(ANIILOG_EVOLUTION_STAGES.map((stage) => [stage.id, stage]));
+
+  entries.forEach((entry) => {
+    const role = String(entry?.role || "").trim();
+    if (role) {
+      const id = normalizeFilterKey(role);
+      classes.set(id, { id, label: role, meta: catalogRoleMeta(role), role });
+    }
+    (entry?.elements || []).forEach((element) => {
+      const option = aniilogElementOption(element);
+      elements.set(option.id, option);
+    });
+    (entry?.homeland || []).filter((ability) => !isElementalHomelandAbility(ability)).forEach((ability) => {
+      const option = aniilogHomelandOption(ability);
+      homeland.set(option.id, option);
+    });
+    (entry?.mobility_skills || []).forEach((skill) => {
+      const option = aniilogSkillFilterOption(skill);
+      if (option.id !== "skill:") mobility.set(option.id, option);
+    });
+    (entry?.exploration || []).forEach((skill) => {
+      const option = aniilogSkillFilterOption(skill);
+      if (option.id !== "skill:") exploration.set(option.id, option);
+    });
+  });
+
+  const classOptions = [...classes.values()].sort((left, right) => {
+    const leftIndex = ANIILOG_CLASS_ORDER.indexOf(left.role);
+    const rightIndex = ANIILOG_CLASS_ORDER.indexOf(right.role);
+    if (leftIndex !== -1 || rightIndex !== -1) {
+      return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
+    }
+    return compareText(left.label, right.label);
+  });
+
+  return {
+    classes: classOptions,
+    elements: sortedOptionValues(elements),
+    homeland: sortedOptionValues(homeland),
+    mobility: sortedOptionValues(mobility),
+    exploration: sortedOptionValues(exploration),
+    stages: ANIILOG_EVOLUTION_STAGES.filter((stage) => stages.has(stage.id)),
+  };
+}
+
+function aniilogSkillFilterMatches(skills, filterValue) {
+  const skillsList = Array.isArray(skills) ? skills : [];
+  if (!filterValue || filterValue === "any") return true;
+  if (filterValue === "has") return skillsList.length > 0;
+  if (filterValue === "none") return skillsList.length === 0;
+  if (filterValue.startsWith("skill:")) {
+    return skillsList.some((skill) => aniilogSkillFilterId(skill) === filterValue);
+  }
+  return true;
+}
+
+function aniilogEntryMatchesFilters(entry) {
+  const filters = state.aniilogFilters || {};
+  const classFilters = aniilogFilterSet("classes");
+  if (classFilters.size && !classFilters.has(normalizeFilterKey(entry?.role))) return false;
+
+  const elementFilters = aniilogFilterSet("elements");
+  if (elementFilters.size && !(entry?.elements || []).some((element) => aniilogTierFilterMatches(elementFilters, aniilogElementOption(element)))) {
+    return false;
+  }
+
+  const homelandFilters = aniilogFilterSet("homeland");
+  if (homelandFilters.size && !(entry?.homeland || [])
+    .filter((ability) => !isElementalHomelandAbility(ability))
+    .some((ability) => aniilogTierFilterMatches(homelandFilters, aniilogHomelandOption(ability)))) {
+    return false;
+  }
+
+  const stageFilters = aniilogFilterSet("stages");
+  if (stageFilters.size) {
+    const stage = aniilogEvolutionStage(entry);
+    if (!stage || !stageFilters.has(stage.id)) return false;
+  }
+
+  const formFilters = aniilogFilterSet("forms");
+  const formKey = normalizeFilterKey(entry?.form_label || entry?.form_key);
+  if (formFilters.size && !formFilters.has(formKey)) return false;
+
+  const stat = visibleAniilogStatConfig().find((option) => option.id === filters.statId);
+  const threshold = Number(filters.statValue);
+  if (stat && filters.statValue !== "" && Number.isFinite(threshold)) {
+    const value = aniilogStatValue(entry, stat.sourceLabel);
+    if (value === null) return false;
+    if ((filters.statComparator || ">") === "<") {
+      if (!(value < threshold)) return false;
+    } else if (!(value > threshold)) {
+      return false;
+    }
+  }
+
+  if (!aniilogSkillFilterMatches(entry?.mobility_skills, filters.mobility)) return false;
+  if (!aniilogSkillFilterMatches(entry?.exploration, filters.exploration)) return false;
+
+  const hasCoreSkill = (entry?.skills || []).some((skill) => Boolean(skill?.core));
+  if (filters.coreSkill === "has" && !hasCoreSkill) return false;
+  if (filters.coreSkill === "none" && hasCoreSkill) return false;
+
+  return true;
 }
 
 function appendCatalogFact(grid, label, value) {
@@ -1554,8 +1945,306 @@ function renderAniilogSortControl() {
   return label;
 }
 
+function renderAniilogActiveRule(group, option) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "aniilog-filter-rule";
+  button.setAttribute("aria-label", `Remove ${option.label} filter`);
+  if (option.meta?.color) button.style.setProperty("--aniilog-filter-color", option.meta.color);
+  if (option.meta?.icon) {
+    const icon = document.createElement("img");
+    icon.className = "aniilog-filter-rule-icon";
+    icon.src = option.meta.icon;
+    icon.alt = "";
+    icon.setAttribute("aria-hidden", "true");
+    button.append(icon);
+  }
+  const text = document.createElement("span");
+  text.textContent = option.label;
+  const remove = document.createElement("span");
+  remove.className = "aniilog-filter-rule-remove";
+  remove.textContent = "x";
+  remove.setAttribute("aria-hidden", "true");
+  button.append(text, remove);
+  button.addEventListener("click", () => toggleAniilogFilter(group, option.id));
+  return button;
+}
+
+function renderAniilogFilterSection(id, title, children, activeCount = 0) {
+  const section = document.createElement("section");
+  section.className = "aniilog-filter-section";
+  const open = aniilogFilterSectionSet().has(id);
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "aniilog-filter-section-toggle";
+  toggle.setAttribute("aria-expanded", String(open));
+  toggle.addEventListener("click", () => toggleAniilogFilterSection(id));
+
+  const label = document.createElement("span");
+  label.className = "aniilog-filter-section-title";
+  label.textContent = title;
+  const count = document.createElement("span");
+  count.className = "aniilog-filter-section-count";
+  count.textContent = activeCount ? String(activeCount) : "";
+  const symbol = document.createElement("span");
+  symbol.className = "aniilog-filter-section-symbol";
+  symbol.classList.toggle("is-open", open);
+  symbol.setAttribute("aria-hidden", "true");
+  toggle.append(label, count, symbol);
+  section.append(toggle);
+
+  if (open) {
+    const body = document.createElement("div");
+    body.className = "aniilog-filter-section-body";
+    body.append(...children);
+    section.append(body);
+  }
+  return section;
+}
+
+function renderAniilogActiveRules(group, options) {
+  const active = aniilogFilterSet(group);
+  const optionMap = new Map(options.map((option) => [option.id, option]));
+  const container = document.createElement("div");
+  container.className = "aniilog-filter-active-rules";
+  [...active].forEach((id) => {
+    const option = optionMap.get(id);
+    if (option) container.append(renderAniilogActiveRule(group, option));
+  });
+  return container;
+}
+
+function renderAniilogSimpleRuleBuilder(group, options, placeholder) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "aniilog-filter-builder";
+  const row = document.createElement("div");
+  row.className = "aniilog-filter-add-row aniilog-filter-add-row--simple";
+  const select = document.createElement("select");
+  select.className = "aniilog-filter-select";
+  select.setAttribute("aria-label", placeholder);
+  const placeholderOption = document.createElement("option");
+  placeholderOption.value = "";
+  placeholderOption.textContent = placeholder;
+  select.append(placeholderOption);
+  options.forEach((option) => {
+    const item = document.createElement("option");
+    item.value = option.id;
+    item.textContent = option.label;
+    select.append(item);
+  });
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "aniilog-filter-add";
+  add.textContent = "Add";
+  add.disabled = true;
+  select.addEventListener("change", () => { add.disabled = !select.value; });
+  add.addEventListener("click", () => addAniilogFilter(group, select.value));
+  row.append(select, add);
+  wrapper.append(row, renderAniilogActiveRules(group, options));
+  return wrapper;
+}
+
+function aniilogTierRuleOptions(groups) {
+  const options = [];
+  groups.forEach((group) => {
+    options.push({ id: `${group.id}:any`, label: `${group.label} - any tier`, meta: group.meta });
+    group.levels.forEach((level) => {
+      options.push({ id: `${group.id}:${level}`, label: `${group.label} - tier ${level}`, meta: group.meta });
+    });
+  });
+  return options;
+}
+
+function renderAniilogTierRuleBuilder(group, options, placeholder) {
+  const groups = groupedAniilogTierOptions(options);
+  const wrapper = document.createElement("div");
+  wrapper.className = "aniilog-filter-builder";
+  const row = document.createElement("div");
+  row.className = "aniilog-filter-add-row";
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "aniilog-filter-select";
+  typeSelect.setAttribute("aria-label", placeholder);
+  const typePlaceholder = document.createElement("option");
+  typePlaceholder.value = "";
+  typePlaceholder.textContent = placeholder;
+  typeSelect.append(typePlaceholder);
+  groups.forEach((groupOption) => {
+    const item = document.createElement("option");
+    item.value = groupOption.id;
+    item.textContent = groupOption.label;
+    typeSelect.append(item);
+  });
+
+  const tierSelect = document.createElement("select");
+  tierSelect.className = "aniilog-filter-select";
+  tierSelect.setAttribute("aria-label", "Tier");
+  tierSelect.disabled = true;
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "aniilog-filter-add";
+  add.textContent = "Add";
+  add.disabled = true;
+
+  const populateTiers = () => {
+    tierSelect.replaceChildren();
+    const selectedGroup = groups.find((groupOption) => groupOption.id === typeSelect.value);
+    if (!selectedGroup) {
+      tierSelect.disabled = true;
+      add.disabled = true;
+      return;
+    }
+    const anyTier = document.createElement("option");
+    anyTier.value = "any";
+    anyTier.textContent = "Any tier";
+    tierSelect.append(anyTier);
+    selectedGroup.levels.forEach((level) => {
+      const item = document.createElement("option");
+      item.value = String(level);
+      item.textContent = `Tier ${level}`;
+      tierSelect.append(item);
+    });
+    tierSelect.disabled = false;
+    add.disabled = false;
+  };
+  typeSelect.addEventListener("change", populateTiers);
+  add.addEventListener("click", () => {
+    if (typeSelect.value) addAniilogTierFilter(group, `${typeSelect.value}:${tierSelect.value || "any"}`);
+  });
+  row.append(typeSelect, tierSelect, add);
+  wrapper.append(row, renderAniilogActiveRules(group, aniilogTierRuleOptions(groups)));
+  return wrapper;
+}
+
+function renderAniilogSkillSelect(name, labelText, options, labels = {}) {
+  const label = document.createElement("label");
+  label.className = "catalog-sort-label";
+  label.textContent = labelText;
+  const select = document.createElement("select");
+  select.className = "aniilog-filter-select";
+  select.value = state.aniilogFilters[name] || "any";
+  [
+    { id: "any", label: "Any" },
+    { id: "has", label: labels.has || "Has any" },
+    { id: "none", label: labels.none || "None" },
+    ...options,
+  ].forEach((option) => {
+    const item = document.createElement("option");
+    item.value = option.id;
+    item.textContent = option.label;
+    item.selected = item.value === select.value;
+    select.append(item);
+  });
+  select.addEventListener("change", () => setAniilogScalarFilter(name, select.value));
+  label.append(select);
+  return label;
+}
+
+function renderAniilogStatFilter() {
+  const filters = state.aniilogFilters;
+  const row = document.createElement("div");
+  row.className = "aniilog-filter-row";
+
+  const statSelect = document.createElement("select");
+  statSelect.className = "aniilog-filter-select";
+  const anyOption = document.createElement("option");
+  anyOption.value = "";
+  anyOption.textContent = "Any base stat";
+  anyOption.selected = !filters.statId;
+  statSelect.append(anyOption);
+  visibleAniilogStatConfig().forEach((stat) => {
+    const option = document.createElement("option");
+    option.value = stat.id;
+    option.textContent = stat.label;
+    option.selected = stat.id === filters.statId;
+    statSelect.append(option);
+  });
+  statSelect.addEventListener("change", () => setAniilogScalarFilter("statId", statSelect.value));
+
+  const comparator = document.createElement("select");
+  comparator.className = "aniilog-filter-select";
+  [">", "<"].forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    option.selected = value === (filters.statComparator || ">");
+    comparator.append(option);
+  });
+  comparator.addEventListener("change", () => setAniilogScalarFilter("statComparator", comparator.value));
+
+  const value = document.createElement("input");
+  value.className = "aniilog-filter-input";
+  value.type = "number";
+  value.inputMode = "numeric";
+  value.placeholder = "Value";
+  value.value = filters.statValue ?? "";
+  value.addEventListener("change", () => setAniilogScalarFilter("statValue", value.value));
+
+  row.append(statSelect, comparator, value);
+  return row;
+}
+
+function renderAniilogFilters(allEntries) {
+  if (!state.aniilogFiltersOpen) return null;
+  const options = collectAniilogFilterOptions(allEntries);
+  const panel = document.createElement("div");
+  panel.className = "aniilog-filter-panel";
+
+  if (options.classes.length) {
+    panel.append(renderAniilogFilterSection("classes", "Classes", [
+      renderAniilogSimpleRuleBuilder("classes", options.classes, "Choose a class"),
+    ], aniilogFilterSet("classes").size));
+  }
+  if (options.elements.length) {
+    panel.append(renderAniilogFilterSection("elements", "Elements", [
+      renderAniilogTierRuleBuilder("elements", options.elements, "Choose an element"),
+    ], aniilogFilterSet("elements").size));
+  }
+  if (options.homeland.length) {
+    panel.append(renderAniilogFilterSection("homeland", "Homeland abilities", [
+      renderAniilogTierRuleBuilder("homeland", options.homeland, "Choose an ability"),
+    ], aniilogFilterSet("homeland").size));
+  }
+  panel.append(renderAniilogFilterSection("stages", "Evolution stage", [
+    renderAniilogSimpleRuleBuilder("stages", options.stages, "Choose a stage"),
+  ], aniilogFilterSet("stages").size));
+  panel.append(renderAniilogFilterSection("forms", "Special forms", [
+    renderAniilogSimpleRuleBuilder("forms", ANIILOG_SPECIAL_FORM_FILTERS, "Choose a form"),
+  ], aniilogFilterSet("forms").size));
+  panel.append(renderAniilogFilterSection("stats", "Base stat", [renderAniilogStatFilter()],
+    state.aniilogFilters.statId && state.aniilogFilters.statValue !== "" ? 1 : 0));
+  const skillFilterCount = ["mobility", "exploration", "coreSkill"]
+    .filter((name) => state.aniilogFilters[name] && state.aniilogFilters[name] !== "any").length;
+  panel.append(renderAniilogFilterSection("skills", "Skills", [
+    renderAniilogSkillSelect("mobility", "Mobility skill", options.mobility),
+    renderAniilogSkillSelect("exploration", "Exploration skill", options.exploration),
+    renderAniilogSkillSelect("coreSkill", "Core skill", [], {
+      has: "Has a core skill",
+      none: "No core skill",
+    }),
+  ], skillFilterCount));
+
+  if (hasActiveAniilogFilters()) {
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "aniilog-filter-clear";
+    clear.textContent = "Clear filters";
+    clear.addEventListener("click", resetAniilogFilters);
+    panel.append(clear);
+  }
+
+  panel.addEventListener("scroll", () => {
+    state.aniilogFilterScroll = panel.scrollTop;
+  }, { passive: true });
+  requestAnimationFrame(() => {
+    panel.scrollTop = Number(state.aniilogFilterScroll) || 0;
+  });
+
+  return panel;
+}
+
 function renderCatalogCategoryToolbar(view) {
   if (!isCatalogView(view)) return null;
+  if (view === "aniilog") return renderAniilogFilters(allCatalogEntriesForView(view));
   const group = document.createElement("section");
   group.className = "catalog-category-group";
   const label = document.createElement("p");
@@ -1772,81 +2461,131 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
     const icon = makeIcon("catalog-ability-icon", ability.icon);
     icon.alt = `${ability.name} icon`;
     const copy = document.createElement("div");
-    const heading = document.createElement("div");
-    heading.className = "catalog-ability-heading";
-    const name = document.createElement("strong");
-    name.textContent = ability.name || "Ability";
-    heading.append(name);
-    if (ability.core) {
-      const coreBadge = document.createElement("span");
-      coreBadge.className = "catalog-core-skill-badge";
-      coreBadge.title = "S Core Skill";
-      const coreIcon = document.createElement("img");
-      coreIcon.src = "./assets/aniilog/skills/core-skill.png";
-      coreIcon.alt = "";
-      coreIcon.setAttribute("aria-hidden", "true");
-      const coreLabel = document.createElement("span");
-      coreLabel.textContent = "Core";
-      coreBadge.append(coreIcon, coreLabel);
-      heading.append(coreBadge);
-    }
-    copy.append(heading);
-    const combat = ability.combat && typeof ability.combat === "object" ? ability.combat : null;
-    if (combat) {
-      const badges = document.createElement("div");
-      badges.className = "catalog-ability-badges";
-      const addBadge = (label, type, color = "", iconSrc = "") => {
-        if (!label) return;
-        const badge = document.createElement("span");
-        badge.className = `catalog-ability-badge catalog-ability-badge--${type}`;
-        if (color) badge.style.setProperty("--catalog-ability-element-color", color);
-        if (iconSrc) {
-          const icon = document.createElement("img");
-          icon.className = "catalog-ability-badge-icon";
-          icon.src = iconSrc;
-          icon.alt = "";
-          icon.setAttribute("aria-hidden", "true");
-          badge.append(icon);
-        }
-        const text = document.createElement("span");
-        text.textContent = label;
-        badge.append(text);
-        badges.append(badge);
-      };
-      const categoryKey = String(combat.category || "").trim().toLowerCase();
-      const categoryLabel = categoryKey === "magic" ? "Magical" : combat.category;
-      const categoryType = categoryKey === "magic" ? "category-magical" : `category-${categoryKey || "other"}`;
-      addBadge(categoryLabel, categoryType);
-      (Array.isArray(combat.types) ? combat.types : []).forEach((type) => addBadge(type, "type"));
-      const elementMeta = catalogElementMeta(combat.element);
-      addBadge(catalogElementLabel(combat.element), "element", combat.element_color || elementMeta.color, elementMeta.icon);
-      if (badges.childElementCount) copy.append(badges);
-
-      const facts = document.createElement("div");
-      facts.className = "catalog-ability-facts";
-      appendCatalogAbilityFact(facts, "Might", combat.might);
-      appendCatalogAbilityFact(facts, "EP Cost", combat.ep_cost);
-      appendCatalogAbilityFact(facts, "BREAK", Number(combat.break_power) * 100, "%");
-      appendCatalogAbilityFact(facts, "Cooldown", combat.cooldown, "s", "cooldown");
-      if (facts.childElementCount) copy.append(facts);
-    }
-    if (ability.description) {
-      const description = document.createElement("p");
-      description.textContent = ability.description;
-      copy.append(description);
-    }
-    if (!combat) {
-      const meta = [];
-      if (ability.group && ability.group !== "Ultimate") meta.push(ability.group);
-      if (ability.power) meta.push(`Might ${ability.power}`);
-      if (ability.consume) meta.push(`EP Cost ${ability.consume}`);
-      if (meta.length) {
-        const detail = document.createElement("small");
-        detail.textContent = meta.join(" - ");
-        copy.append(detail);
-      }
-    }
     card.append(icon, copy);
+    let showUpgrade = false;
+
+    const renderVariant = () => {
+      const displayed = showUpgrade && ability.upgrade
+        ? { ...ability, ...ability.upgrade, core: ability.core }
+        : ability;
+      copy.replaceChildren();
+      icon.src = displayed.icon || ability.icon || "";
+      icon.alt = `${displayed.name || ability.name || "Ability"} icon`;
+
+      const heading = document.createElement("div");
+      heading.className = "catalog-ability-heading";
+      const name = document.createElement("strong");
+      name.textContent = displayed.name || "Ability";
+      heading.append(name);
+      if (displayed.core) {
+        const coreBadge = document.createElement("span");
+        coreBadge.className = "catalog-core-skill-badge";
+        coreBadge.title = "S Core Skill";
+        const coreIcon = document.createElement("img");
+        coreIcon.src = "./assets/aniilog/skills/core-skill.png";
+        coreIcon.alt = "";
+        coreIcon.setAttribute("aria-hidden", "true");
+        const coreLabel = document.createElement("span");
+        coreLabel.textContent = "Core";
+        coreBadge.append(coreIcon, coreLabel);
+        heading.append(coreBadge);
+      }
+      copy.append(heading);
+
+      if (ability.upgrade) {
+        const toggle = document.createElement("div");
+        toggle.className = "catalog-skill-variant-toggle";
+        toggle.setAttribute("aria-label", `${ability.name || "Core skill"} version`);
+        [["Normal", false], ["Upgraded", true]].forEach(([label, upgraded]) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = label;
+          button.classList.toggle("active", showUpgrade === upgraded);
+          button.setAttribute("aria-pressed", String(showUpgrade === upgraded));
+          button.addEventListener("click", () => {
+            if (showUpgrade === upgraded) return;
+            showUpgrade = upgraded;
+            renderVariant();
+          });
+          toggle.append(button);
+        });
+        copy.append(toggle);
+      }
+
+      const combat = displayed.combat && typeof displayed.combat === "object" ? displayed.combat : null;
+      if (combat) {
+        const badges = document.createElement("div");
+        badges.className = "catalog-ability-badges";
+        const addBadge = (label, type, color = "", iconSrc = "") => {
+          if (!label) return;
+          const badge = document.createElement("span");
+          badge.className = `catalog-ability-badge catalog-ability-badge--${type}`;
+          if (color) badge.style.setProperty("--catalog-ability-element-color", color);
+          if (iconSrc) {
+            const badgeIcon = document.createElement("img");
+            badgeIcon.className = "catalog-ability-badge-icon";
+            badgeIcon.src = iconSrc;
+            badgeIcon.alt = "";
+            badgeIcon.setAttribute("aria-hidden", "true");
+            badge.append(badgeIcon);
+          }
+          const text = document.createElement("span");
+          text.textContent = label;
+          badge.append(text);
+          badges.append(badge);
+        };
+        const categoryKey = String(combat.category || "").trim().toLowerCase();
+        const categoryLabel = categoryKey === "magic" ? "Magical" : combat.category;
+        const categoryType = categoryKey === "magic" ? "category-magical" : `category-${categoryKey || "other"}`;
+        addBadge(categoryLabel, categoryType);
+        (Array.isArray(combat.types) ? combat.types : []).forEach((type) => addBadge(type, "type"));
+        const elementMeta = catalogElementMeta(combat.element);
+        addBadge(catalogElementLabel(combat.element), "element", combat.element_color || elementMeta.color, elementMeta.icon);
+        if (badges.childElementCount) copy.append(badges);
+
+        const facts = document.createElement("div");
+        facts.className = "catalog-ability-facts";
+        appendCatalogAbilityFact(facts, "Might", combat.might);
+        appendCatalogAbilityFact(facts, "EP Cost", combat.ep_cost);
+        appendCatalogAbilityFact(facts, "BREAK", Number(combat.break_power) * 100, "%");
+        appendCatalogAbilityFact(facts, "Cooldown", combat.cooldown, "s", "cooldown");
+        if (facts.childElementCount) copy.append(facts);
+      }
+      if (displayed.description) {
+        const description = document.createElement("p");
+        description.textContent = displayed.description;
+        copy.append(description);
+      }
+      if (Array.isArray(displayed.unlock_forms) && displayed.unlock_forms.length) {
+        const requirement = document.createElement("div");
+        requirement.className = "catalog-skill-unlock";
+        const unlockIcons = document.createElement("span");
+        unlockIcons.className = "catalog-skill-unlock-icons";
+        displayed.unlock_forms.forEach((form) => {
+          const formIcon = makeIcon("catalog-skill-unlock-icon", form.icon);
+          formIcon.alt = "";
+          formIcon.setAttribute("aria-hidden", "true");
+          unlockIcons.append(formIcon);
+        });
+        const labels = displayed.unlock_forms.map((form) => `${form.name} (${form.form_label})`);
+        const requirementText = document.createElement("span");
+        requirementText.textContent = `Unlock by obtaining ${labels.join(" and ")}`;
+        requirement.append(unlockIcons, requirementText);
+        copy.append(requirement);
+      }
+      if (!combat) {
+        const meta = [];
+        if (displayed.group && displayed.group !== "Ultimate") meta.push(displayed.group);
+        if (displayed.power) meta.push(`Might ${displayed.power}`);
+        if (displayed.consume) meta.push(`EP Cost ${displayed.consume}`);
+        if (meta.length) {
+          const detail = document.createElement("small");
+          detail.textContent = meta.join(" - ");
+          copy.append(detail);
+        }
+      }
+    };
+    renderVariant();
     grid.append(card);
   });
   section.append(grid);
@@ -2049,7 +2788,13 @@ function renderAniilogBossVariants(bossVariants) {
       meta.append(refresh);
     }
     copy.append(eyebrow, name, meta);
-    header.append(icon, copy);
+    const locate = document.createElement("button");
+    locate.type = "button";
+    locate.className = "catalog-locate-button catalog-boss-locate-button";
+    locate.textContent = "Locate on Map";
+    locate.disabled = !boss.map_id || !boss.item_id;
+    locate.addEventListener("click", () => locateBossVariant(boss));
+    header.append(icon, copy, locate);
     card.append(header);
 
     const rewardTiers = Array.isArray(boss.reward_tiers) ? boss.reward_tiers : [];
@@ -2370,7 +3115,27 @@ function renderCatalogSidebar(view, title, allEntries, entries, selectedId, stat
   count.textContent = allowControls
     ? `${entries.length} / ${allEntries.length}`
     : (statusMessage.startsWith("Loading") ? "Loading" : "Unavailable");
-  heading.append(name, count);
+  const headingActions = document.createElement("div");
+  headingActions.className = "catalog-heading-actions";
+  headingActions.append(count);
+  if (view === "aniilog" && allowControls) {
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "catalog-filter-toggle";
+    const toggleSymbol = document.createElement("span");
+    toggleSymbol.className = "catalog-filter-toggle-symbol";
+    toggleSymbol.classList.toggle("is-open", state.aniilogFiltersOpen);
+    toggleSymbol.setAttribute("aria-hidden", "true");
+    toggle.append(toggleSymbol);
+    toggle.setAttribute("aria-label", state.aniilogFiltersOpen ? "Collapse filters" : "Expand filters");
+    toggle.setAttribute("aria-expanded", String(state.aniilogFiltersOpen));
+    toggle.addEventListener("click", () => {
+      state.aniilogFiltersOpen = !state.aniilogFiltersOpen;
+      renderCatalogPreview();
+    });
+    headingActions.append(toggle);
+  }
+  heading.append(name, headingActions);
   fragment.append(heading);
 
   if (allowControls) {
@@ -2411,7 +3176,7 @@ function renderCatalogPreview(options = {}) {
   if (!isCatalogView()) return;
   const view = state.sidebarView;
   const title = view === "aniilog" ? "Aniilog" : "Item-log";
-  const sidebarTitle = view === "aniilog" ? "Aniimo" : "Items";
+  const sidebarTitle = view === "aniilog" ? "Filters" : "Items";
   const currentIndex = els.catalogSidebarContent.querySelector(".catalog-index");
   if (currentIndex?.dataset.catalogView === view) state.catalogIndexScroll[view] = currentIndex.scrollTop;
   els.catalogPanel.textContent = "";
@@ -2474,19 +3239,23 @@ function renderCatalogPreview(options = {}) {
   }
   if (!entries.length) {
     const entryLabel = view === "aniilog" ? "Aniimo" : "Item";
+    const noResultsFromFilters = view === "aniilog" && hasActiveAniilogFilters();
+    const noResultsMessage = noResultsFromFilters
+      ? "Those filters are too specific. Try fewer filters or a different combination."
+      : (catalogSearchForView(view) ? `No ${entryLabel} entries match that search.` : "No catalogue records are available.");
     renderCatalogSidebar(
       view,
       sidebarTitle,
       allEntries,
       entries,
       "",
-      catalogSearchForView(view) ? `No ${entryLabel} entries match that search.` : "No catalogue records are available.",
+      noResultsMessage,
       true,
       options,
     );
     const message = document.createElement("p");
     message.className = "catalog-empty";
-    message.textContent = catalogSearchForView(view) ? "No catalogue entries match that search." : "No catalogue records are available.";
+    message.textContent = noResultsMessage;
     els.catalogPanel.append(message);
     return;
   }
@@ -4412,6 +5181,7 @@ function useMapDataset(mapId, dataset) {
   refreshVisibility();
   updateMapMeta();
   applyPendingAniilogLocate(true);
+  applyPendingBossLocate(true);
 }
 
 async function loadMapData(mapId, token) {
@@ -4558,7 +5328,10 @@ function switchMap(mapId) {
   refreshVisibility();
   updateMapMeta();
   fitMap();
-  if (dataset) applyPendingAniilogLocate(true);
+  if (dataset) {
+    applyPendingAniilogLocate(true);
+    applyPendingBossLocate(true);
+  }
   if (!dataset) scheduleMapDataLoad(mapId, loadToken);
 }
 
@@ -4781,6 +5554,11 @@ async function init() {
   renderMapTabs();
   switchMap(state.activeMapId);
   initializeLocalTracking();
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(preloadAniilogData, { timeout: 1500 });
+  } else {
+    window.setTimeout(preloadAniilogData, 400);
+  }
 }
 
 init().catch((error) => {
