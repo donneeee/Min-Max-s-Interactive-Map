@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260719-whisperwake-lumen-groups-
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260719-public-catalog-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.3.96";
+const APP_VERSION = "v0.3.97";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -323,8 +323,10 @@ const els = {
   filterCount: document.querySelector("#filterCount"),
   layerTabs: document.querySelector("#layerTabs"),
   itemList: document.querySelector("#itemList"),
+  selectionCatalogShortcut: document.querySelector("#selectionCatalogShortcut"),
   selectionDetail: document.querySelector("#selectionDetail"),
   mobileSelectionPanel: document.querySelector("#mobileSelectionPanel"),
+  mobileSelectionCatalogShortcut: document.querySelector("#mobileSelectionCatalogShortcut"),
   mobileSelectionDetail: document.querySelector("#mobileSelectionDetail"),
   mobileSelectionToggle: document.querySelector("#mobileSelectionToggle"),
   mapPanel: document.querySelector(".map-panel"),
@@ -5254,6 +5256,142 @@ function clearSelectionDetails(message) {
     detail.className = "selection empty";
     detail.textContent = message;
   });
+  updateSelectionCatalogShortcuts(null, null);
+}
+
+function selectionCatalogKind(item) {
+  if (item?.is_aniimo) return "aniilog";
+  const itemId = String(item?.item_id || "");
+  if (/^\d+$/.test(itemId)) return "itemlog";
+  if (/^(?:alpha_egg:\d+|elite_egg_area:\d+)$/.test(itemId)) return "itemlog";
+  return "";
+}
+
+function updateSelectionCatalogShortcuts(spawn, item) {
+  const view = spawn && item ? selectionCatalogKind(item) : "";
+  const label = view === "aniilog" ? "Open in Aniilog" : "Open in Item-log";
+  [els.selectionCatalogShortcut, els.mobileSelectionCatalogShortcut].forEach((button) => {
+    if (!button) return;
+    button.hidden = !view;
+    button.disabled = false;
+    button.dataset.catalogView = view;
+    button.textContent = view ? label : "";
+    button.setAttribute("aria-label", view ? label : "");
+    button.title = view ? label : "";
+  });
+}
+
+function setSelectionCatalogShortcutBusy(busy) {
+  [els.selectionCatalogShortcut, els.mobileSelectionCatalogShortcut].forEach((button) => {
+    if (!button || button.hidden) return;
+    button.disabled = Boolean(busy);
+  });
+}
+
+function resolveAniilogEntryForSelection(item, entries) {
+  const aniimoId = String(item?.aniimo_id || "");
+  const speciesName = String(item?.species_name || "").trim();
+  const formKey = aniilogFormKey(item?.form_key);
+  const baseIds = new Set([aniimoId]);
+  if (/^\d{7}$/.test(aniimoId)) baseIds.add(aniimoId.slice(0, 5));
+
+  return entries.find((entry) => (
+    baseIds.has(String(entry?.base_id || ""))
+    && aniilogFormKey(entry?.form_key) === formKey
+  )) || entries.find((entry) => String(entry?.form_id || "") === aniimoId)
+    || entries.find((entry) => (
+      baseIds.has(String(entry?.base_id || ""))
+      && aniilogFormKey(entry?.form_key) === "basic"
+    )) || entries.find((entry) => (
+      speciesName
+      && String(entry?.name || "").trim().toLowerCase() === speciesName.toLowerCase()
+      && aniilogFormKey(entry?.form_key) === "basic"
+    )) || null;
+}
+
+function normalizedEggLocation(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^the\s+/, "")
+    .replace(/\bwoods\b/g, "wood")
+    .replace(/\bfields\b/g, "field")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function resolveItemlogEntryForSelection(spawn, item, entries) {
+  const itemId = String(item?.item_id || "");
+  const alphaEggId = itemId.match(/^alpha_egg:(\d+)$/)?.[1] || "";
+  const directId = /^\d+$/.test(itemId)
+    ? `item:${itemId}`
+    : (alphaEggId ? `item:${alphaEggId}` : "");
+  if (directId) {
+    const direct = entries.find((entry) => entry?.id === directId);
+    if (direct) return direct;
+  }
+
+  if (itemId.startsWith("elite_egg_area:")) {
+    const spawnLocations = [
+      spawn?.large_area_name,
+      spawn?.level_area_name,
+      spawn?.area_name,
+    ].map(normalizedEggLocation).filter(Boolean);
+    const itemLocations = (Array.isArray(item?.area_names) ? item.area_names : [])
+      .map(normalizedEggLocation)
+      .filter(Boolean);
+    const matchesLocation = (locations) => entries.find((entry) => (
+      entry?.name === "Elite Egg"
+      && locations.includes(normalizedEggLocation(entry?.egg_location))
+    ));
+    return matchesLocation(spawnLocations) || matchesLocation(itemLocations) || null;
+  }
+  return null;
+}
+
+function clearCatalogFiltersForShortcut(view) {
+  state.catalogSearch[view] = "";
+  state.catalogCategory[view] = "all";
+  if (view === "aniilog") {
+    ["classes", "elements", "homeland", "stages", "forms"].forEach((name) => aniilogFilterSet(name).clear());
+    state.aniilogFilters.statRules = [];
+    state.aniilogFilters.mobility = "any";
+    state.aniilogFilters.exploration = "any";
+    state.aniilogFilters.coreSkill = "any";
+  } else {
+    state.itemlogFilters.source = "all";
+    state.itemlogFilters.park = "all";
+    state.itemlogFilters.tier = "all";
+  }
+}
+
+async function openSelectedMarkerCatalogEntry() {
+  const spawn = Number.isInteger(state.selectedSpawnIndex)
+    ? state.data?.spawns[state.selectedSpawnIndex]
+    : null;
+  const item = spawn ? state.data?.itemsById.get(spawn.item_id) : null;
+  const view = selectionCatalogKind(item);
+  if (!spawn || !item || !view) return;
+
+  setSelectionCatalogShortcutBusy(true);
+  const payload = view === "aniilog" ? await ensureAniilogData() : await ensureItemlogData();
+  const entries = Array.isArray(payload?.entries) ? payload.entries : [];
+  const entry = view === "aniilog"
+    ? resolveAniilogEntryForSelection(item, entries)
+    : resolveItemlogEntryForSelection(spawn, item, entries);
+  if (!entry) {
+    updateSelectionCatalogShortcuts(spawn, null);
+    return;
+  }
+
+  clearCatalogFiltersForShortcut(view);
+  state.catalogSelection[view] = entry.id;
+  const orderedEntries = catalogEntriesForView(view);
+  const entryIndex = orderedEntries.findIndex((candidate) => candidate.id === entry.id);
+  state.catalogIndexScroll[view] = Math.max(0, entryIndex * CATALOG_INDEX_ROW_HEIGHT - CATALOG_INDEX_ROW_HEIGHT);
+  setSidebarView(view);
+  window.requestAnimationFrame(() => {
+    els.catalogPanel.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }
 
 function scheduleMapTileDetail() {
@@ -6831,6 +6969,7 @@ function selectSpawn(index) {
   if (state.canvasMode) scheduleCanvasRender();
   renderSelectionDetail(els.selectionDetail, spawn, item);
   renderSelectionDetail(els.mobileSelectionDetail, spawn, item);
+  updateSelectionCatalogShortcuts(spawn, item);
   setMobileSelectionMinimized(false);
 }
 
@@ -6841,6 +6980,7 @@ function refreshSelectionDetails() {
   if (!spawn || !item) return;
   renderSelectionDetail(els.selectionDetail, spawn, item);
   renderSelectionDetail(els.mobileSelectionDetail, spawn, item);
+  updateSelectionCatalogShortcuts(spawn, item);
 }
 
 function renderSelectionDetail(detail, spawn, item) {
@@ -7206,6 +7346,8 @@ function bindEvents() {
   els.mobileSelectionToggle.addEventListener("click", () => {
     setMobileSelectionMinimized(!state.mobileSelectionMinimized);
   });
+  els.selectionCatalogShortcut.addEventListener("click", openSelectedMarkerCatalogEntry);
+  els.mobileSelectionCatalogShortcut.addEventListener("click", openSelectedMarkerCatalogEntry);
   MOBILE_LAYOUT_QUERY.addEventListener("change", () => {
     if (state.selectedSpawnIndex === null) state.mobileSelectionMinimized = true;
     updateMobileSelectionPanel();

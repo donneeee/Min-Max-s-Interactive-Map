@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#1a1f22">
     <title>MinMax's Aniipedia</title>
-    <link rel="stylesheet" href="./styles.css?v=20260719-misc-section-collapse-v001">
+    <link rel="stylesheet" href="./styles.css?v=20260720-selection-catalog-shortcut-v001">
   </head>
   <body>
     <main class="app-shell">
@@ -88,6 +88,7 @@
         <section class="panel detail-panel" aria-live="polite">
           <div class="panel-heading">
             <h2>Selection</h2>
+            <button id="selectionCatalogShortcut" class="selection-catalog-shortcut" type="button" hidden></button>
           </div>
           <div id="selectionDetail" class="selection empty">No marker selected</div>
         </section>
@@ -113,7 +114,10 @@
           <section id="mobileSelectionPanel" class="panel mobile-selection-panel is-minimized" aria-live="polite" hidden>
             <div class="panel-heading mobile-selection-heading">
               <h2>Selection</h2>
-              <button id="mobileSelectionToggle" class="mobile-selection-toggle" type="button" aria-controls="mobileSelectionDetail" aria-expanded="false" aria-label="Expand selection" title="Expand selection">+</button>
+              <div class="mobile-selection-actions">
+                <button id="mobileSelectionCatalogShortcut" class="selection-catalog-shortcut" type="button" hidden></button>
+                <button id="mobileSelectionToggle" class="mobile-selection-toggle" type="button" aria-controls="mobileSelectionDetail" aria-expanded="false" aria-label="Expand selection" title="Expand selection">+</button>
+              </div>
             </div>
             <div id="mobileSelectionDetail" class="selection empty">No marker selected</div>
           </section>
@@ -143,7 +147,7 @@
       </section>
     </div>
 
-  <script defer src="./localization.js?v=20260719-localization-v018"></script>
-  <script defer src="./app.js?v=20260719-whisperwake-lumen-groups-v001"></script>
+  <script defer src="./localization.js?v=20260720-localization-v019"></script>
+  <script defer src="./app.js?v=20260720-selection-catalog-shortcut-v001"></script>
   </body>
 </html>

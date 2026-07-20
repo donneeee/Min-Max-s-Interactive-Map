@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260719-localization-v018";
+  const ASSET_VERSION = "20260720-localization-v019";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -134,6 +134,8 @@
     ["Fit", "适应", "全体表示", "맞춤"],
     ["Selection", "选择项", "選択", "선택"],
     ["No marker selected", "未选择标记", "マーカーが選択されていません", "선택한 마커가 없습니다"],
+    ["Open in Aniilog", "\u5728\u7814\u7a76\u624b\u518c\u4e2d\u6253\u5f00", "\u30a2\u30cb\u30e2\u30ce\u30fc\u30c8\u3067\u958b\u304f", "\uc5f0\uad6c \uc218\ucca9\uc5d0\uc11c \uc5f4\uae30"],
+    ["Open in Item-log", "\u5728\u9053\u5177\u56fe\u9274\u4e2d\u6253\u5f00", "\u30a2\u30a4\u30c6\u30e0\u30ed\u30b0\u3067\u958b\u304f", "\uc544\uc774\ud15c \ub3c4\uac10\uc5d0\uc11c \uc5f4\uae30"],
     ["Name, area, coordinate", "名称、区域、坐标", "名前、エリア、座標", "이름, 지역, 좌표"],
     ["Aniimo, form, or location", "Aniimo、形态或位置", "Aniimo、形態、場所", "Aniimo, 형태 또는 위치"],
     ["Aniimo, form, skill, or effect", "Aniimo、形态、技能或效果", "Aniimo、形態、スキル、効果", "Aniimo, 형태, 스킬 또는 효과"],
