@@ -3263,6 +3263,8 @@ html[data-theme="pawney"] .catalog-record {
 
 .catalog-rune-pool {
   display: grid;
+  align-content: start;
+  grid-template-rows: max-content max-content;
   gap: 9px;
   min-width: 0;
   padding: 10px;
@@ -3338,6 +3340,15 @@ html[data-theme="pawney"] .catalog-record {
 .catalog-rune-rolls strong {
   color: var(--text);
   font-size: inherit;
+}
+
+.catalog-rune-roll-availability {
+  padding-left: 6px;
+  border-left: 1px solid rgba(var(--accent-rgb), 0.3);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  white-space: nowrap;
 }
 
 .catalog-rune-note {

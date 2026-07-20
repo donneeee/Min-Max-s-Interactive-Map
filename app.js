@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260719-whisperwake-lumen-groups-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-rune-reference-v002";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-rune-reference-v003";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.02";
+const APP_VERSION = "v0.4.03";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -4349,8 +4349,10 @@ function appendRuneRollPool(container, shape, title = "Possible secondary rolls"
   const name = document.createElement("strong");
   name.textContent = `${shape.label} · ${shape.role}`;
   const main = document.createElement("small");
-  main.textContent = `Main: ${(shape.main_stats || []).join(" / ")}`;
-  headingCopy.append(name, main);
+  const mainStats = (shape.main_stats || []).filter(Boolean);
+  main.textContent = mainStats.length ? `Main: ${mainStats.join(" / ")}` : "";
+  headingCopy.append(name);
+  if (main.textContent) headingCopy.append(main);
   identity.append(headingCopy);
   const label = document.createElement("span");
   label.textContent = title;
@@ -4362,7 +4364,12 @@ function appendRuneRollPool(container, shape, title = "Possible secondary rolls"
     const chip = document.createElement("span");
     const rollClass = roll.roll_class === "rare" ? "rare" : "standard";
     chip.classList.add(`is-${rollClass}`);
-    if (roll.description) chip.title = roll.description;
+    const availableNames = Array.isArray(roll.available_on?.rune_names)
+      ? roll.available_on.rune_names.filter(Boolean)
+      : [];
+    const titleParts = [roll.description || ""];
+    if (availableNames.length) titleParts.push(`Available on: ${availableNames.join(", ")}`);
+    if (titleParts.some(Boolean)) chip.title = titleParts.filter(Boolean).join("\n");
     if (rollClass === "rare") {
       const rarity = document.createElement("small");
       rarity.className = "catalog-rune-roll-rarity";
@@ -4374,6 +4381,13 @@ function appendRuneRollPool(container, shape, title = "Possible secondary rolls"
     const range = document.createElement("span");
     range.textContent = roll.range_label;
     chip.append(rollName, range);
+    if (availableNames.length) {
+      const availability = document.createElement("small");
+      availability.className = "catalog-rune-roll-availability";
+      const runeCount = Number(roll.available_on?.rune_count) || availableNames.length;
+      availability.textContent = `${formatNumber(runeCount)} Rune${runeCount === 1 ? "" : "s"}`;
+      chip.append(availability);
+    }
     rolls.append(chip);
   });
   card.append(heading, rolls);
@@ -4453,7 +4467,7 @@ function renderCarriedItemRuneLayout(layout, runeReference) {
   });
   const note = document.createElement("p");
   note.className = "catalog-rune-note";
-  note.textContent = "Standard rolls use 80–99% of the listed cap, with a perfect roll at 100%. Rare rolls are fixed: every shape can roll Six Aptitude Stats +1, plus one shape-specific Zephyr Coast property.";
+  note.textContent = "This is the union of rolls available across compatible Runes. Values can differ by Rune type and tier; hover a roll for its Rune list, or open a Rune entry for its exact pool.";
   details.append(detailsSummary, poolGrid, note);
 
   section.append(intro, slots, countList, details);
@@ -4475,23 +4489,24 @@ function renderRuneDetails(runeDetails, runeReference) {
   appendCatalogFact(facts, "Rune Energy", formatNumber(runeDetails.energy || 0));
   appendCatalogFact(facts, "Secondary attributes", formatNumber(runeDetails.secondary_lines || 0));
   appendCatalogFact(facts, "Base CP", formatNumber(runeDetails.cp || 0));
-  if (runeDetails.focus) {
-    appendCatalogFact(
-      facts,
-      "Focused roll",
-      `${runeDetails.focus.label} ${runeDetails.focus.range_label}`,
-    );
-  }
+  appendCatalogFact(facts, "Possible rolls", formatNumber((runeDetails.secondary_rolls || []).length));
 
   const poolGrid = document.createElement("div");
   poolGrid.className = "catalog-rune-pools";
   const shape = (runeReference?.shapes || []).find((candidate) => candidate?.id === runeDetails.shape?.id);
-  if (shape) appendRuneRollPool(poolGrid, shape);
+  const exactRolls = Array.isArray(runeDetails.secondary_rolls) ? runeDetails.secondary_rolls : [];
+  if (shape && exactRolls.length) {
+    appendRuneRollPool(
+      poolGrid,
+      { ...shape, main_stats: [], secondary_rolls: exactRolls },
+      "Exact possible rolls",
+    );
+  }
   const note = document.createElement("p");
   note.className = "catalog-rune-note";
-  note.textContent = runeDetails.focus
-    ? "Focused rolls use 60–124% of their base value, with a perfect focused roll at 125%. Standard and fixed Rare lines use the shape pool below."
-    : "Standard rolls use 80–99% of the listed cap, with a perfect roll at 100%. Rare rolls are fixed and are marked below.";
+  note.textContent = runeDetails.roll_rule_summary
+    ? `Configured range: ${runeDetails.roll_rule_summary}. The number of secondary lines is shown above.`
+    : "Only rolls tied to this Rune are listed here; fixed rare lines are marked.";
   section.append(facts, poolGrid, note);
   return section;
 }
