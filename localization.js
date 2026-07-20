@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260720-localization-v020";
+  const ASSET_VERSION = "20260720-localization-v021";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -299,6 +299,7 @@
     ["Evolved from", "进化来源", "進化元", "진화 이전"],
     ["Requirements", "条件", "条件", "조건"],
     ["Quality", "品质", "品質", "품질"],
+    ["Sells for", "出售可得", "売却価格", "판매 가격"],
     ["Source", "来源", "入手元", "출처"],
     ["Source method", "来源方式", "入手方法", "획득 방식"],
     ["Nurture", "养育", "育成", "육성"],
@@ -436,6 +437,11 @@
     if (namedRange) {
       const label = translate(namedRange[1]);
       if (label !== namedRange[1]) return `${label} ${namedRange[2]}`;
+    }
+    const currencyAmount = text.match(/^([\d,]+)\s+(.+)$/);
+    if (currencyAmount) {
+      const currency = translate(currencyAmount[2]);
+      if (currency !== currencyAmount[2]) return `${currencyAmount[1]} ${currency}`;
     }
     const unlock = text.match(/^Unlock by obtaining (.+)$/);
     if (unlock) {
