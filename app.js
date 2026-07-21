@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-fixed-collectible-links-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.09";
+const APP_VERSION = "v0.4.10";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -2067,12 +2067,9 @@ function itemlogMethodSourceOptions(entries = allCatalogEntriesForView("itemlog"
   return [...methods.values()].sort((left, right) => compareText(left.label, right.label));
 }
 
-function itemlogEntryMatchesFilters(entry) {
-  const selectedSource = state.itemlogFilters.source;
+function itemlogEntryMatchesFilter(entry, selectedSource, park = "all", tier = "all") {
   if (selectedSource === "all") return true;
   if (selectedSource === "rv-expedition") {
-    const park = state.itemlogFilters.park;
-    const tier = state.itemlogFilters.tier;
     return itemlogExpeditionSources(entry).some((source) => (
       (park === "all" || source?.park === park)
       && (tier === "all" || String(source?.duration_hours) === tier)
@@ -2083,6 +2080,41 @@ function itemlogEntryMatchesFilters(entry) {
   return itemlogObtainMethods(entry).some((method) => (
     String(method?.label || "").trim().toLowerCase() === selectedMethod
   ));
+}
+
+function itemlogEntryMatchesFilters(entry) {
+  return itemlogEntryMatchesFilter(
+    entry,
+    state.itemlogFilters.source,
+    state.itemlogFilters.park,
+    state.itemlogFilters.tier,
+  );
+}
+
+function itemlogEntriesForCategory(category, entries = allCatalogEntriesForView("itemlog")) {
+  return entries.filter((entry) => itemlogEntryMatchesCategory(entry, category));
+}
+
+function normalizeItemlogFilterForEntries(entries) {
+  const selectedSource = state.itemlogFilters.source;
+  const sourceAvailable = selectedSource === "all"
+    || entries.some((entry) => itemlogEntryMatchesFilter(entry, selectedSource));
+  if (!sourceAvailable) {
+    state.itemlogFilters.source = "all";
+    state.itemlogFilters.park = "all";
+    state.itemlogFilters.tier = "all";
+    return;
+  }
+  if (selectedSource !== "rv-expedition") return;
+  const expeditionSources = entries.flatMap(itemlogExpeditionSources);
+  if (state.itemlogFilters.park !== "all"
+      && !expeditionSources.some((source) => source?.park === state.itemlogFilters.park)) {
+    state.itemlogFilters.park = "all";
+  }
+  if (state.itemlogFilters.tier !== "all"
+      && !expeditionSources.some((source) => String(source?.duration_hours) === state.itemlogFilters.tier)) {
+    state.itemlogFilters.tier = "all";
+  }
 }
 
 function catalogEntriesForView(view = state.sidebarView) {
@@ -3215,6 +3247,8 @@ function renderCatalogCategoryToolbar(view) {
     select.setAttribute("aria-label", "Item categories");
     const counts = new Map((state.itemlogData?.categories || []).map((category) => [category?.id, category?.count]));
     const allEntries = allCatalogEntriesForView(view);
+    const categoryEntries = itemlogEntriesForCategory(activeCategory, allEntries);
+    normalizeItemlogFilterForEntries(categoryEntries);
     const appendCategoryOption = (parent, category, optionLabel = category) => {
       const option = document.createElement("option");
       option.value = category;
@@ -3247,16 +3281,17 @@ function renderCatalogCategoryToolbar(view) {
     select.append(allCategories);
     select.addEventListener("change", () => {
       state.catalogCategory[view] = select.value;
+      normalizeItemlogFilterForEntries(itemlogEntriesForCategory(select.value, allEntries));
       refreshItemlogFilters();
     });
     group.append(label, select);
 
     const sourceLabel = document.createElement("p");
     sourceLabel.className = "catalog-category-label catalog-category-label--source";
-    sourceLabel.textContent = "Source";
+    sourceLabel.textContent = "Filter";
     const sourceSelect = document.createElement("select");
     sourceSelect.className = "catalog-category-select";
-    sourceSelect.setAttribute("aria-label", "Item source");
+    sourceSelect.setAttribute("aria-label", "Item filter");
     const appendSourceOption = (parent, source) => {
       const option = document.createElement("option");
       option.value = source.id;
@@ -3264,21 +3299,25 @@ function renderCatalogCategoryToolbar(view) {
       option.selected = state.itemlogFilters.source === source.id;
       parent.append(option);
     };
-    appendSourceOption(sourceSelect, { id: "all", label: "All sources", count: allEntries.length });
+    appendSourceOption(sourceSelect, { id: "all", label: "All filters", count: categoryEntries.length });
 
+    const expeditionCount = categoryEntries.filter((entry) => itemlogExpeditionSources(entry).length > 0).length;
     const featuredSources = document.createElement("optgroup");
-    featuredSources.label = "Featured sources";
-    appendSourceOption(featuredSources, {
-      id: "rv-expedition",
-      label: "RV Park Expeditions",
-      count: allEntries.filter((entry) => itemlogExpeditionSources(entry).length > 0).length,
-    });
-    sourceSelect.append(featuredSources);
+    featuredSources.label = "Featured filters";
+    if (expeditionCount) {
+      appendSourceOption(featuredSources, {
+        id: "rv-expedition",
+        label: "RV Park Expeditions",
+        count: expeditionCount,
+      });
+      sourceSelect.append(featuredSources);
+    }
 
+    const methodSources = itemlogMethodSourceOptions(categoryEntries);
     const acquisitionSources = document.createElement("optgroup");
-    acquisitionSources.label = "Acquisition sources";
-    itemlogMethodSourceOptions(allEntries).forEach((source) => appendSourceOption(acquisitionSources, source));
-    sourceSelect.append(acquisitionSources);
+    acquisitionSources.label = "How to obtain";
+    methodSources.forEach((source) => appendSourceOption(acquisitionSources, source));
+    if (methodSources.length) sourceSelect.append(acquisitionSources);
     sourceSelect.addEventListener("change", () => {
       state.itemlogFilters.source = sourceSelect.value;
       if (sourceSelect.value !== "rv-expedition") {
@@ -3290,13 +3329,22 @@ function renderCatalogCategoryToolbar(view) {
     group.append(sourceLabel, sourceSelect);
 
     if (state.itemlogFilters.source === "rv-expedition") {
+      const expeditionSources = categoryEntries.flatMap(itemlogExpeditionSources);
+      const availableParks = [...new Set(expeditionSources.map((source) => source?.park).filter(Boolean))]
+        .sort(compareText);
+      const availableTiers = [...new Set(expeditionSources
+        .map((source) => Number(source?.duration_hours))
+        .filter(Number.isFinite))]
+        .sort((left, right) => left - right);
+      const tierLabels = new Map((state.itemlogData?.rv_expedition_filters?.tiers || [])
+        .map((tier) => [Number(tier?.duration_hours), tier?.mode]));
       const parkLabel = document.createElement("p");
       parkLabel.className = "catalog-category-label";
       parkLabel.textContent = "RV Park";
       const parkSelect = document.createElement("select");
       parkSelect.className = "catalog-category-select";
       parkSelect.setAttribute("aria-label", "RV Park");
-      ["all", ...(state.itemlogData?.rv_expedition_filters?.parks || [])].forEach((park) => {
+      ["all", ...availableParks].forEach((park) => {
         const option = document.createElement("option");
         option.value = park;
         option.textContent = park === "all" ? "All RV Parks" : park;
@@ -3316,7 +3364,10 @@ function renderCatalogCategoryToolbar(view) {
       tierSelect.setAttribute("aria-label", "Expedition tier");
       const tierOptions = [
         { duration_hours: "all", mode: "All tiers" },
-        ...(state.itemlogData?.rv_expedition_filters?.tiers || []),
+        ...availableTiers.map((durationHours) => ({
+          duration_hours: durationHours,
+          mode: tierLabels.get(durationHours) || "Expedition",
+        })),
       ];
       tierOptions.forEach((tier) => {
         const value = String(tier.duration_hours);
