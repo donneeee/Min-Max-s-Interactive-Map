@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.14";
+const APP_VERSION = "v0.4.15";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -18,7 +18,9 @@ const MAP_TILE_DETAIL_SCALE = 0.55;
 const PIN_CANVAS_THRESHOLD = 450;
 const CANVAS_HIT_CELL_SIZE = 128;
 const REQUESTED_MAP_ID = new URLSearchParams(window.location.search).get("map");
-const MOBILE_LAYOUT_QUERY = window.matchMedia("(max-width: 820px)");
+const MOBILE_LAYOUT_QUERY = window.matchMedia(
+  "(max-width: 820px), (max-height: 540px) and (pointer: coarse)",
+);
 // Reserved for temporarily suppressing incomplete physical reward sources.
 const TEMPORARILY_HIDDEN_ITEM_IDS = new Set();
 const ANIILOG_STAT_CONFIG = Object.freeze([
@@ -8206,6 +8208,7 @@ function switchMap(mapId) {
 function bindEvents() {
   window.addEventListener("scroll", resetDocumentScroll, { passive: true });
   window.addEventListener("scroll", scheduleMobileCatalogStickyIdentity, { passive: true });
+  els.catalogPanel.addEventListener("scroll", scheduleMobileCatalogStickyIdentity, { passive: true });
   els.mapViewport.addEventListener("scroll", resetMapScroll, { passive: true });
   els.mobileSelectionToggle.addEventListener("click", () => {
     setMobileSelectionMinimized(!state.mobileSelectionMinimized);
