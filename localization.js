@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260721-localization-v025";
+  const ASSET_VERSION = "20260721-localization-v027";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -47,6 +47,10 @@
     ["Minimum", "最低", "最小", "최소"],
     ["Perfect", "完美", "最大", "최대"],
     ["Confirmed build stats", "已确认构建属性", "確認済みビルド能力", "확인된 빌드 능력치"],
+    ["Projected build stats", "预计构筑属性", "予測ビルドステータス", "예상 빌드 능력치"],
+    ["Aniimo level", "伊莫等级", "アニモレベル", "애니모 레벨"],
+    ["Level scaling", "等级成长", "レベル成長", "레벨 성장"],
+    ["Level scaling uses the listed Aniimo template as a neutral reference. Personal Potential (its own progression caps at 24, while carried-item effects can raise effective Potential higher), Personality, Awakening, percentage tier bonuses, carried-item enhancement, and conditional effects remain separate until configured, so these totals are projections rather than an exact personal stat sheet.", "等级成长以列出的伊莫模板作为中性参考。个人潜能（自身养成上限为24，携带物效果可使有效潜能超过24）、性格、觉醒、共鸣阶级百分比加成、携带物强化和条件效果在配置前均单独计算，因此这些总值是预测值，而不是个人属性表的精确结果。", "レベル成長は、表示されているアニモテンプレートを基準値として使用します。個体ポテンシャル（育成自体の上限は24ですが、持ち物効果で有効ポテンシャルは24を超えます）、性格、覚醒、共鳴段階の割合ボーナス、持ち物強化、条件付き効果は設定されるまで別扱いのため、これらの合計値は予測値であり、個体の正確なステータスではありません。", "레벨 성장은 표시된 애니모 템플릿을 중립 기준으로 사용합니다. 개체 포텐셜(자체 성장 상한은 24이며, 소지품 효과로 유효 포텐셜은 24를 초과할 수 있음), 성격, 각성, 공명 티어 비율 보너스, 소지품 강화 및 조건부 효과는 설정 전까지 별도로 처리되므로 이 합계는 예상치이며 개체의 정확한 능력치가 아닙니다."],
     ["Base value", "基础值", "基本値", "기본값"],
     ["Tier", "阶", "段階", "티어"],
     ["Tier bonuses", "阶级加成", "段階ボーナス", "티어 보너스"],

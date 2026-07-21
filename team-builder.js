@@ -6,6 +6,8 @@
   const STORAGE_KEY = "minmax-aniipedia:team-builder:v1";
   const TEAM_SIZE = 4;
   const MAX_ACTIVE_SKILLS = 2;
+  const MIN_ANIIMO_LEVEL = 1;
+  const MAX_ANIIMO_LEVEL = 60;
   const BUFF_PATTERN = /\b(increas|boost|amplif|bonus|restore|shield|resist|siphon|damage dealt|critical|break efficiency|invincible)/i;
   const STAT_ORDER = ["HP", "Attack", "Magic Attack", "Break", "Defense", "Magic Defense", "EP Regen"];
   const STAT_ALIASES = Object.freeze({
@@ -23,6 +25,15 @@
     Regen: "EP Regen",
     "EP Regen": "EP Regen",
   });
+  const LEVEL_STAT_CURVES = Object.freeze({
+    HP: Object.freeze({ offset: 20, divisor: 120, scale: 20.4 }),
+    Attack: Object.freeze({ offset: 0, divisor: 90, scale: 0.51 }),
+    "Magic Attack": Object.freeze({ offset: 0, divisor: 90, scale: 0.51 }),
+    Break: Object.freeze({ offset: 0, divisor: 80, scale: 0.51 }),
+    Defense: Object.freeze({ offset: 0, divisor: 120, scale: 1.02 }),
+    "Magic Defense": Object.freeze({ offset: 0, divisor: 120, scale: 1.02 }),
+    "EP Regen": Object.freeze({ offset: 0, divisor: 50, scale: 0.51 }),
+  });
 
   let sidebar = null;
   let panel = null;
@@ -35,6 +46,7 @@
   function defaultMember() {
     return {
       aniimoId: "",
+      level: MAX_ANIIMO_LEVEL,
       stage: 7,
       activeSkills: ["", ""],
       switchSkill: "",
@@ -61,6 +73,7 @@
     return {
       ...base,
       aniimoId: String(value?.aniimoId || ""),
+      level: Math.min(MAX_ANIIMO_LEVEL, Math.max(MIN_ANIIMO_LEVEL, Math.round(Number(value?.level) || MAX_ANIIMO_LEVEL))),
       stage: Math.min(7, Math.max(1, Number(value?.stage) || 7)),
       activeSkills,
       switchSkill: String(value?.switchSkill || ""),
@@ -207,6 +220,7 @@
     member.switchSkill = coreSkills(entry)
       .map(skillKey)
       .find((key) => !defaults.includes(key)) || "";
+    member.level = MAX_ANIIMO_LEVEL;
     member.stage = 7;
     member.carriedItemId = "";
     member.runes = {};
@@ -227,6 +241,7 @@
     });
     const allowedSwitch = new Set(coreSkills(entry).map(skillKey));
     if (!allowedSwitch.has(member.switchSkill) || seen.has(member.switchSkill)) member.switchSkill = "";
+    member.stage = Math.min(member.stage, maxStageForLevel(member.level));
     const item = carriedItemFor(member);
     if (!item) {
       member.carriedItemId = "";
@@ -310,7 +325,11 @@
 
     const header = el("div", "team-sidebar-slot-header");
     const role = el("span", "team-sidebar-slot-role", slotRole(index));
-    const stage = el("span", "team-sidebar-slot-stage", entry ? `${translate("Tier")} ${member.stage}` : "");
+    const stage = el(
+      "span",
+      "team-sidebar-slot-stage",
+      entry ? `${translate("Level")} ${member.level} · ${translate("Tier")} ${member.stage}` : "",
+    );
     header.append(role, stage);
 
     const identity = el("div", "team-sidebar-slot-identity");
@@ -519,15 +538,32 @@
       el("p", "team-member-meta", `${translate(entry.form_label || "Basic")} · ${translate(entry.role || "Other")}`),
     );
     section.append(copy);
-    const stageOptions = Array.from({ length: Number(aniilog?.aniimo_progression?.max_stage || 7) }, (_, offset) => ({
-      value: String(offset + 1),
-      label: `${translate("Tier")} ${offset + 1}`,
+    const controls = el("div", "team-progression-fields");
+    const levelOptions = Array.from({ length: MAX_ANIIMO_LEVEL }, (_, offset) => ({
+      value: String(offset + MIN_ANIIMO_LEVEL),
+      label: `${translate("Level")} ${offset + MIN_ANIIMO_LEVEL}`,
     }));
-    section.append(selectControl("Resonance Training", stageOptions, String(member.stage), (value) => {
+    controls.append(selectControl(translate("Aniimo level"), levelOptions, String(member.level), (value) => {
+      member.level = Number(value);
+      member.stage = Math.min(member.stage, maxStageForLevel(member.level));
+      persist();
+      render();
+    }, "team-level-field"));
+    const maxStage = maxStageForLevel(member.level);
+    const stageOptions = progressionStages()
+      .filter((stage) => Number(stage.stage) <= maxStage)
+      .map((stage) => ({
+        value: String(stage.stage),
+        label: stage.level_gate
+          ? `${translate("Tier")} ${stage.stage} · ${translate("Level")} ${stage.level_gate}`
+          : `${translate("Tier")} ${stage.stage}`,
+      }));
+    controls.append(selectControl(translate("Resonance Training"), stageOptions, String(member.stage), (value) => {
       member.stage = Number(value);
       persist();
       render();
     }, "team-stage-field"));
+    section.append(controls);
     return section;
   }
 
@@ -646,8 +682,22 @@
     return card;
   }
 
+  function progressionStages() {
+    return Array.isArray(aniilog?.aniimo_progression?.stages)
+      ? aniilog.aniimo_progression.stages
+      : [];
+  }
+
+  function maxStageForLevel(level) {
+    const aniimoLevel = Math.min(MAX_ANIIMO_LEVEL, Math.max(MIN_ANIIMO_LEVEL, Number(level) || MAX_ANIIMO_LEVEL));
+    return progressionStages().reduce((maximum, stage) => {
+      const gate = Number(stage.level_gate || MIN_ANIIMO_LEVEL);
+      return gate <= aniimoLevel ? Math.max(maximum, Number(stage.stage) || 1) : maximum;
+    }, 1);
+  }
+
   function progressionForStage(stageNumber) {
-    const stages = aniilog?.aniimo_progression?.stages || [];
+    const stages = progressionStages();
     const eligible = stages.filter((stage) => Number(stage.stage) <= stageNumber);
     const training = eligible.slice().reverse().find((stage) => Array.isArray(stage.training_steps) && stage.training_steps.length);
     return {
@@ -675,10 +725,28 @@
     target.percent[key] = (target.percent[key] || 0) + Number(value || 0);
   }
 
+  function projectLevelStat(label, listedValue, level) {
+    const curve = LEVEL_STAT_CURVES[label];
+    const rating = Number(listedValue);
+    const aniimoLevel = Number(level);
+    if (!curve || !Number.isFinite(rating) || !Number.isFinite(aniimoLevel)) return rating || 0;
+    const levelTerm = (4 * aniimoLevel) + 35;
+    return Math.floor(((rating + curve.offset) / curve.divisor) * levelTerm * curve.scale);
+  }
+
+  function addLevelBasedCarriedEffects(result, member, carried) {
+    (carried?.carried_effects?.core_effects || []).forEach((effect) => {
+      const match = String(effect).match(/additional\s+(\d+(?:\.\d+)?)\s+(.+?)\s+for each\s+Level\b/i);
+      if (!match) return;
+      addFlat(result, match[2].trim(), Number(match[1]) * member.level, `${translate(carried.name)} · ${translate("Level scaling")}`);
+    });
+  }
+
   function memberStats(member, entry) {
-    const result = { base: {}, flat: {}, percent: {}, sources: [], bonuses: [] };
+    const result = { listed: {}, base: {}, flat: {}, percent: {}, sources: [], bonuses: [] };
     (entry?.stats || []).forEach((stat) => {
-      result.base[stat.label] = Number(stat.value || 0);
+      result.listed[stat.label] = Number(stat.value || 0);
+      result.base[stat.label] = projectLevelStat(stat.label, stat.value, member.level);
     });
     const progression = progressionForStage(member.stage);
     progression.trainingSteps.forEach((step) => {
@@ -692,6 +760,7 @@
       if (!match) return;
       addModifier(result, match[1].trim(), Number(match[2]) / (match[3] ? 100 : 1), Boolean(match[3]), translate(carried.name));
     });
+    addLevelBasedCarriedEffects(result, member, carried);
     Object.values(member.runes || {}).forEach((selection) => {
       const rune = runeItems().find((entry) => entry.id === selection?.itemId);
       if (!rune) return;
@@ -712,7 +781,10 @@
   function renderStats(member, entry) {
     const section = el("section", "team-config-section team-stats-section");
     const heading = el("div", "team-section-heading");
-    heading.append(el("div", "", "Confirmed build stats"), el("small", "", `Tier ${member.stage}`));
+    heading.append(
+      el("div", "", translate("Projected build stats")),
+      el("small", "", `${translate("Level")} ${member.level} · ${translate("Tier")} ${member.stage}`),
+    );
     section.append(heading);
     const stats = memberStats(member, entry);
     const grid = el("div", "team-stat-grid");
@@ -745,7 +817,7 @@
     section.append(el(
       "p",
       "team-data-note",
-      "Totals combine listed base values, confirmed flat training gains, rune main stats, and selected rune rolls. Tier bonuses and conditional effects remain separate so their scaling is not guessed.",
+      translate("Level scaling uses the listed Aniimo template as a neutral reference. Personal Potential (its own progression caps at 24, while carried-item effects can raise effective Potential higher), Personality, Awakening, percentage tier bonuses, carried-item enhancement, and conditional effects remain separate until configured, so these totals are projections rather than an exact personal stat sheet."),
     ));
     return section;
   }

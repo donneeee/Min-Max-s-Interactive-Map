@@ -398,7 +398,7 @@ button[aria-pressed="true"] {
 
 .team-member-identity {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(190px, 260px);
+  grid-template-columns: auto minmax(0, 1fr) minmax(320px, 520px);
   align-items: center;
   gap: 14px;
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
@@ -450,9 +450,17 @@ button[aria-pressed="true"] {
   text-transform: uppercase;
 }
 
-.team-stage-field {
+.team-progression-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   justify-self: end;
-  width: min(100%, 260px);
+  width: min(100%, 520px);
+  gap: 10px;
+}
+
+.team-level-field,
+.team-stage-field {
+  width: 100%;
 }
 
 .team-builder-columns {
@@ -796,7 +804,7 @@ button[aria-pressed="true"] {
     display: grid;
   }
 
-  .team-stage-field {
+  .team-progression-fields {
     grid-column: 1 / -1;
     justify-self: stretch;
     width: 100%;
@@ -837,6 +845,10 @@ button[aria-pressed="true"] {
 
   .team-member-copy h2 {
     font-size: 21px;
+  }
+
+  .team-progression-fields {
+    grid-template-columns: 1fr;
   }
 
   .team-rune-roll-row {
