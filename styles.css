@@ -6136,6 +6136,7 @@ button.catalog-item-reference {
     align-items: center;
     flex-wrap: wrap;
     gap: 6px;
+    margin-top: 4px;
     font-size: 11px;
   }
 
@@ -6145,11 +6146,7 @@ button.catalog-item-reference {
   }
 
   .catalog-mobile-sticky-identity .catalog-subtitle {
-    margin-top: 3px;
-    overflow: hidden;
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
   }
 
   .catalog-mobile-sticky-identity .catalog-identity-actions {
