@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.15";
+const APP_VERSION = "v0.4.16";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -5421,8 +5421,13 @@ function syncMobileCatalogStickyIdentity() {
   if (!stickyIdentity) {
     stickyIdentity = identity.cloneNode(true);
     stickyIdentity.classList.add("catalog-mobile-sticky-identity", `catalog-mobile-sticky-${view}`, "is-stuck");
-    stickyIdentity.setAttribute("aria-hidden", "true");
-    stickyIdentity.setAttribute("inert", "");
+    const stickyLabel = stickyIdentity.querySelector(".catalog-sticky-indicator")?.textContent?.trim();
+    if (stickyLabel) stickyIdentity.setAttribute("aria-label", stickyLabel);
+    const stickyLocate = stickyIdentity.querySelector(".catalog-locate-button");
+    const sourceLocate = identity.querySelector(".catalog-locate-button");
+    if (stickyLocate && sourceLocate) {
+      stickyLocate.addEventListener("click", () => sourceLocate.click());
+    }
     document.body.append(stickyIdentity);
   }
   stickyIdentity.style.setProperty("--catalog-sticky-left", `${Math.max(0, identityRect.left)}px`);

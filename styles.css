@@ -6073,6 +6073,8 @@ button.catalog-item-reference {
 @media (max-width: 820px), (max-height: 540px) and (pointer: coarse) {
   .catalog-mobile-sticky-identity {
     position: fixed;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
     left: var(--catalog-sticky-left, 12px);
     top: env(safe-area-inset-top, 0px);
     z-index: 80;
@@ -6146,7 +6148,24 @@ button.catalog-item-reference {
   }
 
   .catalog-mobile-sticky-identity .catalog-identity-actions {
-    display: none;
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    width: 100%;
+    margin: 0;
+    pointer-events: auto;
+  }
+
+  .catalog-mobile-sticky-identity .catalog-quality {
+    min-height: 28px;
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .catalog-mobile-sticky-identity .catalog-locate-button {
+    min-height: 30px;
+    padding: 4px 9px;
+    font-size: 11px;
   }
 
   .catalog-mobile-sticky-aniilog .catalog-tags {
