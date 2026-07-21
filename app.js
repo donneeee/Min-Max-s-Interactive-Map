@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
-const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.5.0";
+const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
+const APP_VERSION = "v0.5.1";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -3558,6 +3558,77 @@ function appendCatalogAbilityFact(container, label, value, suffix = "", modifier
   container.append(fact);
 }
 
+function renderCatalogAbilityBehavior(ability) {
+  const behavior = ability?.behavior;
+  if (!behavior || typeof behavior !== "object") return null;
+
+  const details = document.createElement("details");
+  details.className = "catalog-skill-analysis";
+  const summary = document.createElement("summary");
+  const summaryLabel = document.createElement("span");
+  summaryLabel.className = "catalog-skill-analysis-title";
+  summaryLabel.textContent = "How this skill works";
+  const role = document.createElement("span");
+  role.className = `catalog-skill-scope catalog-skill-scope--${String(behavior.main_dps_support || "unknown").replaceAll("_", "-")}`;
+  role.textContent = behavior.team_role || "Scope unresolved";
+  summary.append(summaryLabel, role);
+  details.append(summary);
+
+  const body = document.createElement("div");
+  body.className = "catalog-skill-analysis-body";
+  const facts = document.createElement("dl");
+  facts.className = "catalog-skill-analysis-facts";
+  const appendFact = (label, value) => {
+    if (!value) return;
+    const item = document.createElement("div");
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const detail = document.createElement("dd");
+    detail.textContent = value;
+    item.append(term, detail);
+    facts.append(item);
+  };
+  appendFact("Activation", behavior.activation);
+  appendFact("Affects", Array.isArray(behavior.target_scope) ? behavior.target_scope.join(" + ") : "");
+  appendFact("Team use", behavior.team_role);
+  appendFact("Evidence", behavior.verification_label);
+  body.append(facts);
+
+  if (behavior.main_dps_note) {
+    const note = document.createElement("p");
+    note.className = "catalog-skill-main-dps-note";
+    note.textContent = behavior.main_dps_note;
+    body.append(note);
+  }
+
+  const appendList = (label, values, valueText = (value) => value) => {
+    if (!Array.isArray(values) || !values.length) return;
+    const group = document.createElement("section");
+    group.className = "catalog-skill-analysis-group";
+    const heading = document.createElement("strong");
+    heading.textContent = label;
+    const list = document.createElement("ul");
+    values.forEach((value) => {
+      const text = valueText(value);
+      if (!text) return;
+      const item = document.createElement("li");
+      item.textContent = text;
+      list.append(item);
+    });
+    if (!list.childElementCount) return;
+    group.append(heading, list);
+    body.append(group);
+  };
+  appendList("Resolved effects", behavior.effects, (effect) => (
+    effect?.text ? `${effect.type || "Effect"}: ${effect.text}` : ""
+  ));
+  appendList("Conditions", behavior.conditions);
+  appendList("Timing and stacks", behavior.timing);
+  appendList("Runtime mechanics", behavior.mechanics);
+  details.append(body);
+  return details;
+}
+
 function renderCatalogAbilitySection(title, abilities, emptyText = "No data available.") {
   const section = createCatalogSection(title);
   const compact = title === "Ultimate" || title === "Trait" || title === "Mobility skills";
@@ -3686,6 +3757,8 @@ function renderCatalogAbilitySection(title, abilities, emptyText = "No data avai
         description.textContent = displayed.description;
         copy.append(description);
       }
+      const behavior = renderCatalogAbilityBehavior(displayed);
+      if (behavior) copy.append(behavior);
       if (Array.isArray(displayed.unlock_forms) && displayed.unlock_forms.length) {
         const requirement = document.createElement("div");
         requirement.className = "catalog-skill-unlock";

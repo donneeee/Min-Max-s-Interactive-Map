@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ANIILOG_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
+  const ANIILOG_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
   const ITEMLOG_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
   const STORAGE_KEY = "minmax-aniipedia:team-builder:v1";
   const TEAM_SIZE = 4;
@@ -490,6 +490,16 @@
       Number.isFinite(Number(skill?.combat?.cooldown)) ? `${translate("Cooldown")} ${skill.combat.cooldown}s` : "",
     ].filter(Boolean).join(" · ");
     copy.append(el("small", "", meta));
+    if (skill?.behavior?.team_role) {
+      const scope = Array.isArray(skill.behavior.target_scope)
+        ? skill.behavior.target_scope.join(" + ")
+        : "";
+      copy.append(el(
+        "small",
+        "team-skill-behavior",
+        [skill.behavior.team_role, scope].filter(Boolean).join(" · "),
+      ));
+    }
     card.append(copy);
     return card;
   }
@@ -751,21 +761,50 @@
     model.members.forEach((member, index) => {
       const entry = aniimoFor(member);
       if (!entry) return;
-      const append = (kind, name, description, activation) => {
-        if (!description || !BUFF_PATTERN.test(description)) return;
+      const append = (kind, name, description, activation, behavior = null) => {
+        if (!description) return;
+        const support = behavior?.main_dps_support || "";
+        const appliesToSelectedDps = support === "yes"
+          || support === "conditional"
+          || (support === "self_only" && index === model.activeSlot);
+        if (behavior && !appliesToSelectedDps) return;
+        if (!behavior && !BUFF_PATTERN.test(description)) return;
         const id = `${index}:${kind}:${name}`;
-        effects.push({ id, slot: index, source: translate(entry.name), kind, name: translate(name), description: translate(description), activation });
+        effects.push({
+          id,
+          slot: index,
+          source: translate(entry.name),
+          kind,
+          name: translate(name),
+          description: translate(description),
+          activation: behavior?.activation || activation,
+          teamRole: behavior?.team_role || "Conditional effect",
+          supportNote: behavior?.main_dps_note || "Apply only when the listed effect is active.",
+          verification: behavior?.verification_label || "Listed item effect",
+        });
       };
-      (entry.traits || []).forEach((trait) => append("Trait", trait.name, trait.description, "Passive"));
+      (entry.traits || []).forEach((trait) => append("Trait", trait.name, trait.description, "Passive", trait.behavior));
       if (model.mode === "coop" && index > 0) {
-        coreSkills(entry).forEach((skill) => append("Core skill", skill.name, skill.description, "Active"));
+        coreSkills(entry).forEach((skill) => append("Core skill", skill.name, skill.description, "Active", skill.behavior));
       } else {
         [...member.activeSkills, member.switchSkill]
           .filter(Boolean)
           .map((key) => skillFor(entry, key))
           .filter(Boolean)
-          .forEach((skill) => append(skill.core ? "Core skill" : "Skill", skill.name, skill.description, "Active"));
-        (entry.ultimates || []).forEach((skill) => append("Ultimate", skill.name, skill.description, "Active"));
+          .forEach((skill) => append(
+            skill.core ? "Core skill" : "Skill",
+            skill.name,
+            skill.description,
+            "Active",
+            skill.behavior,
+          ));
+        (entry.ultimates || []).forEach((skill) => append(
+          "Ultimate",
+          skill.name,
+          skill.description,
+          "Active",
+          skill.behavior,
+        ));
       }
       const carried = carriedItemFor(member);
       (carried?.carried_effects?.core_effects || []).forEach((description, effectIndex) => append("Carried item", carried.name, description, `Core effect ${effectIndex + 1}`));
@@ -804,7 +843,12 @@
         const copy = el("span", "team-synergy-copy");
         const title = el("span", "team-synergy-title");
         title.append(el("strong", "", effect.name), el("small", "", `${effect.source} · ${translate(effect.activation)}`));
-        copy.append(title, el("span", "team-synergy-description", effect.description));
+        copy.append(
+          title,
+          el("span", "team-synergy-scope", `${effect.teamRole} · ${effect.verification}`),
+          el("span", "team-synergy-description", effect.description),
+          el("span", "team-synergy-note", effect.supportNote),
+        );
         label.append(input, copy);
         list.append(label);
       });
