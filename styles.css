@@ -2843,6 +2843,10 @@ html[data-theme="pawney"] .catalog-record {
   gap: 14px;
 }
 
+.catalog-sticky-indicator {
+  display: none;
+}
+
 .catalog-identity > div {
   min-width: 0;
 }
@@ -5957,6 +5961,92 @@ button.catalog-item-reference {
     grid-column: 1 / -1;
     justify-self: start;
     margin-left: 0;
+  }
+}
+
+@media (max-width: 820px) {
+  .catalog-mobile-sticky-identity {
+    position: fixed;
+    left: var(--catalog-sticky-left, 12px);
+    top: env(safe-area-inset-top, 0px);
+    z-index: 80;
+    width: var(--catalog-sticky-width, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    pointer-events: none;
+    transition:
+      border-color 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease,
+      padding 140ms ease;
+  }
+
+  .catalog-mobile-sticky-identity.is-stuck {
+    gap: 10px;
+    border: 1px solid rgba(var(--accent-rgb), 0.78);
+    border-radius: 9px;
+    background: rgba(var(--panel-rgb), 0.97);
+    box-shadow:
+      inset 0 3px 0 rgba(var(--accent-rgb), 0.88),
+      0 10px 28px rgba(var(--background-rgb), 0.72);
+    padding: 9px 10px;
+    backdrop-filter: blur(14px);
+  }
+
+  .catalog-mobile-sticky-identity .catalog-hero-icon {
+    width: 48px;
+    height: 48px;
+    padding: 4px;
+  }
+
+  .catalog-mobile-sticky-identity .catalog-sticky-indicator {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    gap: 5px;
+    margin-bottom: 2px;
+    color: color-mix(in srgb, var(--accent) 38%, var(--text));
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.055em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .catalog-mobile-sticky-identity .catalog-sticky-indicator::before {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.75);
+    content: "";
+  }
+
+  .catalog-mobile-sticky-identity .catalog-eyebrow {
+    font-size: 11px;
+  }
+
+  .catalog-mobile-sticky-identity h2 {
+    margin-top: 2px;
+    font-size: 18px;
+  }
+
+  .catalog-mobile-sticky-identity .catalog-subtitle {
+    margin-top: 3px;
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .catalog-mobile-sticky-identity .catalog-identity-actions {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .catalog-mobile-sticky-identity {
+    grid-template-columns: 48px minmax(0, 1fr);
   }
 }
 

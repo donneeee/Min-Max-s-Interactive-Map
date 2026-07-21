@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ASSET_VERSION = "20260720-localization-v022";
+  const ASSET_VERSION = "20260721-localization-v023";
   const SUPPORTED_LANGUAGES = Object.freeze({
     en: { label: "English", htmlLang: "en" },
     "zh-CN": { label: "简体中文", htmlLang: "zh-CN" },
@@ -12,6 +12,7 @@
   // Website-owned interface copy. Game-owned names and descriptions come from
   // the complete UID maps generated from the client localization files.
   const UI_ROWS = [
+    ["Selected item", "已选道具", "選択中のアイテム", "선택한 아이템"],
     ["Pack contents", "礼包内容", "パック内容", "팩 구성품"],
     ["Contains all listed items", "包含所有列出的物品", "表示されたアイテムをすべて含みます", "표시된 모든 아이템 포함"],
     ["Choose one listed item", "从列出的物品中选择一个", "表示されたアイテムから1つ選択", "표시된 아이템 중 1개 선택"],

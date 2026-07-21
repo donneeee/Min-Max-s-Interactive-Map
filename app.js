@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.12";
+const APP_VERSION = "v0.4.13";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -254,6 +254,7 @@ const state = {
     aniilog: 0,
     itemlog: 0,
   },
+  catalogStickyFrame: 0,
   catalogSelection: {
     aniilog: "aniimo:1005100",
     itemlog: "item:4010132",
@@ -4978,9 +4979,14 @@ function renderItemLogCatalogRecord(entry) {
 
   const identity = document.createElement("header");
   identity.className = "catalog-identity";
+  identity.dataset.catalogEntryId = entry.id;
   const icon = makeIcon("catalog-hero-icon", entry.icon);
   icon.alt = `${entry.name} icon`;
   const copy = document.createElement("div");
+  const stickyIndicator = document.createElement("span");
+  stickyIndicator.className = "catalog-sticky-indicator";
+  stickyIndicator.textContent = "Selected item";
+  stickyIndicator.setAttribute("aria-hidden", "true");
   const eyebrow = document.createElement("p");
   eyebrow.className = "catalog-eyebrow";
   eyebrow.textContent = entry.catalog_category || entry.type || "Item";
@@ -4989,7 +4995,7 @@ function renderItemLogCatalogRecord(entry) {
   const subtitle = document.createElement("p");
   subtitle.className = "catalog-subtitle";
   subtitle.textContent = entry.inventory || "";
-  copy.append(eyebrow, name, subtitle);
+  copy.append(stickyIndicator, eyebrow, name, subtitle);
   identity.append(icon, copy);
   const actions = document.createElement("div");
   actions.className = "catalog-identity-actions";
@@ -5374,6 +5380,52 @@ function renderCatalogPreview(options = {}) {
   state.catalogSelection[view] = selected.id;
   renderCatalogSidebar(view, sidebarTitle, allEntries, entries, selected.id, "", true, options);
   els.catalogPanel.append(view === "aniilog" ? renderAniilogCatalogRecord(selected) : renderItemLogCatalogRecord(selected));
+  scheduleMobileCatalogStickyIdentity();
+}
+
+function removeMobileCatalogStickyIdentity() {
+  document.querySelector(".catalog-mobile-sticky-identity")?.remove();
+}
+
+function syncMobileCatalogStickyIdentity() {
+  const identity = els.catalogPanel.querySelector(".catalog-itemlog-record > .catalog-identity");
+  const stickyEnabled = MOBILE_LAYOUT_QUERY.matches
+    && state.sidebarView === "itemlog"
+    && !els.catalogPanel.hidden;
+  if (!identity || !stickyEnabled) {
+    removeMobileCatalogStickyIdentity();
+    return;
+  }
+  const identityRect = identity.getBoundingClientRect();
+  const recordRect = identity.closest(".catalog-itemlog-record")?.getBoundingClientRect();
+  const isStuck = identityRect.top <= 0
+    && Boolean(recordRect && recordRect.bottom > identityRect.height + 1);
+  if (!isStuck) {
+    removeMobileCatalogStickyIdentity();
+    return;
+  }
+  let stickyIdentity = document.querySelector(".catalog-mobile-sticky-identity");
+  if (stickyIdentity && stickyIdentity.dataset.catalogEntryId !== identity.dataset.catalogEntryId) {
+    stickyIdentity.remove();
+    stickyIdentity = null;
+  }
+  if (!stickyIdentity) {
+    stickyIdentity = identity.cloneNode(true);
+    stickyIdentity.classList.add("catalog-mobile-sticky-identity", "is-stuck");
+    stickyIdentity.setAttribute("aria-hidden", "true");
+    stickyIdentity.setAttribute("inert", "");
+    document.body.append(stickyIdentity);
+  }
+  stickyIdentity.style.setProperty("--catalog-sticky-left", `${Math.max(0, identityRect.left)}px`);
+  stickyIdentity.style.setProperty("--catalog-sticky-width", `${Math.max(0, identityRect.width)}px`);
+}
+
+function scheduleMobileCatalogStickyIdentity() {
+  if (state.catalogStickyFrame) return;
+  state.catalogStickyFrame = window.requestAnimationFrame(() => {
+    state.catalogStickyFrame = 0;
+    syncMobileCatalogStickyIdentity();
+  });
 }
 
 function checklistEntriesForCategory(category = state.checklistCategory) {
@@ -5878,7 +5930,11 @@ function updateWorkspaceTabs() {
   els.catalogPanel.hidden = !catalogView;
   els.mapPanel.classList.toggle("catalog-active", catalogView);
   document.body.classList.toggle("catalog-view-active", catalogView);
-  if (catalogView) renderCatalogPreview();
+  if (catalogView) {
+    renderCatalogPreview();
+  } else {
+    removeMobileCatalogStickyIdentity();
+  }
 }
 
 function setSidebarView(view) {
@@ -8142,6 +8198,7 @@ function switchMap(mapId) {
 
 function bindEvents() {
   window.addEventListener("scroll", resetDocumentScroll, { passive: true });
+  window.addEventListener("scroll", scheduleMobileCatalogStickyIdentity, { passive: true });
   els.mapViewport.addEventListener("scroll", resetMapScroll, { passive: true });
   els.mobileSelectionToggle.addEventListener("click", () => {
     setMobileSelectionMinimized(!state.mobileSelectionMinimized);
@@ -8151,6 +8208,7 @@ function bindEvents() {
   MOBILE_LAYOUT_QUERY.addEventListener("change", () => {
     if (state.selectedSpawnIndex === null) state.mobileSelectionMinimized = true;
     updateMobileSelectionPanel();
+    scheduleMobileCatalogStickyIdentity();
     window.requestAnimationFrame(fitMap);
   });
   els.mapWorkspaceTab.addEventListener("click", () => setSidebarView("map"));
@@ -8326,6 +8384,7 @@ function bindEvents() {
     state.viewportResizeObserver.observe(els.mapViewport);
   }
   window.addEventListener("resize", scheduleMapViewportFit, { passive: true });
+  window.addEventListener("resize", scheduleMobileCatalogStickyIdentity, { passive: true });
   const refreshPinGeometry = () => {
     if (state.data) applyTransform();
   };
