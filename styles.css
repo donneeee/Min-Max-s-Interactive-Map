@@ -3680,6 +3680,10 @@ html[data-theme="pawney"] .catalog-record {
   margin-left: auto;
 }
 
+.catalog-identity-actions .catalog-quality {
+  margin-left: 0;
+}
+
 .catalog-locate-button {
   min-height: 36px;
   border-color: rgba(var(--accent-rgb), 0.68);

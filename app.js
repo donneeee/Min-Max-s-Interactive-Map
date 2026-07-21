@@ -1,8 +1,8 @@
-const DATA_URL = "./data/map_site_data.json?v=20260719-whisperwake-lumen-groups-v001";
+const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-item-level-cleanup-v001";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-fixed-collectible-links-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.08";
+const APP_VERSION = "v0.4.09";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -284,6 +284,7 @@ const state = {
   trackingTicker: 0,
   pendingTrackingIds: new Set(),
   pendingAniilogLocate: null,
+  pendingItemlogLocate: null,
   pendingBossLocate: null,
   pendingReset: false,
   localStorageError: "",
@@ -803,6 +804,69 @@ function locateAniilogEntry(entry) {
     switchMap(mapId);
   }
   if (datasetForMap(mapId)) applyPendingAniilogLocate(true);
+}
+
+function itemlogTargetForMap(entry, mapId) {
+  const targets = Array.isArray(entry?.map_targets) ? entry.map_targets : [];
+  return targets.find((target) => target?.map_id === mapId) || null;
+}
+
+function applyItemlogLocate(entry, finalAttempt = false) {
+  const target = itemlogTargetForMap(entry, state.activeMapId);
+  const item = target
+    ? activeMapItems().find((candidate) => candidate.item_id === target.map_item_id)
+    : null;
+  if (!target || !item) {
+    if (finalAttempt) {
+      state.pendingItemlogLocate = null;
+      clearSelectionDetails("No confirmed fixed pickup is available on the selected map.");
+    }
+    return false;
+  }
+
+  activeMapItems()
+    .filter((candidate) => candidate.layer_id === target.layer_id)
+    .forEach((candidate) => setItemSelection(candidate.item_id, false));
+  setItemSelection(item.item_id, true);
+  state.activeLayer = target.layer_id || item.layer_id || "items";
+  state.search = "";
+  els.searchInput.value = "";
+  renderItems();
+  refreshVisibility();
+
+  const spawnEntries = activeMapSpawnEntries(item.item_id);
+  const spawnEntry = spawnEntries.find(({ spawn }) => (
+    target.coordinate_key && spawn.coordinate_key === target.coordinate_key
+  )) || spawnEntries.find(({ spawn }) => spawnMatches(spawn)) || spawnEntries[0];
+  if (spawnEntry) {
+    state.locatedSpawnIndex = spawnEntry.index;
+    selectSpawn(spawnEntry.index);
+    focusSpawn(spawnEntry.spawn);
+  }
+  state.pendingItemlogLocate = null;
+  return true;
+}
+
+function applyPendingItemlogLocate(finalAttempt = false) {
+  if (!state.pendingItemlogLocate) return false;
+  return applyItemlogLocate(state.pendingItemlogLocate, finalAttempt);
+}
+
+function locateItemlogEntry(entry) {
+  const targets = Array.isArray(entry?.map_targets) ? entry.map_targets : [];
+  if (!targets.length) return;
+  state.pendingItemlogLocate = entry;
+  const target = itemlogTargetForMap(entry, state.activeMapId)
+    || targets.find((candidate) => state.data?.mapsById.has(candidate?.map_id));
+  if (!target?.map_id) {
+    state.pendingItemlogLocate = null;
+    return;
+  }
+  setSidebarView("map");
+  if (target.map_id !== state.activeMapId) {
+    switchMap(target.map_id);
+  }
+  if (datasetForMap(target.map_id)) applyPendingItemlogLocate(true);
 }
 
 function applyBossLocate(boss, finalAttempt = false) {
@@ -4646,12 +4710,23 @@ function renderItemLogCatalogRecord(entry) {
   subtitle.textContent = entry.inventory || "";
   copy.append(eyebrow, name, subtitle);
   identity.append(icon, copy);
+  const actions = document.createElement("div");
+  actions.className = "catalog-identity-actions";
   if (entry.quality) {
     const quality = document.createElement("span");
     quality.className = `catalog-quality catalog-quality--${qualityClassName(entry.quality)}`;
     quality.textContent = entry.quality_display || entry.quality;
-    identity.append(quality);
+    actions.append(quality);
   }
+  if (Array.isArray(entry.map_targets) && entry.map_targets.length) {
+    const locate = document.createElement("button");
+    locate.type = "button";
+    locate.className = "catalog-locate-button";
+    locate.textContent = "Locate on Map";
+    locate.addEventListener("click", () => locateItemlogEntry(entry));
+    actions.append(locate);
+  }
+  if (actions.childElementCount) identity.append(actions);
   record.append(identity);
 
   if (entry.description) {
@@ -5673,8 +5748,9 @@ function clearSelectionDetails(message) {
   updateSelectionCatalogShortcuts(null, null);
 }
 
-function selectionCatalogKind(item) {
+function selectionCatalogKind(spawn, item) {
   if (item?.is_aniimo) return "aniilog";
+  if (spawn?.document_uid || spawn?.collectible_uid) return "itemlog";
   const itemId = String(item?.item_id || "");
   if (/^\d+$/.test(itemId)) return "itemlog";
   if (/^(?:alpha_egg:\d+|elite_egg_area:\d+)$/.test(itemId)) return "itemlog";
@@ -5682,7 +5758,7 @@ function selectionCatalogKind(item) {
 }
 
 function updateSelectionCatalogShortcuts(spawn, item) {
-  const view = spawn && item ? selectionCatalogKind(item) : "";
+  const view = spawn && item ? selectionCatalogKind(spawn, item) : "";
   const label = view === "aniilog" ? "Open in Aniilog" : "Open in Item-log";
   [els.selectionCatalogShortcut, els.mobileSelectionCatalogShortcut].forEach((button) => {
     if (!button) return;
@@ -5734,6 +5810,12 @@ function normalizedEggLocation(value) {
 }
 
 function resolveItemlogEntryForSelection(spawn, item, entries) {
+  const sourceItemId = String(spawn?.document_uid || spawn?.collectible_uid || "");
+  if (/^\d+$/.test(sourceItemId)) {
+    const sourceEntry = entries.find((entry) => entry?.id === `item:${sourceItemId}`);
+    if (sourceEntry) return sourceEntry;
+  }
+
   const itemId = String(item?.item_id || "");
   const alphaEggId = itemId.match(/^alpha_egg:(\d+)$/)?.[1] || "";
   const directId = /^\d+$/.test(itemId)
@@ -5783,7 +5865,7 @@ async function openSelectedMarkerCatalogEntry() {
     ? state.data?.spawns[state.selectedSpawnIndex]
     : null;
   const item = spawn ? state.data?.itemsById.get(spawn.item_id) : null;
-  const view = selectionCatalogKind(item);
+  const view = selectionCatalogKind(spawn, item);
   if (!spawn || !item || !view) return;
 
   setSelectionCatalogShortcutBusy(true);
@@ -6218,6 +6300,8 @@ function itemSearchText(item) {
     item.marker_names,
     item.document_groups,
     item.document_uids,
+    item.collectible_groups,
+    item.collectible_uids,
     item.misc_group,
     item.layer_id,
     item.inventory_label,
@@ -6266,6 +6350,8 @@ function spawnSearchText(spawn) {
     spawn.display_name,
     spawn.document_group,
     spawn.document_uid,
+    spawn.collectible_group,
+    spawn.collectible_uid,
     spawn.marker_type,
     spawn.layer_id,
     spawn.reward_label,
@@ -6651,6 +6737,14 @@ function spawnChildDisplayParts(spawn, siblings = [], siblingIndex = 0) {
   if (spawn.marker_type === "lumin_amber") {
     return {
       name: window.AniipediaI18n.translate("Lumen Ember"),
+      sequence,
+      typeLabel: "",
+    };
+  }
+  if (spawn.marker_type === "collectible_pickup") {
+    const localizedTitle = localizedSpawnTitle(spawn);
+    return {
+      name: localizedTitle.replace(/^Spirit Dust:\s*/i, ""),
       sequence,
       typeLabel: "",
     };
@@ -7452,6 +7546,7 @@ function renderSelectionDetail(detail, spawn, item) {
   const rows = [
     ["Type", typeLabel],
     spawn.document_group ? ["Series", spawn.document_group] : null,
+    spawn.collectible_group ? ["Series", spawn.collectible_group] : null,
     formValue ? ["Form", formValue] : null,
     ["X", formatCoordinate(spawn.x), formatCoordinate(spawn.x)],
     ["Y", formatCoordinate(spawn.y), formatCoordinate(spawn.y)],
@@ -7596,6 +7691,7 @@ function useMapDataset(mapId, dataset) {
   refreshVisibility();
   updateMapMeta();
   applyPendingAniilogLocate(true);
+  applyPendingItemlogLocate(true);
   applyPendingBossLocate(true);
 }
 
@@ -7749,6 +7845,7 @@ function switchMap(mapId) {
   fitMap();
   if (dataset) {
     applyPendingAniilogLocate(true);
+    applyPendingItemlogLocate(true);
     applyPendingBossLocate(true);
   }
   if (!dataset) scheduleMapDataLoad(mapId, loadToken);
