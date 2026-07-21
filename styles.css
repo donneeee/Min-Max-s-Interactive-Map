@@ -3363,6 +3363,198 @@ html[data-theme="pawney"] .catalog-record {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.catalog-gizmo-section {
+  gap: 12px;
+}
+
+.catalog-gizmo-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.catalog-gizmo-intro strong {
+  color: var(--accent-2);
+  font-size: 14px;
+}
+
+.catalog-gizmo-stages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  max-width: 1180px;
+}
+
+.catalog-gizmo-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(112px, 0.22fr) minmax(0, 1fr);
+  min-width: 0;
+  gap: 12px;
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 8px;
+  background: rgba(var(--background-rgb), 0.48);
+  padding: 11px 13px;
+}
+
+.catalog-gizmo-stage::before {
+  position: absolute;
+  top: -9px;
+  left: 27px;
+  width: 2px;
+  height: 9px;
+  background: rgba(var(--accent-rgb), 0.55);
+  content: "";
+}
+
+.catalog-gizmo-stage:first-child::before {
+  content: none;
+}
+
+.catalog-gizmo-stage.is-final {
+  border-color: rgba(var(--accent-2-rgb), 0.64);
+  background: linear-gradient(115deg, rgba(var(--accent-2-rgb), 0.12), rgba(var(--background-rgb), 0.52));
+  box-shadow: 0 0 12px rgba(var(--accent-2-rgb), 0.08);
+}
+
+.catalog-gizmo-stage > header {
+  display: flex;
+  align-items: center;
+  align-self: start;
+  gap: 9px;
+}
+
+.catalog-gizmo-stage h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.catalog-gizmo-layer {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(var(--accent-rgb), 0.58);
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.catalog-gizmo-stage.is-final .catalog-gizmo-layer {
+  border-color: rgba(var(--accent-2-rgb), 0.72);
+  background: rgba(var(--accent-2-rgb), 0.16);
+  color: var(--accent-2);
+}
+
+.catalog-gizmo-stage ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 20px;
+  color: #d6ddde;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.catalog-gizmo-alpha {
+  display: grid;
+  max-width: 1180px;
+  gap: 10px;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.24);
+  padding-top: 12px;
+}
+
+.catalog-gizmo-alpha > header,
+.catalog-gizmo-modifier-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px 12px;
+}
+
+.catalog-gizmo-alpha h4,
+.catalog-gizmo-alpha h5 {
+  margin: 0;
+}
+
+.catalog-gizmo-alpha > header span,
+.catalog-gizmo-modifier-header span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.catalog-gizmo-alpha-levels {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.catalog-gizmo-alpha-level {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 7px;
+  background: rgba(var(--accent-rgb), 0.07);
+  padding: 9px 10px;
+}
+
+.catalog-gizmo-alpha-level strong {
+  color: var(--accent-2);
+  font-size: 13px;
+}
+
+.catalog-gizmo-alpha-level span {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.catalog-gizmo-modifiers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.catalog-gizmo-modifier {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  border-left: 3px solid rgba(var(--accent-2-rgb), 0.72);
+  border-radius: 6px;
+  background: rgba(var(--panel-rgb), 0.56);
+  padding: 9px 11px;
+}
+
+.catalog-gizmo-modifier h5 {
+  color: var(--accent-2);
+  font-size: 13px;
+}
+
+.catalog-gizmo-modifier p {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .catalog-gizmo-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalog-gizmo-alpha-levels,
+  .catalog-gizmo-modifiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 1100px) {
   .catalog-rune-slots {
     grid-template-columns: repeat(3, minmax(104px, 1fr));

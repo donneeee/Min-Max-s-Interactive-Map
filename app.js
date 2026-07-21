@@ -1,8 +1,8 @@
 const DATA_URL = "./data/map_site_data.json?v=20260719-whisperwake-lumen-groups-v001";
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
-const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-item-canonical-v001";
+const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260720-holo-gizmos-v002";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260719-localization-v003";
-const APP_VERSION = "v0.4.06";
+const APP_VERSION = "v0.4.07";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -3172,12 +3172,13 @@ function renderCatalogCategoryToolbar(view) {
     });
     appendCategoryOption(quickCategories, "Carried Item", "Carried Items");
     appendCategoryOption(quickCategories, "Carried Item - Rune", "Runes");
+    appendCategoryOption(quickCategories, "Holo-Battle Gizmo", "Holo-Battle Gizmos");
     select.append(quickCategories);
 
     const allCategories = document.createElement("optgroup");
     allCategories.label = "All categories";
     categories
-      .filter((category) => !["all", "Carried Item", "Carried Item - Rune"].includes(category))
+      .filter((category) => !["all", "Carried Item", "Carried Item - Rune", "Holo-Battle Gizmo"].includes(category))
       .forEach((category) => appendCategoryOption(allCategories, category));
     select.append(allCategories);
     select.addEventListener("change", () => {
@@ -4527,6 +4528,105 @@ function renderRuneDetails(runeDetails, runeReference) {
   return section;
 }
 
+function renderHoloBattleGizmoProgression(gizmo) {
+  const stages = Array.isArray(gizmo?.stages) ? gizmo.stages : [];
+  const alphaProgression = gizmo?.alpha_progression;
+  if (stages.length < 2 && !alphaProgression) return null;
+
+  const section = createCatalogSection("Holo-Battle progression");
+  section.classList.add("catalog-gizmo-section");
+
+  const intro = document.createElement("div");
+  intro.className = "catalog-gizmo-intro";
+  const classification = document.createElement("strong");
+  classification.textContent = [gizmo?.series_name, gizmo?.classification || "Core Gizmo"]
+    .filter(Boolean)
+    .join(" · ");
+  const note = document.createElement("span");
+  note.textContent = stages.length > 1
+    ? "Duplicate pickups upgrade the active Gizmo one layer at a time."
+    : "This Gizmo has one active layer.";
+  intro.append(classification, note);
+
+  const stageList = document.createElement("div");
+  stageList.className = "catalog-gizmo-stages";
+  stages.forEach((stage, index) => {
+    const stageCard = document.createElement("article");
+    stageCard.className = "catalog-gizmo-stage";
+    if (index === stages.length - 1) stageCard.classList.add("is-final");
+
+    const header = document.createElement("header");
+    const layer = document.createElement("span");
+    layer.className = "catalog-gizmo-layer";
+    layer.textContent = String(index + 1);
+    const title = document.createElement("h4");
+    title.textContent = stage?.name || `Layer ${index + 1}`;
+    header.append(layer, title);
+
+    const effects = document.createElement("ul");
+    (Array.isArray(stage?.effects) ? stage.effects : []).forEach((effect) => {
+      if (!effect) return;
+      const item = document.createElement("li");
+      item.textContent = effect;
+      effects.append(item);
+    });
+    stageCard.append(header, effects);
+    stageList.append(stageCard);
+  });
+
+  section.append(intro, stageList);
+
+  if (alphaProgression) {
+    const alpha = document.createElement("section");
+    alpha.className = "catalog-gizmo-alpha";
+
+    const alphaHeader = document.createElement("header");
+    const alphaTitle = document.createElement("h4");
+    alphaTitle.textContent = "Series Rogue Skill";
+    const alphaSubtitle = document.createElement("span");
+    alphaSubtitle.textContent = `${gizmo?.series_name || "Series"} progression · ${alphaProgression.alpha_aniimo || "Alpha transformation"}`;
+    alphaHeader.append(alphaTitle, alphaSubtitle);
+
+    const levels = document.createElement("div");
+    levels.className = "catalog-gizmo-alpha-levels";
+    (Array.isArray(alphaProgression.levels) ? alphaProgression.levels : []).forEach((level) => {
+      const card = document.createElement("article");
+      card.className = "catalog-gizmo-alpha-level";
+      const point = document.createElement("strong");
+      point.textContent = `${formatNumber(level?.points || 0)} points`;
+      const unlock = document.createElement("span");
+      unlock.textContent = level?.unlock || "Series reward";
+      card.append(point, unlock);
+      levels.append(card);
+    });
+
+    const modifierHeader = document.createElement("div");
+    modifierHeader.className = "catalog-gizmo-modifier-header";
+    const modifierTitle = document.createElement("strong");
+    modifierTitle.textContent = "Series modifier pool";
+    const modifierNote = document.createElement("span");
+    modifierNote.textContent = alphaProgression.modifier_order || "Modifier order may vary.";
+    modifierHeader.append(modifierTitle, modifierNote);
+
+    const modifiers = document.createElement("div");
+    modifiers.className = "catalog-gizmo-modifiers";
+    (Array.isArray(alphaProgression.modifiers) ? alphaProgression.modifiers : []).forEach((modifier) => {
+      const card = document.createElement("article");
+      card.className = "catalog-gizmo-modifier";
+      const title = document.createElement("h5");
+      title.textContent = modifier?.name || "Series modifier";
+      const description = document.createElement("p");
+      description.textContent = modifier?.description || "";
+      card.append(title, description);
+      modifiers.append(card);
+    });
+
+    alpha.append(alphaHeader, levels, modifierHeader, modifiers);
+    section.append(alpha);
+  }
+  return section;
+}
+
 function renderItemLogCatalogRecord(entry) {
   const record = document.createElement("article");
   record.className = "catalog-record catalog-itemlog-record";
@@ -4549,7 +4649,7 @@ function renderItemLogCatalogRecord(entry) {
   if (entry.quality) {
     const quality = document.createElement("span");
     quality.className = `catalog-quality catalog-quality--${qualityClassName(entry.quality)}`;
-    quality.textContent = entry.quality;
+    quality.textContent = entry.quality_display || entry.quality;
     identity.append(quality);
   }
   record.append(identity);
@@ -4579,6 +4679,8 @@ function renderItemLogCatalogRecord(entry) {
     record.append(details);
   }
 
+  const gizmoProgression = renderHoloBattleGizmoProgression(entry.holo_battle_gizmo);
+  if (gizmoProgression) record.append(gizmoProgression);
   const requirements = renderItemLogRequirements(entry.requirements);
   if (requirements) record.append(requirements);
   const expeditionSources = renderRvExpeditionSources(entry);
