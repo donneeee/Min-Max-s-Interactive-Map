@@ -6386,11 +6386,12 @@ button.catalog-item-reference {
   }
 
   .item-panel {
-    min-height: min(260px, 38svh);
+    min-height: min(200px, 28svh);
+    overflow: hidden;
   }
 
   .item-panel .item-list {
-    min-height: min(210px, 28svh);
+    min-height: 0;
   }
 
   .item-row {
@@ -6400,6 +6401,51 @@ button.catalog-item-reference {
 
   .detail-panel {
     max-height: min(172px, 19svh);
+  }
+}
+
+@media (min-width: 821px) and (max-height: 800px) {
+  .brand .database-meta {
+    display: none;
+  }
+
+  .map-tabs {
+    margin-bottom: 5px;
+  }
+
+  .map-tab {
+    height: 34px;
+    min-height: 34px;
+  }
+
+  .search-label {
+    margin-bottom: 3px;
+    font-size: 10px;
+  }
+
+  .search {
+    height: 34px;
+  }
+
+  .toolbar {
+    margin-top: 6px;
+  }
+
+  .toolbar button,
+  .share-pins-button {
+    min-height: 32px;
+  }
+
+  .share-pins-button {
+    margin-top: 6px;
+  }
+
+  .item-panel {
+    min-height: min(160px, 24svh);
+  }
+
+  .detail-panel {
+    max-height: min(124px, 15svh);
   }
 }
 
