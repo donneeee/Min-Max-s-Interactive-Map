@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#1a1f22">
     <title>MinMax's Aniipedia</title>
-    <link rel="stylesheet" href="./styles.css?v=20260722-selection-dismiss-v001">
+    <link rel="stylesheet" href="./styles.css?v=20260722-sidebar-collapse-v001">
   </head>
   <body>
-    <main class="app-shell">
-      <aside class="sidebar" aria-label="Map and tracking controls">
+    <main id="appShell" class="app-shell">
+      <aside id="sidebar" class="sidebar" aria-label="Map and tracking controls">
         <header class="brand">
           <div class="brand-copy">
             <h1>MinMax's Aniipedia</h1>
@@ -21,6 +21,9 @@
               <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
+          </button>
+          <button id="sidebarCollapseButton" class="sidebar-collapse-button" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <span aria-hidden="true">&lsaquo;</span>
           </button>
         </header>
 
@@ -44,6 +47,7 @@
             </div>
             <button id="sharePinsButton" class="share-pins-button" type="button" disabled>Copy pin link</button>
             <span id="sharePinsStatus" class="visually-hidden" role="status" aria-live="polite"></span>
+            <p id="sharePinsNotice" class="share-pins-notice" role="status" aria-live="polite" hidden></p>
           </section>
 
           <section class="panel item-panel">
@@ -104,6 +108,10 @@
         </section>
       </aside>
 
+      <button id="sidebarRestoreButton" class="sidebar-restore-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Show sidebar" title="Show sidebar" hidden>
+        <span aria-hidden="true">&rsaquo;</span>
+      </button>
+
       <section class="map-panel" aria-label="Interactive map and catalogue">
         <div id="mapSurface" class="map-surface">
           <div class="map-toolbar">
@@ -158,8 +166,9 @@
       </section>
     </div>
 
+  <script defer src="./app-config.js?v=20260722-short-share-v001"></script>
   <script defer src="./localization.js?v=20260722-selection-dismiss-v001"></script>
   <script defer src="./team-builder.js?v=20260721-team-levels-v001"></script>
-  <script defer src="./app.js?v=20260722-selection-dismiss-v001"></script>
+  <script defer src="./app.js?v=20260722-short-share-v001"></script>
   </body>
 </html>

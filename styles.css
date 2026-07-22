@@ -79,6 +79,7 @@ button[aria-pressed="true"] {
 }
 
 .app-shell {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   width: 100%;
@@ -108,7 +109,7 @@ button[aria-pressed="true"] {
 
 .brand {
   position: relative;
-  padding-right: 44px;
+  padding-right: 84px;
 }
 
 /* Team Builder */
@@ -933,6 +934,95 @@ button[aria-pressed="true"] {
   padding: 0;
 }
 
+.sidebar-collapse-button {
+  position: absolute;
+  top: 0;
+  right: 32px;
+  display: none;
+  width: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  place-items: center;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  font-size: 31px;
+  line-height: 1;
+}
+
+.sidebar-collapse-button:hover,
+.sidebar-collapse-button:focus-visible {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: color-mix(in srgb, var(--accent) 28%, var(--text));
+  outline: none;
+}
+
+.sidebar-restore-button {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  z-index: 90;
+  display: none;
+  width: 42px;
+  min-width: 42px;
+  min-height: 74px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid var(--accent);
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--panel) 92%, var(--accent));
+  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.32);
+  color: var(--text);
+  padding: 0;
+  font-size: 34px;
+  line-height: 1;
+}
+
+@media (min-width: 821px) and (pointer: fine) {
+  .app-shell {
+    transition: grid-template-columns 180ms ease;
+  }
+
+  .sidebar {
+    transition:
+      opacity 140ms ease,
+      transform 180ms ease;
+  }
+
+  .sidebar-collapse-button {
+    display: inline-grid;
+  }
+
+  .app-shell.is-sidebar-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .app-shell.is-sidebar-collapsed .sidebar {
+    visibility: hidden;
+    overflow: hidden;
+    border-right: 0;
+    opacity: 0;
+    padding-right: 0;
+    padding-left: 0;
+    pointer-events: none;
+    transform: translateX(-100%);
+  }
+
+  .app-shell.is-sidebar-collapsed .sidebar-restore-button:not([hidden]) {
+    display: inline-grid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell,
+  .sidebar {
+    transition: none !important;
+  }
+}
+
 .settings-icon {
   width: 22px;
   height: 22px;
@@ -1092,6 +1182,21 @@ button[aria-pressed="true"] {
   color: var(--muted);
   cursor: not-allowed;
   opacity: 0.62;
+}
+
+.share-pins-notice {
+  margin: 7px 2px 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.share-pins-notice[data-tone="success"] {
+  color: color-mix(in srgb, var(--accent) 65%, var(--text));
+}
+
+.share-pins-notice[data-tone="error"] {
+  color: #ff9c9c;
 }
 
 .panel-heading {

@@ -20,12 +20,19 @@ const CANVAS_HIT_CELL_SIZE = 128;
 const SHARED_PINS_PARAM = "pins";
 const SHARED_PINS_VERSION = 1;
 const MAX_SHARED_PINS_PAYLOAD_LENGTH = 24000;
+const SHORT_SHARE_PARAM = "s";
+const SHORT_SHARE_CODE_PATTERN = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8}$/;
+const SHARE_API_URL = String(window.ANIIPEDIA_CONFIG?.shareApiUrl || "").replace(/\/+$/, "");
 const INITIAL_URL_PARAMS = new URLSearchParams(window.location.search);
 const REQUESTED_SHARED_PIN_SELECTION = parseSharedPinSelection(INITIAL_URL_PARAMS.get(SHARED_PINS_PARAM));
+const REQUESTED_SHORT_SHARE_ID = SHORT_SHARE_CODE_PATTERN.test(INITIAL_URL_PARAMS.get(SHORT_SHARE_PARAM) || "")
+  ? INITIAL_URL_PARAMS.get(SHORT_SHARE_PARAM)
+  : "";
 const REQUESTED_MAP_ID = REQUESTED_SHARED_PIN_SELECTION?.mapId || INITIAL_URL_PARAMS.get("map");
 const MOBILE_LAYOUT_QUERY = window.matchMedia(
   "(max-width: 820px), (max-height: 540px) and (pointer: coarse)",
 );
+const DESKTOP_SIDEBAR_QUERY = window.matchMedia("(min-width: 821px) and (pointer: fine)");
 // Reserved for temporarily suppressing incomplete physical reward sources.
 const TEMPORARILY_HIDDEN_ITEM_IDS = new Set();
 const ANIILOG_STAT_CONFIG = Object.freeze([
@@ -229,6 +236,7 @@ const state = {
   selectedSpawnIndex: null,
   locatedSpawnIndex: null,
   mobileSelectionMinimized: true,
+  sidebarCollapsed: false,
   sidebarView: "map",
   settingsOpen: false,
   settingsFocusReturn: null,
@@ -295,6 +303,7 @@ const state = {
   pendingItemlogLocate: null,
   pendingBossLocate: null,
   pendingSharedPinSelection: REQUESTED_SHARED_PIN_SELECTION,
+  sharePinsBusy: false,
   sharePinsResetTimer: 0,
   pendingReset: false,
   localStorageError: "",
@@ -302,6 +311,8 @@ const state = {
 };
 
 const els = {
+  appShell: document.querySelector("#appShell"),
+  sidebar: document.querySelector("#sidebar"),
   mapMeta: document.querySelector("#mapMeta"),
   appVersion: document.querySelector("#appVersion"),
   workspaceTabs: document.querySelector("#workspaceTabs"),
@@ -312,6 +323,8 @@ const els = {
   itemlogWorkspaceTab: document.querySelector("#itemlogWorkspaceTab"),
   teamWorkspaceTab: document.querySelector("#teamWorkspaceTab"),
   settingsButton: document.querySelector("#settingsButton"),
+  sidebarCollapseButton: document.querySelector("#sidebarCollapseButton"),
+  sidebarRestoreButton: document.querySelector("#sidebarRestoreButton"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
   settingsCloseButton: document.querySelector("#settingsCloseButton"),
   changelogOverlay: document.querySelector("#changelogOverlay"),
@@ -361,6 +374,7 @@ const els = {
   selectNoneButton: document.querySelector("#selectNoneButton"),
   sharePinsButton: document.querySelector("#sharePinsButton"),
   sharePinsStatus: document.querySelector("#sharePinsStatus"),
+  sharePinsNotice: document.querySelector("#sharePinsNotice"),
   zoomInButton: document.querySelector("#zoomInButton"),
   zoomOutButton: document.querySelector("#zoomOutButton"),
   fitButton: document.querySelector("#fitButton"),
@@ -368,18 +382,6 @@ const els = {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
-}
-
-function encodeBase64Url(value) {
-  const bytes = new TextEncoder().encode(String(value));
-  let binary = "";
-  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-  }
-  return window.btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
 }
 
 function decodeBase64Url(value) {
@@ -390,27 +392,31 @@ function decodeBase64Url(value) {
   return new TextDecoder().decode(bytes);
 }
 
+function normalizeSharedPinPayload(payload) {
+  if (!payload || typeof payload !== "object" || !String(payload.m || "") || !Array.isArray(payload.g)) {
+    return null;
+  }
+  const groups = payload.g.slice(0, 5000).flatMap((group) => {
+    if (!Array.isArray(group) || !String(group[0] ?? "")) return [];
+    const mode = group[1] === "s" || group[1] === "x" ? group[1] : "a";
+    const spawnIds = mode === "a" || !Array.isArray(group[2])
+      ? []
+      : group[2].slice(0, 20000).map(String).filter(Boolean);
+    return [{ itemId: String(group[0]), mode, spawnIds }];
+  });
+  if (groups.length !== payload.g.length) return null;
+  return {
+    mapId: String(payload.m),
+    groups,
+  };
+}
+
 function parseSharedPinSelection(value) {
   if (!value || typeof value !== "string" || value.length > MAX_SHARED_PINS_PAYLOAD_LENGTH) return null;
   const match = value.match(/^v(\d+)\.([A-Za-z0-9_-]+)$/);
   if (!match || Number(match[1]) !== SHARED_PINS_VERSION) return null;
   try {
-    const payload = JSON.parse(decodeBase64Url(match[2]));
-    if (!payload || typeof payload !== "object" || !String(payload.m || "") || !Array.isArray(payload.g)) {
-      return null;
-    }
-    const groups = payload.g.slice(0, 5000).flatMap((group) => {
-      if (!Array.isArray(group) || !String(group[0] ?? "")) return [];
-      const mode = group[1] === "s" || group[1] === "x" ? group[1] : "a";
-      const spawnIds = mode === "a" || !Array.isArray(group[2])
-        ? []
-        : group[2].slice(0, 10000).map(String).filter(Boolean);
-      return [{ itemId: String(group[0]), mode, spawnIds }];
-    });
-    return {
-      mapId: String(payload.m),
-      groups,
-    };
+    return normalizeSharedPinPayload(JSON.parse(decodeBase64Url(match[2])));
   } catch {
     return null;
   }
@@ -6160,6 +6166,21 @@ function setSidebarView(view) {
   }
 }
 
+function setDesktopSidebarCollapsed(collapsed) {
+  const nextCollapsed = Boolean(collapsed) && DESKTOP_SIDEBAR_QUERY.matches;
+  state.sidebarCollapsed = nextCollapsed;
+  els.appShell.classList.toggle("is-sidebar-collapsed", nextCollapsed);
+  els.sidebarCollapseButton.setAttribute("aria-expanded", String(!nextCollapsed));
+  els.sidebarRestoreButton.setAttribute("aria-expanded", String(!nextCollapsed));
+  els.sidebarRestoreButton.hidden = !nextCollapsed;
+  if (!nextCollapsed) els.sidebar.removeAttribute("aria-hidden");
+  else els.sidebar.setAttribute("aria-hidden", "true");
+  window.requestAnimationFrame(() => {
+    stabilizeViewport();
+    scheduleMapViewportFit();
+  });
+}
+
 function fallbackCopyText(text) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
@@ -6992,19 +7013,58 @@ function sharedPinSelectionForActiveMap() {
   };
 }
 
-function encodeSharedPinSelection(selection) {
-  const payload = {
+function shortSharedPinUrl(id) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set(SHORT_SHARE_PARAM, id);
+  return url.href;
+}
+
+function sharedPinPayload(selection) {
+  return {
     m: selection.mapId,
     g: selection.groups,
   };
-  return `v${SHARED_PINS_VERSION}.${encodeBase64Url(JSON.stringify(payload))}`;
 }
 
-function sharedPinUrl(selection) {
-  const url = new URL(window.location.href);
-  url.searchParams.set("map", selection.mapId);
-  url.searchParams.set(SHARED_PINS_PARAM, encodeSharedPinSelection(selection));
-  return url.href;
+function setSharePinsNotice(message = "", tone = "info") {
+  if (!els.sharePinsNotice) return;
+  els.sharePinsNotice.textContent = message;
+  els.sharePinsNotice.dataset.tone = tone;
+  els.sharePinsNotice.hidden = !message;
+}
+
+async function loadRequestedShortShareSelection() {
+  if (!REQUESTED_SHORT_SHARE_ID) return;
+  if (!SHARE_API_URL) {
+    setSharePinsNotice("This short pin link cannot be loaded until the share service is configured.", "error");
+    return;
+  }
+  setSharePinsNotice("Loading shared pins…");
+  try {
+    const response = await fetch(`${SHARE_API_URL}/v1/shares/${REQUESTED_SHORT_SHARE_ID}`, {
+      headers: { accept: "application/json" },
+    });
+    if (response.status === 410) {
+      setSharePinsNotice("This shared pin link expired after 3 hours.", "error");
+      return;
+    }
+    if (response.status === 404) {
+      setSharePinsNotice("This shared pin link was not found.", "error");
+      return;
+    }
+    if (!response.ok) throw new Error(`Share service returned ${response.status}`);
+    const body = await response.json();
+    const selection = normalizeSharedPinPayload(body?.selection);
+    if (!selection) throw new Error("Shared pin data is invalid");
+    state.pendingSharedPinSelection = selection;
+    state.activeMapId = selection.mapId;
+    setSharePinsNotice("Shared pins loaded. This link expires 3 hours after it was created.", "success");
+  } catch (error) {
+    console.error("Could not load short pin link", error);
+    setSharePinsNotice("The shared pins could not be loaded. Please try again.", "error");
+  }
 }
 
 function applySharedPinSelection(selection) {
@@ -7056,20 +7116,22 @@ function selectedPinCount() {
 function updateSharePinsButton() {
   if (!els.sharePinsButton) return;
   const count = selectedPinCount();
-  els.sharePinsButton.disabled = count === 0;
+  els.sharePinsButton.disabled = state.sharePinsBusy || count === 0;
   els.sharePinsButton.title = count
-    ? "Copy a link to the selected pins"
+    ? "Copy a short link that expires after 3 hours"
     : "Select at least one pin to create a link";
 }
 
-function setSharePinsFeedback(message, resetDelay = 1800) {
+function setSharePinsFeedback(message, resetDelay = 2200, tone = "info") {
   if (!els.sharePinsButton || !els.sharePinsStatus) return;
   window.clearTimeout(state.sharePinsResetTimer);
   els.sharePinsButton.textContent = message;
   els.sharePinsStatus.textContent = message;
+  setSharePinsNotice(message, tone);
   state.sharePinsResetTimer = window.setTimeout(() => {
     els.sharePinsButton.textContent = "Copy pin link";
     els.sharePinsStatus.textContent = "";
+    setSharePinsNotice();
     updateSharePinsButton();
   }, resetDelay);
 }
@@ -7080,14 +7142,41 @@ async function copySharedPinLink() {
     setSharePinsFeedback("Select at least one pin", 1500);
     return;
   }
-  const url = sharedPinUrl(selection);
-  const payloadLength = new URL(url).searchParams.get(SHARED_PINS_PARAM)?.length || 0;
-  if (payloadLength > MAX_SHARED_PINS_PAYLOAD_LENGTH) {
-    setSharePinsFeedback("Too many pins for one link", 2200);
+  if (!SHARE_API_URL) {
+    setSharePinsFeedback("Short-link service is not configured", 4000, "error");
     return;
   }
-  const copied = await copyText(url);
-  setSharePinsFeedback(copied ? "Pin link copied" : "Could not copy pin link");
+  state.sharePinsBusy = true;
+  window.clearTimeout(state.sharePinsResetTimer);
+  els.sharePinsButton.textContent = "Creating short link…";
+  els.sharePinsStatus.textContent = "Creating short link";
+  setSharePinsNotice("Creating a 3-hour link…");
+  updateSharePinsButton();
+  try {
+    const response = await fetch(`${SHARE_API_URL}/v1/shares`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        version: SHARED_PINS_VERSION,
+        selection: sharedPinPayload(selection),
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !SHORT_SHARE_CODE_PATTERN.test(body?.id || "")) {
+      throw new Error(body?.error || `Share service returned ${response.status}`);
+    }
+    const copied = await copyText(shortSharedPinUrl(body.id));
+    setSharePinsFeedback(copied ? "3-hour link copied" : "Could not copy short link", 2600, copied ? "success" : "error");
+  } catch (error) {
+    console.error("Could not create short pin link", error);
+    setSharePinsFeedback("Could not create short link", 3500, "error");
+  } finally {
+    state.sharePinsBusy = false;
+    updateSharePinsButton();
+  }
 }
 
 function itemSelectionState(itemId) {
@@ -8518,7 +8607,10 @@ function switchMap(mapId, preserveSharedPins = false) {
   } else {
     url.searchParams.set("map", mapId);
   }
-  if (!preserveSharedPins) url.searchParams.delete(SHARED_PINS_PARAM);
+  if (!preserveSharedPins) {
+    url.searchParams.delete(SHARED_PINS_PARAM);
+    url.searchParams.delete(SHORT_SHARE_PARAM);
+  }
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
   state.selectedPin = null;
   state.selectedSpawnIndex = null;
@@ -8559,6 +8651,11 @@ function bindEvents() {
     updateMobileSelectionPanel();
     scheduleMobileCatalogStickyIdentity();
     window.requestAnimationFrame(fitMap);
+  });
+  els.sidebarCollapseButton.addEventListener("click", () => setDesktopSidebarCollapsed(true));
+  els.sidebarRestoreButton.addEventListener("click", () => setDesktopSidebarCollapsed(false));
+  DESKTOP_SIDEBAR_QUERY.addEventListener("change", (event) => {
+    if (!event.matches) setDesktopSidebarCollapsed(false);
   });
   els.mapWorkspaceTab.addEventListener("click", () => setSidebarView("map"));
   els.trackingWorkspaceTab.addEventListener("click", () => setSidebarView("tracking"));
@@ -8770,6 +8867,7 @@ async function init() {
     panel: els.teamPanel,
   });
   bindEvents();
+  await loadRequestedShortShareSelection();
   const checklistRequest = fetch(CHECKLIST_URL)
     .then(async (response) => {
       if (!response.ok) throw new Error(`Could not load ${CHECKLIST_URL}`);
@@ -8809,7 +8907,7 @@ async function init() {
   renderChecklist();
   renderSettings();
   renderMapTabs();
-  switchMap(state.activeMapId, Boolean(state.pendingSharedPinSelection));
+  switchMap(state.activeMapId, Boolean(state.pendingSharedPinSelection || REQUESTED_SHORT_SHARE_ID));
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(preloadAniilogData, { timeout: 1500 });
   } else {

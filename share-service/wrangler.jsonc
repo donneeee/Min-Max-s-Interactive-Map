@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aniipedia-map-shares",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-22",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGINS": "https://donneeee.github.io"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aniipedia-map-shares",
+      "database_id": "28ab1c20-2e1b-4782-afbb-68c6a9586525",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["17 * * * *"]
+  }
+}
