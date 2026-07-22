@@ -17,7 +17,12 @@ const MAP_EDGE_MARGIN = 48;
 const MAP_TILE_DETAIL_SCALE = 0.55;
 const PIN_CANVAS_THRESHOLD = 450;
 const CANVAS_HIT_CELL_SIZE = 128;
-const REQUESTED_MAP_ID = new URLSearchParams(window.location.search).get("map");
+const SHARED_PINS_PARAM = "pins";
+const SHARED_PINS_VERSION = 1;
+const MAX_SHARED_PINS_PAYLOAD_LENGTH = 24000;
+const INITIAL_URL_PARAMS = new URLSearchParams(window.location.search);
+const REQUESTED_SHARED_PIN_SELECTION = parseSharedPinSelection(INITIAL_URL_PARAMS.get(SHARED_PINS_PARAM));
+const REQUESTED_MAP_ID = REQUESTED_SHARED_PIN_SELECTION?.mapId || INITIAL_URL_PARAMS.get("map");
 const MOBILE_LAYOUT_QUERY = window.matchMedia(
   "(max-width: 820px), (max-height: 540px) and (pointer: coarse)",
 );
@@ -289,6 +294,8 @@ const state = {
   pendingAniilogLocate: null,
   pendingItemlogLocate: null,
   pendingBossLocate: null,
+  pendingSharedPinSelection: REQUESTED_SHARED_PIN_SELECTION,
+  sharePinsResetTimer: 0,
   pendingReset: false,
   localStorageError: "",
   preferences: defaultPreferences(),
@@ -330,7 +337,9 @@ const els = {
   filterCount: document.querySelector("#filterCount"),
   layerTabs: document.querySelector("#layerTabs"),
   itemList: document.querySelector("#itemList"),
+  desktopSelectionPanel: document.querySelector("#desktopSelectionPanel"),
   selectionCatalogShortcut: document.querySelector("#selectionCatalogShortcut"),
+  selectionCloseButton: document.querySelector("#selectionCloseButton"),
   selectionDetail: document.querySelector("#selectionDetail"),
   mobileSelectionPanel: document.querySelector("#mobileSelectionPanel"),
   mobileSelectionCatalogShortcut: document.querySelector("#mobileSelectionCatalogShortcut"),
@@ -350,6 +359,8 @@ const els = {
   coordinateReadout: document.querySelector("#coordinateReadout"),
   selectAllButton: document.querySelector("#selectAllButton"),
   selectNoneButton: document.querySelector("#selectNoneButton"),
+  sharePinsButton: document.querySelector("#sharePinsButton"),
+  sharePinsStatus: document.querySelector("#sharePinsStatus"),
   zoomInButton: document.querySelector("#zoomInButton"),
   zoomOutButton: document.querySelector("#zoomOutButton"),
   fitButton: document.querySelector("#fitButton"),
@@ -357,6 +368,52 @@ const els = {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function encodeBase64Url(value) {
+  const bytes = new TextEncoder().encode(String(value));
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return window.btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeBase64Url(value) {
+  const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  const binary = window.atob(padded);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function parseSharedPinSelection(value) {
+  if (!value || typeof value !== "string" || value.length > MAX_SHARED_PINS_PAYLOAD_LENGTH) return null;
+  const match = value.match(/^v(\d+)\.([A-Za-z0-9_-]+)$/);
+  if (!match || Number(match[1]) !== SHARED_PINS_VERSION) return null;
+  try {
+    const payload = JSON.parse(decodeBase64Url(match[2]));
+    if (!payload || typeof payload !== "object" || !String(payload.m || "") || !Array.isArray(payload.g)) {
+      return null;
+    }
+    const groups = payload.g.slice(0, 5000).flatMap((group) => {
+      if (!Array.isArray(group) || !String(group[0] ?? "")) return [];
+      const mode = group[1] === "s" || group[1] === "x" ? group[1] : "a";
+      const spawnIds = mode === "a" || !Array.isArray(group[2])
+        ? []
+        : group[2].slice(0, 10000).map(String).filter(Boolean);
+      return [{ itemId: String(group[0]), mode, spawnIds }];
+    });
+    return {
+      mapId: String(payload.m),
+      groups,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function formatNumber(value, digits = 1) {
@@ -2741,6 +2798,34 @@ function createCatalogSection(title) {
   return section;
 }
 
+function addCatalogSectionInfo(section, label, paragraphs) {
+  const heading = section.querySelector(":scope > h3");
+  if (!heading) return;
+
+  const header = document.createElement("div");
+  header.className = "catalog-section-heading";
+
+  const details = document.createElement("details");
+  details.className = "catalog-section-info";
+  const summary = document.createElement("summary");
+  summary.className = "catalog-section-info-button";
+  summary.textContent = "i";
+  summary.setAttribute("aria-label", label);
+  summary.title = label;
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "catalog-section-info-tooltip";
+  paragraphs.forEach((text) => {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = text;
+    tooltip.append(paragraph);
+  });
+
+  heading.replaceWith(header);
+  details.append(summary, tooltip);
+  header.append(heading, details);
+}
+
 const CATALOG_INDEX_ROW_HEIGHT = 72;
 const CATALOG_INDEX_OVERSCAN = 6;
 
@@ -3505,6 +3590,12 @@ function renderCatalogLevels(title, entries, emptyText = "No ability data availa
 function renderCatalogHomelandLevels(entries) {
   const section = createCatalogSection("Homeland abilities");
   section.classList.add("catalog-section--compact", "catalog-homeland-section");
+  addCatalogSectionInfo(section, "About Homeland abilities", [
+    "Homeland abilities are fixed by Aniimo form. Each facility task requires an ability type and level.",
+    "Homeland personality fit is separate from combat personality bonuses. It depends on the individual Aniimo's personality and the selected facility.",
+    "A matching personality applies a 1.2x modifier to the facility workload calculation. Two Aniimo of the same form can therefore perform differently.",
+    "Combat bonuses such as ATK, HP, or Damage Amp do not determine Homeland personality fit.",
+  ]);
   if (!Array.isArray(entries) || !entries.length) {
     const empty = document.createElement("p");
     empty.className = "catalog-empty-detail";
@@ -6193,12 +6284,31 @@ function setMobileSelectionMinimized(minimized) {
   updateMobileSelectionPanel();
 }
 
+function setDesktopSelectionVisible(visible) {
+  els.desktopSelectionPanel.hidden = !visible;
+}
+
+function dismissSelection() {
+  if (state.selectedPin) state.selectedPin.classList.remove("selected");
+  state.selectedPin = null;
+  state.selectedSpawnIndex = null;
+  state.hoveredCanvasIndex = null;
+  clearLocatedSpawn();
+  hideCanvasTooltip();
+  state.mobileSelectionMinimized = true;
+  clearSelectionDetails("No marker selected");
+  setDesktopSelectionVisible(false);
+  updateMobileSelectionPanel();
+  if (state.canvasMode) scheduleCanvasRender();
+}
+
 function clearSelectionDetails(message) {
   [els.selectionDetail, els.mobileSelectionDetail].forEach((detail) => {
     detail.className = "selection empty";
     detail.textContent = message;
   });
   updateSelectionCatalogShortcuts(null, null);
+  if (message !== "No marker selected") setDesktopSelectionVisible(true);
 }
 
 function selectionCatalogKind(spawn, item) {
@@ -6854,6 +6964,132 @@ function spawnSelectionId(spawn) {
   return [spawn.map_id, spawn.item_id, spawn.coordinate_key, spawn.display_name].join("::");
 }
 
+function sharedPinSelectionForActiveMap() {
+  if (!state.data) return null;
+  const groups = [];
+  activeMapItems().forEach((item) => {
+    const selection = itemSelectionState(item.item_id);
+    if (!selection.total || !selection.selected) return;
+    if (selection.selected === selection.total) {
+      groups.push([String(item.item_id)]);
+      return;
+    }
+    const selectedIds = [];
+    const excludedIds = [];
+    selection.entries.forEach(({ spawn }) => {
+      const id = spawnSelectionId(spawn);
+      if (state.disabledSpawnIds.has(id)) excludedIds.push(id);
+      else selectedIds.push(id);
+    });
+    groups.push(selectedIds.length <= excludedIds.length
+      ? [String(item.item_id), "s", selectedIds]
+      : [String(item.item_id), "x", excludedIds]);
+  });
+  if (!groups.length) return null;
+  return {
+    mapId: state.activeMapId,
+    groups,
+  };
+}
+
+function encodeSharedPinSelection(selection) {
+  const payload = {
+    m: selection.mapId,
+    g: selection.groups,
+  };
+  return `v${SHARED_PINS_VERSION}.${encodeBase64Url(JSON.stringify(payload))}`;
+}
+
+function sharedPinUrl(selection) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("map", selection.mapId);
+  url.searchParams.set(SHARED_PINS_PARAM, encodeSharedPinSelection(selection));
+  return url.href;
+}
+
+function applySharedPinSelection(selection) {
+  if (!selection || selection.mapId !== state.activeMapId || !state.data) return false;
+  const mapItems = activeMapItems();
+  if (!mapItems.length) return false;
+  const itemsByShareId = new Map(mapItems.map((item) => [String(item.item_id), item]));
+  const restoredLayers = new Set();
+  state.enabled.clear();
+  state.disabledSpawnIds.clear();
+
+  selection.groups.forEach((group) => {
+    const item = itemsByShareId.get(group.itemId);
+    if (!item) return;
+    const entries = activeMapSpawnEntries(item.item_id);
+    if (!entries.length) return;
+    const requestedIds = new Set(group.spawnIds);
+    const selectedEntries = group.mode === "s"
+      ? entries.filter(({ spawn }) => requestedIds.has(spawnSelectionId(spawn)))
+      : group.mode === "x"
+        ? entries.filter(({ spawn }) => !requestedIds.has(spawnSelectionId(spawn)))
+        : entries;
+    if (!selectedEntries.length) return;
+
+    const selectedIds = new Set(selectedEntries.map(({ spawn }) => spawnSelectionId(spawn)));
+    state.enabled.add(item.item_id);
+    entries.forEach(({ spawn }) => {
+      const id = spawnSelectionId(spawn);
+      if (!selectedIds.has(id)) state.disabledSpawnIds.add(id);
+    });
+    restoredLayers.add(item.layer_id);
+  });
+
+  if (restoredLayers.size === 1) state.activeLayer = [...restoredLayers][0];
+  state.pendingSharedPinSelection = null;
+  return true;
+}
+
+function applyPendingSharedPinSelection() {
+  if (!state.pendingSharedPinSelection) return false;
+  return applySharedPinSelection(state.pendingSharedPinSelection);
+}
+
+function selectedPinCount() {
+  if (!state.data) return 0;
+  return [...state.enabled].reduce((total, itemId) => total + itemSelectionState(itemId).selected, 0);
+}
+
+function updateSharePinsButton() {
+  if (!els.sharePinsButton) return;
+  const count = selectedPinCount();
+  els.sharePinsButton.disabled = count === 0;
+  els.sharePinsButton.title = count
+    ? "Copy a link to the selected pins"
+    : "Select at least one pin to create a link";
+}
+
+function setSharePinsFeedback(message, resetDelay = 1800) {
+  if (!els.sharePinsButton || !els.sharePinsStatus) return;
+  window.clearTimeout(state.sharePinsResetTimer);
+  els.sharePinsButton.textContent = message;
+  els.sharePinsStatus.textContent = message;
+  state.sharePinsResetTimer = window.setTimeout(() => {
+    els.sharePinsButton.textContent = "Copy pin link";
+    els.sharePinsStatus.textContent = "";
+    updateSharePinsButton();
+  }, resetDelay);
+}
+
+async function copySharedPinLink() {
+  const selection = sharedPinSelectionForActiveMap();
+  if (!selection) {
+    setSharePinsFeedback("Select at least one pin", 1500);
+    return;
+  }
+  const url = sharedPinUrl(selection);
+  const payloadLength = new URL(url).searchParams.get(SHARED_PINS_PARAM)?.length || 0;
+  if (payloadLength > MAX_SHARED_PINS_PAYLOAD_LENGTH) {
+    setSharePinsFeedback("Too many pins for one link", 2200);
+    return;
+  }
+  const copied = await copyText(url);
+  setSharePinsFeedback(copied ? "Pin link copied" : "Could not copy pin link");
+}
+
 function itemSelectionState(itemId) {
   const entries = activeMapSpawnEntries(itemId);
   const enabled = state.enabled.has(itemId);
@@ -6913,11 +7149,7 @@ function deselectIndividualSpawn(entry) {
     if (remaining === 0) setItemSelection(spawn.item_id, false);
   }
   if (state.selectedSpawnIndex === index) {
-    state.selectedSpawnIndex = null;
-    state.selectedPin = null;
-    state.mobileSelectionMinimized = true;
-    clearSelectionDetails("No marker selected");
-    updateMobileSelectionPanel();
+    dismissSelection();
   }
   refreshVisibility();
 }
@@ -7510,6 +7742,7 @@ function refreshVisibility() {
   }
 
   updateFilterCount();
+  updateSharePinsButton();
   stabilizeViewport();
 }
 
@@ -7928,6 +8161,7 @@ function selectSpawn(index) {
   if (pin) pin.classList.add("selected");
   state.selectedPin = pin;
   if (state.canvasMode) scheduleCanvasRender();
+  setDesktopSelectionVisible(true);
   renderSelectionDetail(els.selectionDetail, spawn, item);
   renderSelectionDetail(els.mobileSelectionDetail, spawn, item);
   updateSelectionCatalogShortcuts(spawn, item);
@@ -7939,6 +8173,7 @@ function refreshSelectionDetails() {
   const spawn = state.data?.spawns[state.selectedSpawnIndex];
   const item = spawn ? state.data.itemsById.get(spawn.item_id) : null;
   if (!spawn || !item) return;
+  setDesktopSelectionVisible(true);
   renderSelectionDetail(els.selectionDetail, spawn, item);
   renderSelectionDetail(els.mobileSelectionDetail, spawn, item);
   updateSelectionCatalogShortcuts(spawn, item);
@@ -8140,6 +8375,7 @@ function useMapDataset(mapId, dataset) {
     items: dataset?.items || [],
     spawns: dataset?.spawns || [],
   });
+  applyPendingSharedPinSelection();
   renderItems();
   refreshVisibility();
   updateMapMeta();
@@ -8262,7 +8498,7 @@ function scheduleMapDataLoad(mapId, token) {
   }
 }
 
-function switchMap(mapId) {
+function switchMap(mapId, preserveSharedPins = false) {
   if (!state.data.mapsById.has(mapId)) return;
   const loadToken = ++state.mapLoadToken;
   state.activeMapId = mapId;
@@ -8274,6 +8510,7 @@ function switchMap(mapId) {
     items: dataset?.items || [],
     spawns: dataset?.spawns || [],
   });
+  if (dataset) applyPendingSharedPinSelection();
   updateMapTabs();
   const url = new URL(window.location.href);
   if (mapId === state.data.maps[0].id) {
@@ -8281,11 +8518,13 @@ function switchMap(mapId) {
   } else {
     url.searchParams.set("map", mapId);
   }
+  if (!preserveSharedPins) url.searchParams.delete(SHARED_PINS_PARAM);
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
   state.selectedPin = null;
   state.selectedSpawnIndex = null;
   clearLocatedSpawn();
   clearSelectionDetails("No marker selected");
+  setDesktopSelectionVisible(false);
   setMobileSelectionMinimized(true);
   els.coordinateReadout.textContent = "X 0, Y 0";
   const map = currentMap();
@@ -8313,6 +8552,7 @@ function bindEvents() {
     setMobileSelectionMinimized(!state.mobileSelectionMinimized);
   });
   els.selectionCatalogShortcut.addEventListener("click", openSelectedMarkerCatalogEntry);
+  els.selectionCloseButton.addEventListener("click", dismissSelection);
   els.mobileSelectionCatalogShortcut.addEventListener("click", openSelectedMarkerCatalogEntry);
   MOBILE_LAYOUT_QUERY.addEventListener("change", () => {
     if (state.selectedSpawnIndex === null) state.mobileSelectionMinimized = true;
@@ -8352,6 +8592,14 @@ function bindEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && state.settingsOpen) closeSettings();
     if (event.key === "Escape" && state.changelogOpen) closeChangelog();
+    if (
+      event.key === "Escape"
+      && !state.settingsOpen
+      && !state.changelogOpen
+      && state.selectedSpawnIndex !== null
+    ) {
+      dismissSelection();
+    }
   });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) updateTrackingCountdowns();
@@ -8392,6 +8640,7 @@ function bindEvents() {
     state.enabled.clear();
     refreshVisibility();
   });
+  els.sharePinsButton.addEventListener("click", copySharedPinLink);
   els.zoomInButton.addEventListener("click", () => {
     const rect = els.mapViewport.getBoundingClientRect();
     zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, state.scale * 1.25);
@@ -8560,7 +8809,7 @@ async function init() {
   renderChecklist();
   renderSettings();
   renderMapTabs();
-  switchMap(state.activeMapId);
+  switchMap(state.activeMapId, Boolean(state.pendingSharedPinSelection));
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(preloadAniilogData, { timeout: 1500 });
   } else {
