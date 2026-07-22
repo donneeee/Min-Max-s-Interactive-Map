@@ -3017,7 +3017,7 @@ html[data-theme="pawney"] .sidebar {
 #desktopSelectionPanel.is-map-overlay {
   position: absolute;
   z-index: 6;
-  width: clamp(310px, 29vw, 430px);
+  width: clamp(360px, 31vw, 480px);
   max-width: calc(100% - 32px);
   max-height: min(68%, 540px);
   margin: 0;
@@ -3072,19 +3072,11 @@ html[data-theme="pawney"] .sidebar {
   overflow: hidden;
 }
 
-#desktopSelectionPanel.is-map-overlay.is-minimized {
-  width: clamp(430px, 42vw, 650px);
-}
-
 #desktopSelectionPanel.is-minimized .panel-heading {
   margin-bottom: 8px;
 }
 
 #desktopSelectionPanel.is-minimized .selection > :not(.selection-title) {
-  display: none;
-}
-
-#desktopSelectionPanel.is-minimized .selection-catalog-shortcut {
   display: none;
 }
 
@@ -3094,9 +3086,9 @@ html[data-theme="pawney"] .sidebar {
 
 .selection-minimized-coordinates {
   display: none;
-  grid-template-columns: repeat(3, minmax(48px, auto));
-  align-items: stretch;
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(44px, auto));
+  align-items: center;
+  gap: 0;
 }
 
 #desktopSelectionPanel.is-minimized .selection-minimized-coordinates {
@@ -3105,18 +3097,23 @@ html[data-theme="pawney"] .sidebar {
 
 .selection-minimized-coordinate {
   display: grid;
-  min-width: 48px;
-  min-height: 48px;
+  min-width: 44px;
+  min-height: 40px;
   align-content: center;
   justify-items: center;
-  gap: 3px;
+  gap: 4px;
   margin: 0;
-  padding: 0;
+  padding: 0 10px;
   border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   background: transparent;
   color: var(--text);
   font: inherit;
   line-height: 1;
+}
+
+.selection-minimized-coordinate:first-child {
+  border-left: 0;
 }
 
 button.selection-minimized-coordinate {
@@ -3125,16 +3122,12 @@ button.selection-minimized-coordinate {
 
 .selection-minimized-coordinate-label,
 .selection-minimized-coordinate-value {
-  box-sizing: border-box;
-  min-width: 34px;
-  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--background) 78%, var(--panel-2));
+  min-width: 0;
   text-align: center;
 }
 
 .selection-minimized-coordinate-label {
-  padding: 4px 7px;
+  padding: 0;
   color: var(--muted);
   font-size: 10px;
   font-weight: 800;
@@ -3142,7 +3135,7 @@ button.selection-minimized-coordinate {
 }
 
 .selection-minimized-coordinate-value {
-  padding: 4px 7px;
+  padding: 0;
   font-size: 12px;
 }
 
@@ -3150,8 +3143,31 @@ button.selection-minimized-coordinate:hover .selection-minimized-coordinate-labe
 button.selection-minimized-coordinate:hover .selection-minimized-coordinate-value,
 button.selection-minimized-coordinate:focus-visible .selection-minimized-coordinate-label,
 button.selection-minimized-coordinate:focus-visible .selection-minimized-coordinate-value {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, var(--panel-2));
+  color: var(--accent);
+}
+
+button.selection-minimized-coordinate:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -3px;
+}
+
+#desktopSelectionPanel.is-minimized .selection-title-copy {
+  min-width: 0;
+  overflow: hidden;
+}
+
+#desktopSelectionPanel.is-minimized .selection-name,
+#desktopSelectionPanel.is-minimized .selection-subtitle-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#desktopSelectionPanel.is-minimized .selection-subtitle {
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 #desktopSelectionPanel.is-sidebar-placement.is-minimized .selection-title {
@@ -7342,14 +7358,10 @@ button.catalog-item-reference {
 
   .mobile-selection-panel.is-minimized .selection {
     display: grid;
-    padding-right: 100px;
+    padding-right: 228px;
   }
 
   .mobile-selection-panel.is-minimized .selection > :not(.selection-title) {
-    display: none;
-  }
-
-  .mobile-selection-panel.is-minimized .selection-catalog-shortcut {
     display: none;
   }
 
@@ -7420,14 +7432,13 @@ button.catalog-item-reference {
   }
 
   .mobile-selection-panel.is-minimized .mobile-selection-heading h2,
-  .mobile-selection-panel.is-minimized .selection > :not(.selection-title),
-  .mobile-selection-panel.is-minimized .selection-catalog-shortcut {
+  .mobile-selection-panel.is-minimized .selection > :not(.selection-title) {
     display: none;
   }
 
   .mobile-selection-panel.is-minimized .selection {
     display: grid;
-    padding-right: 100px;
+    padding-right: 228px;
   }
 
   .mobile-selection-toggle,
