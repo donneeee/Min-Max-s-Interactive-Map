@@ -6727,6 +6727,37 @@ button.catalog-item-reference {
   display: none;
 }
 
+.map-underground-plan-toggle {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(var(--background-rgb), 0.84);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.map-underground-plan-toggle strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.map-underground-plan-toggle:hover,
+.map-underground-plan-toggle:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--accent) 12%);
+}
+
+.map-underground-plan-toggle[hidden] {
+  display: none;
+}
+
 .map-viewport {
   position: absolute;
   inset: 0;
@@ -6794,10 +6825,22 @@ button.catalog-item-reference {
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
+  background: rgb(5 9 13 / 56%);
 }
 
 .map-underground-layer[hidden] {
   display: none;
+}
+
+.map-underground-plan {
+  position: absolute;
+  inset: 0;
+  opacity: 0.24;
+  transition: opacity 140ms ease;
+}
+
+.map-underground-plan.is-foreground {
+  opacity: 1;
 }
 
 .map-underground-tile {

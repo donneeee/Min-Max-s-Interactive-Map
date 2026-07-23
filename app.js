@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
-const APP_VERSION = "v0.5.7";
+const APP_VERSION = "v0.5.8";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -37,18 +37,37 @@ const UNDERGROUND_MAP_LAYERS = Object.freeze({
   "country-of-time": Object.freeze({
     offIcon: "./assets/icons/map-layer-underground-off.png",
     onIcon: "./assets/icons/map-layer-underground-on.png",
-    tiles: Object.freeze([
-      { src: "./assets/maps/underground/breezy-plains/underground-01.png", left: 928, top: 1792, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-02.png", left: 928, top: 2048, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-03.png", left: 1184, top: 1792, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-04.png", left: 1184, top: 2048, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-05.png", left: 1184, top: 2304, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-06.png", left: 1440, top: 1792, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-07.png", left: 1440, top: 2048, width: 256, height: 256 },
-      { src: "./assets/maps/underground/breezy-plains/underground-08.png", left: -96, top: 1024, width: 1024, height: 1024 },
-      { src: "./assets/maps/underground/breezy-plains/underground-09.png", left: 928, top: 1024, width: 1024, height: 1024 },
-      { src: "./assets/maps/underground/breezy-plains/underground-10.png", left: 928, top: 1024, width: 1024, height: 1024 },
-      { src: "./assets/maps/underground/breezy-plains/underground-11.png", left: 928, top: 2048, width: 1024, height: 1024 },
+    defaultPlanId: "path-2",
+    plans: Object.freeze([
+      Object.freeze({
+        id: "path-1",
+        label: "Path 1",
+        tiles: Object.freeze([
+          { src: "./assets/maps/underground/breezy-plains/underground-08.png", left: -96, top: 1024, width: 1024, height: 1024 },
+          { src: "./assets/maps/underground/breezy-plains/underground-09.png", left: 928, top: 1024, width: 1024, height: 1024 },
+        ]),
+      }),
+      Object.freeze({
+        id: "path-2",
+        label: "Path 2",
+        tiles: Object.freeze([
+          { src: "./assets/maps/underground/breezy-plains/underground-10.png", left: 928, top: 1024, width: 1024, height: 1024 },
+          { src: "./assets/maps/underground/breezy-plains/underground-11.png", left: 928, top: 2048, width: 1024, height: 1024 },
+        ]),
+      }),
+      Object.freeze({
+        id: "path-3",
+        label: "Path 3",
+        tiles: Object.freeze([
+          { src: "./assets/maps/underground/breezy-plains/underground-01.png", left: 928, top: 1792, width: 256, height: 256 },
+          { src: "./assets/maps/underground/breezy-plains/underground-02.png", left: 928, top: 2048, width: 256, height: 256 },
+          { src: "./assets/maps/underground/breezy-plains/underground-03.png", left: 1184, top: 1792, width: 256, height: 256 },
+          { src: "./assets/maps/underground/breezy-plains/underground-04.png", left: 1184, top: 2048, width: 256, height: 256 },
+          { src: "./assets/maps/underground/breezy-plains/underground-05.png", left: 1184, top: 2304, width: 256, height: 256 },
+          { src: "./assets/maps/underground/breezy-plains/underground-06.png", left: 1440, top: 1792, width: 256, height: 256 },
+          { src: "./assets/maps/underground/breezy-plains/underground-07.png", left: 1440, top: 2048, width: 256, height: 256 },
+        ]),
+      }),
     ]),
   }),
 });
@@ -254,6 +273,7 @@ const state = {
   renderedMapGroups: new Map(),
   activeMapId: REQUESTED_MAP_ID || "country-of-time",
   undergroundLayerVisible: false,
+  undergroundForegroundPlans: new Map(),
   activeLayer: "items",
   search: "",
   scale: 1,
@@ -409,6 +429,8 @@ const els = {
   coordinateReadout: document.querySelector("#coordinateReadout"),
   undergroundLayerToggle: document.querySelector("#undergroundLayerToggle"),
   undergroundLayerToggleIcon: document.querySelector("#undergroundLayerToggleIcon"),
+  undergroundPlanToggle: document.querySelector("#undergroundPlanToggle"),
+  undergroundPlanToggleLabel: document.querySelector("#undergroundPlanToggleLabel"),
   selectAllButton: document.querySelector("#selectAllButton"),
   selectNoneButton: document.querySelector("#selectNoneButton"),
   sharePinsButton: document.querySelector("#sharePinsButton"),
@@ -6420,11 +6442,38 @@ function undergroundLayerForCurrentMap() {
   return UNDERGROUND_MAP_LAYERS[state.activeMapId] || null;
 }
 
+function selectedUndergroundPlanIndex(layer = undergroundLayerForCurrentMap()) {
+  if (!layer?.plans?.length) return -1;
+  const selectedId = state.undergroundForegroundPlans.get(state.activeMapId) || layer.defaultPlanId;
+  const selectedIndex = layer.plans.findIndex((plan) => plan.id === selectedId);
+  return selectedIndex >= 0 ? selectedIndex : 0;
+}
+
+function updateUndergroundPlanOrdering() {
+  const layer = undergroundLayerForCurrentMap();
+  const selectedIndex = selectedUndergroundPlanIndex(layer);
+  const selectedPlan = layer?.plans?.[selectedIndex];
+  els.mapUndergroundLayer.querySelectorAll(".map-underground-plan").forEach((planElement, index) => {
+    const foreground = index === selectedIndex;
+    planElement.classList.toggle("is-foreground", foreground);
+    planElement.style.zIndex = foreground ? String(layer.plans.length + 1) : String(index + 1);
+  });
+
+  if (!selectedPlan) return;
+  state.undergroundForegroundPlans.set(state.activeMapId, selectedPlan.id);
+  els.undergroundPlanToggleLabel.textContent = `${selectedIndex + 1} / ${layer.plans.length}`;
+  const nextIndex = (selectedIndex + 1) % layer.plans.length;
+  const label = `${selectedPlan.label} is in front. Bring ${layer.plans[nextIndex].label} to front`;
+  els.undergroundPlanToggle.setAttribute("aria-label", label);
+  els.undergroundPlanToggle.title = label;
+}
+
 function updateUndergroundMapLayerVisibility() {
   const layer = undergroundLayerForCurrentMap();
   const visible = Boolean(layer && state.undergroundLayerVisible);
   els.mapUndergroundLayer.hidden = !visible;
   els.undergroundLayerToggle.hidden = !layer;
+  els.undergroundPlanToggle.hidden = !visible || (layer?.plans?.length || 0) < 2;
   els.undergroundLayerToggle.setAttribute("aria-pressed", String(visible));
   const label = visible ? "Hide underground map" : "Show underground map";
   els.undergroundLayerToggle.setAttribute("aria-label", label);
@@ -6439,20 +6488,27 @@ function renderUndergroundMapLayer() {
   els.mapUndergroundLayer.replaceChildren();
   if (layer) {
     const fragment = document.createDocumentFragment();
-    layer.tiles.forEach((tile) => {
-      const image = document.createElement("img");
-      image.className = "map-underground-tile";
-      image.src = tile.src;
-      image.alt = "";
-      image.draggable = false;
-      image.setAttribute("aria-hidden", "true");
-      image.style.left = `${tile.left}px`;
-      image.style.top = `${tile.top}px`;
-      image.style.width = `${tile.width}px`;
-      image.style.height = `${tile.height}px`;
-      fragment.append(image);
+    layer.plans.forEach((plan) => {
+      const planElement = document.createElement("div");
+      planElement.className = "map-underground-plan";
+      planElement.dataset.planId = plan.id;
+      plan.tiles.forEach((tile) => {
+        const image = document.createElement("img");
+        image.className = "map-underground-tile";
+        image.src = tile.src;
+        image.alt = "";
+        image.draggable = false;
+        image.setAttribute("aria-hidden", "true");
+        image.style.left = `${tile.left}px`;
+        image.style.top = `${tile.top}px`;
+        image.style.width = `${tile.width}px`;
+        image.style.height = `${tile.height}px`;
+        planElement.append(image);
+      });
+      fragment.append(planElement);
     });
     els.mapUndergroundLayer.append(fragment);
+    updateUndergroundPlanOrdering();
   }
   updateUndergroundMapLayerVisibility();
 }
@@ -9113,6 +9169,13 @@ function bindEvents() {
     if (!undergroundLayerForCurrentMap()) return;
     state.undergroundLayerVisible = !state.undergroundLayerVisible;
     updateUndergroundMapLayerVisibility();
+  });
+  els.undergroundPlanToggle.addEventListener("click", () => {
+    const layer = undergroundLayerForCurrentMap();
+    if (!layer?.plans?.length) return;
+    const nextIndex = (selectedUndergroundPlanIndex(layer) + 1) % layer.plans.length;
+    state.undergroundForegroundPlans.set(state.activeMapId, layer.plans[nextIndex].id);
+    updateUndergroundPlanOrdering();
   });
   els.mapViewport.addEventListener("wheel", (event) => {
     event.preventDefault();
