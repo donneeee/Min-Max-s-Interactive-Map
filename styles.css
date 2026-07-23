@@ -6835,12 +6835,11 @@ button.catalog-item-reference {
 .map-underground-plan {
   position: absolute;
   inset: 0;
-  opacity: 0.24;
-  transition: opacity 140ms ease;
+  opacity: 1;
 }
 
-.map-underground-plan.is-foreground {
-  opacity: 1;
+.map-underground-plan[hidden] {
+  display: none;
 }
 
 .map-underground-tile {

@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
-const APP_VERSION = "v0.5.8";
+const APP_VERSION = "v0.5.9";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -41,7 +41,7 @@ const UNDERGROUND_MAP_LAYERS = Object.freeze({
     plans: Object.freeze([
       Object.freeze({
         id: "path-1",
-        label: "Path 1",
+        label: "Minespine",
         tiles: Object.freeze([
           { src: "./assets/maps/underground/breezy-plains/underground-08.png", left: -96, top: 1024, width: 1024, height: 1024 },
           { src: "./assets/maps/underground/breezy-plains/underground-09.png", left: 928, top: 1024, width: 1024, height: 1024 },
@@ -49,23 +49,10 @@ const UNDERGROUND_MAP_LAYERS = Object.freeze({
       }),
       Object.freeze({
         id: "path-2",
-        label: "Path 2",
+        label: "Crystal Cave / Mistrider",
         tiles: Object.freeze([
           { src: "./assets/maps/underground/breezy-plains/underground-10.png", left: 928, top: 1024, width: 1024, height: 1024 },
           { src: "./assets/maps/underground/breezy-plains/underground-11.png", left: 928, top: 2048, width: 1024, height: 1024 },
-        ]),
-      }),
-      Object.freeze({
-        id: "path-3",
-        label: "Path 3",
-        tiles: Object.freeze([
-          { src: "./assets/maps/underground/breezy-plains/underground-01.png", left: 928, top: 1792, width: 256, height: 256 },
-          { src: "./assets/maps/underground/breezy-plains/underground-02.png", left: 928, top: 2048, width: 256, height: 256 },
-          { src: "./assets/maps/underground/breezy-plains/underground-03.png", left: 1184, top: 1792, width: 256, height: 256 },
-          { src: "./assets/maps/underground/breezy-plains/underground-04.png", left: 1184, top: 2048, width: 256, height: 256 },
-          { src: "./assets/maps/underground/breezy-plains/underground-05.png", left: 1184, top: 2304, width: 256, height: 256 },
-          { src: "./assets/maps/underground/breezy-plains/underground-06.png", left: 1440, top: 1792, width: 256, height: 256 },
-          { src: "./assets/maps/underground/breezy-plains/underground-07.png", left: 1440, top: 2048, width: 256, height: 256 },
         ]),
       }),
     ]),
@@ -6456,14 +6443,15 @@ function updateUndergroundPlanOrdering() {
   els.mapUndergroundLayer.querySelectorAll(".map-underground-plan").forEach((planElement, index) => {
     const foreground = index === selectedIndex;
     planElement.classList.toggle("is-foreground", foreground);
-    planElement.style.zIndex = foreground ? String(layer.plans.length + 1) : String(index + 1);
+    planElement.hidden = !foreground;
+    planElement.style.zIndex = foreground ? "1" : "0";
   });
 
   if (!selectedPlan) return;
   state.undergroundForegroundPlans.set(state.activeMapId, selectedPlan.id);
-  els.undergroundPlanToggleLabel.textContent = `${selectedIndex + 1} / ${layer.plans.length}`;
+  els.undergroundPlanToggleLabel.textContent = selectedPlan.label;
   const nextIndex = (selectedIndex + 1) % layer.plans.length;
-  const label = `${selectedPlan.label} is in front. Bring ${layer.plans[nextIndex].label} to front`;
+  const label = `Showing ${selectedPlan.label}. Switch to ${layer.plans[nextIndex].label}`;
   els.undergroundPlanToggle.setAttribute("aria-label", label);
   els.undergroundPlanToggle.title = label;
 }
