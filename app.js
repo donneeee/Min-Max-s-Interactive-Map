@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
-const APP_VERSION = "v0.5.12";
+const APP_VERSION = "v0.5.13";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -78,6 +78,58 @@ const UNDERGROUND_MAP_LAYERS = Object.freeze({
             top: 672,
             width: 648,
             height: 342,
+          },
+        ]),
+      }),
+      Object.freeze({
+        id: "path-5",
+        label: "Mistwoods Underground / Rigged Maze",
+        tiles: Object.freeze([
+          {
+            src: "./assets/maps/underground/breezy-plains/mistwoods-boundary.png?v=20260723-underground-spaces-v001",
+            left: 1526,
+            top: 1193,
+            width: 136,
+            height: 131,
+          },
+        ]),
+      }),
+      Object.freeze({
+        id: "path-6",
+        label: "Yellow Forest Hidden Cave",
+        tiles: Object.freeze([
+          {
+            src: "./assets/maps/underground/breezy-plains/yellow-forest-cave-boundary.png?v=20260723-underground-spaces-v001",
+            left: 1817,
+            top: 2191,
+            width: 247,
+            height: 225,
+          },
+        ]),
+      }),
+      Object.freeze({
+        id: "path-7",
+        label: "Sea of Flowers Underground",
+        tiles: Object.freeze([
+          {
+            src: "./assets/maps/underground/breezy-plains/sea-of-flowers-underground-boundary.png?v=20260723-underground-spaces-v001",
+            left: 2551,
+            top: 1549,
+            width: 169,
+            height: 193,
+          },
+        ]),
+      }),
+      Object.freeze({
+        id: "path-8",
+        label: "Sparkling Butterfly Cave",
+        tiles: Object.freeze([
+          {
+            src: "./assets/maps/underground/breezy-plains/sparkling-butterfly-cave-boundary.png?v=20260723-underground-spaces-v001",
+            left: 1501,
+            top: 1343,
+            width: 137,
+            height: 119,
           },
         ]),
       }),
