@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
-const APP_VERSION = "v0.5.11";
+const APP_VERSION = "v0.5.12";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
