@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dig spot">
+  <defs>
+    <linearGradient id="soil" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b6848"/>
+      <stop offset="1" stop-color="#4c3527"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f7f8"/>
+      <stop offset="1" stop-color="#9aa9b1"/>
+    </linearGradient>
+  </defs>
+  <path d="M7 50c5-9 14-14 25-14s20 5 25 14c-8 5-16 7-25 7S15 55 7 50Z" fill="url(#soil)"/>
+  <path d="m38 9 5 3-22 36-5-3L38 9Z" fill="#c98b4b"/>
+  <path d="M39 6c4-3 9-2 12 1s3 8 0 12l-5-3c1-2 1-4-1-5s-3-1-5 0l-1-5Z" fill="#d9a66a"/>
+  <path d="M17 39c5 0 10 3 13 7l-8 12c-8-3-13-9-14-16l9-3Z" fill="url(#metal)" stroke="#eaf2f5" stroke-width="2"/>
+  <path d="m47 28 2.2 4.8L54 35l-4.8 2.2L47 42l-2.2-4.8L40 35l4.8-2.2L47 28Z" fill="#ffd66b"/>
+</svg>
