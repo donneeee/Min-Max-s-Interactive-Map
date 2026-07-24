@@ -1,0 +1,47 @@
+.itemlog-maintenance-target {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+#itemlogWorkspaceTab.itemlog-maintenance-target {
+  position: relative;
+  filter: saturate(0.45);
+}
+
+.itemlog-maintenance-dialog {
+  width: min(31rem, calc(100vw - 2rem));
+  min-height: 0;
+}
+
+.itemlog-maintenance-copy {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.25rem 0.1rem 0.35rem;
+  color: var(--text-muted, #b5c0c5);
+  line-height: 1.55;
+}
+
+.itemlog-maintenance-copy p {
+  margin: 0;
+}
+
+.itemlog-maintenance-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.4rem;
+}
+
+.itemlog-maintenance-close {
+  min-width: 7rem;
+}
+
+@media (max-width: 560px) {
+  .itemlog-maintenance-dialog {
+    width: 100%;
+  }
+
+  .itemlog-maintenance-actions,
+  .itemlog-maintenance-close {
+    width: 100%;
+  }
+}
