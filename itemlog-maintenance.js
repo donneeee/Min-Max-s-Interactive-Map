@@ -43,8 +43,7 @@
           <button class="settings-close-button" type="button" data-itemlog-maintenance-close aria-label="Close Item-log maintenance notice">&times;</button>
         </div>
         <div class="itemlog-maintenance-copy">
-          <p id="itemlogMaintenanceDescription">The Item-log is temporarily unavailable while its beta item list is reviewed.</p>
-          <p>It will return after entries that are not available in the current beta have been removed.</p>
+          <p id="itemlogMaintenanceDescription">The Item-log is currently under maintenance.</p>
         </div>
         <div class="itemlog-maintenance-actions">
           <button class="settings-reset-button itemlog-maintenance-close" type="button" data-itemlog-maintenance-close>Close</button>
