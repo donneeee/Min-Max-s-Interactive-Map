@@ -2,7 +2,7 @@ const DATA_URL = "./data/map_site_data.json?v=20260720-fixed-collectible-links-v
 const CHECKLIST_URL = "./data/checklist_data.json?v=20260719-lumen-embers-v001";
 const ITEMLOG_DATA_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
 const ANIILOG_DATA_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
-const APP_VERSION = "v0.5.20";
+const APP_VERSION = "v0.5.21";
 const GITHUB_COMMITS_URL = "https://api.github.com/repos/donneeee/MinMax-Aniipedia/commits?sha=main&per_page=30";
 const CHANGELOG_INTERNAL_MARKER_RE = /\[(?:skip changelog|internal)\]/i;
 const CHANGELOG_PUBLIC_ENTRY_LIMIT = 12;
@@ -21,12 +21,16 @@ const SHARED_PINS_PARAM = "pins";
 const SHARED_PINS_VERSION = 1;
 const MAX_SHARED_PINS_PAYLOAD_LENGTH = 24000;
 const SHORT_SHARE_PARAM = "s";
+const TEAM_SHARE_PARAM = "team";
 const SHORT_SHARE_CODE_PATTERN = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8}$/;
 const SHARE_API_URL = String(window.ANIIPEDIA_CONFIG?.shareApiUrl || "").replace(/\/+$/, "");
 const INITIAL_URL_PARAMS = new URLSearchParams(window.location.search);
 const REQUESTED_SHARED_PIN_SELECTION = parseSharedPinSelection(INITIAL_URL_PARAMS.get(SHARED_PINS_PARAM));
 const REQUESTED_SHORT_SHARE_ID = SHORT_SHARE_CODE_PATTERN.test(INITIAL_URL_PARAMS.get(SHORT_SHARE_PARAM) || "")
   ? INITIAL_URL_PARAMS.get(SHORT_SHARE_PARAM)
+  : "";
+const REQUESTED_TEAM_SHARE_ID = SHORT_SHARE_CODE_PATTERN.test(INITIAL_URL_PARAMS.get(TEAM_SHARE_PARAM) || "")
+  ? INITIAL_URL_PARAMS.get(TEAM_SHARE_PARAM)
   : "";
 const REQUESTED_MAP_ID = REQUESTED_SHARED_PIN_SELECTION?.mapId || INITIAL_URL_PARAMS.get("map");
 const MOBILE_LAYOUT_QUERY = window.matchMedia(
@@ -356,7 +360,7 @@ const state = {
   desktopSelectionMinimized: false,
   desktopSelectionDrag: null,
   sidebarCollapsed: false,
-  sidebarView: "map",
+  sidebarView: REQUESTED_TEAM_SHARE_ID ? "team" : "map",
   settingsOpen: false,
   settingsFocusReturn: null,
   settingsThemeDraft: null,

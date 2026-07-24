@@ -1,10 +1,32 @@
-const SHARE_LIFETIME_SECONDS = 3 * 60 * 60;
+const DEFAULT_MAP_SHARE_LIFETIME_SECONDS = 3 * 60 * 60;
+const DEFAULT_TEAM_SHARE_LIFETIME_SECONDS = 30 * 24 * 60 * 60;
 const MAX_REQUEST_BYTES = 1_500_000;
 const MAX_GROUPS = 5_000;
 const MAX_SPAWN_IDS = 20_000;
 const SHARE_CODE_LENGTH = 8;
 const SHARE_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const SHARE_CODE_PATTERN = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8}$/;
+
+function configuredLifetimeSeconds(env, name, fallback) {
+  const configured = String(env?.[name] ?? "").trim();
+  if (!configured) return fallback;
+  const seconds = Number(configured);
+  return Number.isFinite(seconds) && seconds >= 0 ? Math.floor(seconds) : fallback;
+}
+
+function shareLifetimeSeconds(env, selection) {
+  return selection.t === "team"
+    ? configuredLifetimeSeconds(
+      env,
+      "TEAM_SHARE_LIFETIME_SECONDS",
+      DEFAULT_TEAM_SHARE_LIFETIME_SECONDS,
+    )
+    : configuredLifetimeSeconds(
+      env,
+      "MAP_SHARE_LIFETIME_SECONDS",
+      DEFAULT_MAP_SHARE_LIFETIME_SECONDS,
+    );
+}
 
 function jsonResponse(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -178,15 +200,15 @@ async function createShare(request, env) {
 
   const payload = JSON.stringify(selection);
   const now = Math.floor(Date.now() / 1000);
-  const permanent = selection.t === "team";
-  const expiresAt = permanent ? 0 : now + SHARE_LIFETIME_SECONDS;
+  const lifetimeSeconds = shareLifetimeSeconds(env, selection);
+  const expiresAt = lifetimeSeconds > 0 ? now + lifetimeSeconds : 0;
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const id = randomShareCode();
     try {
       await env.DB.prepare(
         "INSERT INTO pin_shares (id, payload, created_at, expires_at) VALUES (?, ?, ?, ?)",
       ).bind(id, payload, now, expiresAt).run();
-      return jsonResponse({ id, expiresAt: permanent ? null : expiresAt }, 201, cors);
+      return jsonResponse({ id, expiresAt: expiresAt || null }, 201, cors);
     } catch (error) {
       if (!String(error?.message || error).toLowerCase().includes("unique")) throw error;
     }
@@ -222,10 +244,20 @@ async function handleRequest(request, env) {
   const cors = corsHeaders(request, env);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (url.pathname === "/health" && request.method === "GET") {
+    const mapLifetimeSeconds = configuredLifetimeSeconds(
+      env,
+      "MAP_SHARE_LIFETIME_SECONDS",
+      DEFAULT_MAP_SHARE_LIFETIME_SECONDS,
+    );
+    const teamLifetimeSeconds = configuredLifetimeSeconds(
+      env,
+      "TEAM_SHARE_LIFETIME_SECONDS",
+      DEFAULT_TEAM_SHARE_LIFETIME_SECONDS,
+    );
     return jsonResponse({
       ok: true,
-      mapLifetimeSeconds: SHARE_LIFETIME_SECONDS,
-      teamLifetimeSeconds: null,
+      mapLifetimeSeconds: mapLifetimeSeconds || null,
+      teamLifetimeSeconds: teamLifetimeSeconds || null,
     }, 200, cors);
   }
   if (url.pathname === "/v1/shares" && request.method === "POST") return createShare(request, env);

@@ -4,7 +4,12 @@
   const ANIILOG_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
   const ITEMLOG_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
   const MECHANICS_URL = "./data/team_builder_mechanics.json?v=20260723-reviewed-v001";
-  const STORAGE_KEY = "minmax-aniipedia:team-builder:v1";
+  const LEGACY_STORAGE_KEY = "minmax-aniipedia:team-builder:v1";
+  const LOADOUTS_STORAGE_KEY = "minmax-aniipedia:team-loadouts:v1";
+  const LOADOUT_FILE_FORMAT = "aniipedia-team-loadout";
+  const LOADOUT_FILE_VERSION = 1;
+  const MAX_LOCAL_LOADOUTS = 50;
+  const MAX_LOADOUT_FILE_BYTES = 512 * 1024;
   const TEAM_SHARE_PARAM = "team";
   const TEAM_SHARE_VERSION = 1;
   const SHORT_SHARE_CODE_PATTERN = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8}$/;
@@ -112,7 +117,8 @@
   let requestedTeamShareLoaded = false;
   let shareBusy = false;
   let shareStatus = "";
-  let model = loadModel();
+  let loadoutStore = loadLoadoutStore();
+  let model = activeLoadout().model;
 
   function defaultMember() {
     return {
@@ -171,15 +177,6 @@
     };
   }
 
-  function loadModel() {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
-      return normalizeModel(saved);
-    } catch {
-      return defaultModel();
-    }
-  }
-
   function normalizeRunes(value) {
     if (Array.isArray(value)) {
       return Object.fromEntries(value.slice(0, 6).flatMap((slot) => {
@@ -222,12 +219,157 @@
     };
   }
 
-  function persist() {
+  function loadoutId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return `team-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function cleanLoadoutName(value, fallback = "Team") {
+    const name = String(value || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    return name || fallback;
+  }
+
+  function normalizeLoadout(value, index) {
+    return {
+      id: String(value?.id || loadoutId()),
+      name: cleanLoadoutName(value?.name, `Team ${index + 1}`),
+      createdAt: String(value?.createdAt || new Date().toISOString()),
+      updatedAt: String(value?.updatedAt || value?.createdAt || new Date().toISOString()),
+      sourceShareId: SHORT_SHARE_CODE_PATTERN.test(String(value?.sourceShareId || ""))
+        ? String(value.sourceShareId)
+        : "",
+      model: normalizeModel(value?.model),
+    };
+  }
+
+  function normalizeLoadoutStore(value, legacyModel = null) {
+    const savedLoadouts = Array.isArray(value?.loadouts)
+      ? value.loadouts.slice(0, MAX_LOCAL_LOADOUTS).map(normalizeLoadout)
+      : [];
+    const loadouts = savedLoadouts.length
+      ? savedLoadouts
+      : [normalizeLoadout({ name: "Team 1", model: legacyModel || defaultModel() }, 0)];
+    const requestedActiveId = String(value?.activeId || "");
+    return {
+      version: 1,
+      activeId: loadouts.some((loadout) => loadout.id === requestedActiveId)
+        ? requestedActiveId
+        : loadouts[0].id,
+      loadouts,
+    };
+  }
+
+  function loadLoadoutStore() {
+    let saved = null;
+    let legacyModel = null;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(model));
+      saved = JSON.parse(window.localStorage.getItem(LOADOUTS_STORAGE_KEY) || "null");
+    } catch {
+      saved = null;
+    }
+    if (!Array.isArray(saved?.loadouts) || !saved.loadouts.length) {
+      try {
+        const legacy = JSON.parse(window.localStorage.getItem(LEGACY_STORAGE_KEY) || "null");
+        if (legacy && typeof legacy === "object") legacyModel = normalizeModel(legacy);
+      } catch {
+        legacyModel = null;
+      }
+    }
+    const store = normalizeLoadoutStore(saved, legacyModel);
+    try {
+      window.localStorage.setItem(LOADOUTS_STORAGE_KEY, JSON.stringify(store));
+      if (legacyModel) window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch {
       // The builder remains usable for the current visit if storage is unavailable.
     }
+    return store;
+  }
+
+  function activeLoadout() {
+    return loadoutStore.loadouts.find((loadout) => loadout.id === loadoutStore.activeId)
+      || loadoutStore.loadouts[0];
+  }
+
+  function persistLoadoutStore() {
+    try {
+      window.localStorage.setItem(LOADOUTS_STORAGE_KEY, JSON.stringify(loadoutStore));
+    } catch {
+      // The builder remains usable for the current visit if storage is unavailable.
+    }
+  }
+
+  function persist() {
+    const loadout = activeLoadout();
+    model = normalizeModel(model);
+    loadout.model = model;
+    loadout.updatedAt = new Date().toISOString();
+    persistLoadoutStore();
+  }
+
+  function uniqueLoadoutName(requestedName) {
+    const base = cleanLoadoutName(requestedName, `Team ${loadoutStore.loadouts.length + 1}`);
+    const names = new Set(loadoutStore.loadouts.map((loadout) => loadout.name.toLocaleLowerCase()));
+    if (!names.has(base.toLocaleLowerCase())) return base;
+    let suffix = 2;
+    while (names.has(`${base} ${suffix}`.toLocaleLowerCase())) suffix += 1;
+    return `${base} ${suffix}`;
+  }
+
+  function createLoadout(name, initialModel = defaultModel(), sourceShareId = "") {
+    if (loadoutStore.loadouts.length >= MAX_LOCAL_LOADOUTS) {
+      throw new Error(`You can save up to ${MAX_LOCAL_LOADOUTS} local team loadouts.`);
+    }
+    const now = new Date().toISOString();
+    const loadout = normalizeLoadout({
+      id: loadoutId(),
+      name: uniqueLoadoutName(name),
+      createdAt: now,
+      updatedAt: now,
+      sourceShareId,
+      model: initialModel,
+    }, loadoutStore.loadouts.length);
+    loadoutStore.loadouts.push(loadout);
+    loadoutStore.activeId = loadout.id;
+    model = loadout.model;
+    persistLoadoutStore();
+    return loadout;
+  }
+
+  function switchLoadout(id) {
+    persist();
+    const loadout = loadoutStore.loadouts.find((entry) => entry.id === id);
+    if (!loadout) return;
+    loadoutStore.activeId = loadout.id;
+    model = normalizeModel(loadout.model);
+    loadout.model = model;
+    shareStatus = `Loaded ${loadout.name}.`;
+    persistLoadoutStore();
+    render();
+  }
+
+  function createNewLoadout() {
+    try {
+      const loadout = createLoadout(`Team ${loadoutStore.loadouts.length + 1}`);
+      shareStatus = `${loadout.name} created. Changes save automatically.`;
+    } catch (error) {
+      shareStatus = error instanceof Error ? error.message : String(error);
+    }
+    render();
+  }
+
+  function renameActiveLoadout() {
+    const loadout = activeLoadout();
+    const requested = window.prompt("Team loadout name:", loadout.name);
+    if (requested === null) return;
+    const nextName = cleanLoadoutName(requested, loadout.name);
+    const duplicate = loadoutStore.loadouts.some((entry) => (
+      entry.id !== loadout.id && entry.name.toLocaleLowerCase() === nextName.toLocaleLowerCase()
+    ));
+    loadout.name = duplicate ? uniqueLoadoutName(nextName) : nextName;
+    loadout.updatedAt = new Date().toISOString();
+    shareStatus = `Renamed to ${loadout.name}.`;
+    persistLoadoutStore();
+    render();
   }
 
   function teamShareSelection() {
@@ -261,6 +403,85 @@
     };
   }
 
+  function safeFileName(value) {
+    const safe = cleanLoadoutName(value, "team")
+      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+      .replace(/[. ]+$/g, "")
+      .slice(0, 80);
+    return safe || "team";
+  }
+
+  function exportActiveLoadout() {
+    persist();
+    const loadout = activeLoadout();
+    const payload = {
+      format: LOADOUT_FILE_FORMAT,
+      version: LOADOUT_FILE_VERSION,
+      name: loadout.name,
+      team: teamShareSelection(),
+    };
+    const blob = new Blob([JSON.stringify(payload)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${safeFileName(loadout.name)}.aniiteam`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    shareStatus = `${loadout.name} exported.`;
+    render();
+  }
+
+  function importedLoadoutPayload(value) {
+    const wrapper = value && typeof value === "object" && !Array.isArray(value) ? value : null;
+    const selection = wrapper?.format === LOADOUT_FILE_FORMAT
+      && Number(wrapper.version) === LOADOUT_FILE_VERSION
+      ? wrapper.team
+      : wrapper?.selection?.t === "team"
+        ? wrapper.selection
+        : wrapper;
+    if (selection?.t !== "team" || Number(selection.v) !== TEAM_SHARE_VERSION) {
+      throw new Error("This is not a valid Aniipedia team loadout file.");
+    }
+    return {
+      name: cleanLoadoutName(wrapper?.name, "Imported team"),
+      model: normalizeModel(selection),
+    };
+  }
+
+  async function importLoadoutFile(file) {
+    if (!file) return;
+    if (file.size > MAX_LOADOUT_FILE_BYTES) {
+      shareStatus = "That loadout file is too large.";
+      render();
+      return;
+    }
+    try {
+      const parsed = JSON.parse(await file.text());
+      const imported = importedLoadoutPayload(parsed);
+      const loadout = activeLoadout();
+      const confirmed = window.confirm(
+        `Import "${imported.name}" and overwrite "${loadout.name}"?\n\n`
+        + "The current profile's team setup will be replaced. This cannot be undone.",
+      );
+      if (!confirmed) {
+        shareStatus = "Import cancelled. The current profile was not changed.";
+        render();
+        return;
+      }
+      loadout.model = imported.model;
+      loadout.updatedAt = new Date().toISOString();
+      loadout.sourceShareId = "";
+      model = loadout.model;
+      persistLoadoutStore();
+      shareStatus = `${loadout.name} was overwritten by the imported team.`;
+    } catch (error) {
+      shareStatus = error instanceof Error ? error.message : String(error);
+    }
+    render();
+  }
+
   async function copyText(value) {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(value);
@@ -283,6 +504,7 @@
       render();
       return;
     }
+    persist();
     shareBusy = true;
     shareStatus = "Creating share link…";
     render();
@@ -301,7 +523,9 @@
       url.searchParams.set(TEAM_SHARE_PARAM, body.id);
       url.hash = "";
       await copyText(url.toString());
-      shareStatus = "Team link copied.";
+      shareStatus = body?.expiresAt
+        ? "Team link copied. It expires in 30 days."
+        : "Team link copied.";
     } catch (error) {
       shareStatus = error instanceof Error ? error.message : String(error);
     } finally {
@@ -326,9 +550,20 @@
       if (body?.selection?.t !== "team" || Number(body.selection.v) !== TEAM_SHARE_VERSION) {
         throw new Error("Shared team data is invalid");
       }
-      model = normalizeModel(body.selection);
-      persist();
-      shareStatus = "Shared team loaded.";
+      const existing = loadoutStore.loadouts.find(
+        (loadout) => loadout.sourceShareId === REQUESTED_TEAM_SHARE_ID,
+      );
+      if (existing) {
+        existing.model = normalizeModel(body.selection);
+        existing.updatedAt = new Date().toISOString();
+        loadoutStore.activeId = existing.id;
+        model = existing.model;
+        persistLoadoutStore();
+        shareStatus = `${existing.name} refreshed from its shared link.`;
+      } else {
+        const loadout = createLoadout("Shared team", body.selection, REQUESTED_TEAM_SHARE_ID);
+        shareStatus = `${loadout.name} loaded and saved locally.`;
+      }
     } catch (error) {
       shareStatus = error instanceof Error ? error.message : String(error);
     }
@@ -636,6 +871,52 @@
     return card;
   }
 
+  function renderLoadoutControls() {
+    const section = el("section", "team-loadout-controls");
+    const field = el("label", "team-loadout-field");
+    field.append(el("span", "team-loadout-label", "Team loadout"));
+
+    const selector = el("select", "team-select team-loadout-select");
+    loadoutStore.loadouts.forEach((loadout) => {
+      const option = document.createElement("option");
+      option.value = loadout.id;
+      option.textContent = loadout.name;
+      option.selected = loadout.id === loadoutStore.activeId;
+      selector.append(option);
+    });
+    const newOption = document.createElement("option");
+    newOption.value = "__new__";
+    newOption.textContent = "+ New team...";
+    selector.append(newOption);
+    selector.addEventListener("change", () => {
+      if (selector.value === "__new__") {
+        createNewLoadout();
+        return;
+      }
+      switchLoadout(selector.value);
+    });
+    field.append(selector);
+
+    const fileInput = el("input", "team-loadout-file-input");
+    fileInput.type = "file";
+    fileInput.accept = ".aniiteam,application/json,text/plain";
+    fileInput.hidden = true;
+    fileInput.addEventListener("change", async () => {
+      const [file] = fileInput.files || [];
+      fileInput.value = "";
+      await importLoadoutFile(file);
+    });
+
+    const actions = el("div", "team-loadout-actions");
+    actions.append(
+      button("Rename", "team-loadout-action", renameActiveLoadout),
+      button("Import", "team-loadout-action", () => fileInput.click()),
+      button("Export", "team-loadout-action", exportActiveLoadout),
+    );
+    section.append(field, fileInput, actions);
+    return section;
+  }
+
   function renderSidebar() {
     sidebar.textContent = "";
     const heading = el("div", "team-sidebar-heading");
@@ -647,7 +928,7 @@
       render();
     });
     heading.append(reset);
-    sidebar.append(heading, renderModeSwitch(true));
+    sidebar.append(heading, renderLoadoutControls(), renderModeSwitch(true));
     const description = el(
       "p",
       "team-sidebar-description",
@@ -659,7 +940,7 @@
     const slots = el("div", "team-sidebar-slots");
     model.members.forEach((member, index) => slots.append(renderSidebarSlot(member, index)));
     const shareWrap = el("div", "team-share-wrap");
-    const shareButton = button(shareBusy ? "Creating share link…" : "Share team", "team-share-button", shareTeam);
+    const shareButton = button(shareBusy ? "Creating share link..." : "Share team", "team-share-button", shareTeam);
     shareButton.disabled = shareBusy;
     shareWrap.append(shareButton);
     if (shareStatus) shareWrap.append(el("p", "team-share-status", shareStatus));

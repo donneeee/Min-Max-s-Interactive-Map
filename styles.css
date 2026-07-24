@@ -155,6 +155,48 @@ button[aria-pressed="true"] {
   font-size: 12px;
 }
 
+.team-loadout-controls {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(var(--background-rgb), 0.34);
+}
+
+.team-loadout-field {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.team-loadout-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.team-loadout-select {
+  width: 100%;
+}
+
+.team-loadout-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.team-loadout-action {
+  min-width: 0;
+  min-height: 31px;
+  padding: 5px 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .team-mode-switch {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
