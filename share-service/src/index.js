@@ -45,7 +45,7 @@ function requestOriginAllowed(request, env) {
     || allowedOrigins(env).includes(origin);
 }
 
-function normalizeSelection(value) {
+function normalizeMapSelection(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const mapId = String(value.m || "").trim();
   if (!mapId || mapId.length > 100 || !Array.isArray(value.g) || !value.g.length) return null;
@@ -71,6 +71,73 @@ function normalizeSelection(value) {
 
   if (!groups.length || groups.length !== value.g.length) return null;
   return { m: mapId, g: groups };
+}
+
+function clampNumber(value, minimum, maximum, fallback = minimum) {
+  const number = Number(value);
+  return Math.min(maximum, Math.max(minimum, Number.isFinite(number) ? Math.round(number) : fallback));
+}
+
+function limitedString(value, maximum = 128) {
+  return String(value || "").slice(0, maximum);
+}
+
+function normalizeTeamSelection(value) {
+  if (value?.t !== "team" || Number(value?.v) !== 1 || !Array.isArray(value.members)) return null;
+  const potentialKeys = ["HP", "Attack", "Defense", "EP Regen", "Magic Defense", "Break"];
+  const members = value.members.slice(0, 4).map((member) => {
+    const potentials = Object.fromEntries(potentialKeys.map((key) => [
+      key,
+      clampNumber(member?.potentials?.[key], 0, 24, 0),
+    ]));
+    const runes = Array.isArray(member?.runes)
+      ? member.runes.slice(0, 6).map((rune) => ({
+        position: clampNumber(rune?.position, 1, 6, 1),
+        itemId: limitedString(rune?.itemId),
+        rolls: Array.isArray(rune?.rolls)
+          ? rune.rolls.slice(0, 3).map((roll) => ({
+            attributeId: limitedString(roll?.attributeId),
+            mode: roll?.mode === "minimum" ? "minimum" : "perfect",
+          }))
+          : [],
+      }))
+      : [];
+    return {
+      aniimoId: limitedString(member?.aniimoId),
+      level: clampNumber(member?.level, 1, 60, 60),
+      stage: clampNumber(member?.stage, 1, 7, 7),
+      activeSkills: Array.isArray(member?.activeSkills)
+        ? member.activeSkills.slice(0, 2).map((skill) => limitedString(skill, 256))
+        : ["", ""],
+      switchSkill: limitedString(member?.switchSkill, 256),
+      personalities: Array.isArray(member?.personalities)
+        ? member.personalities.slice(0, 4).map((trait) => limitedString(trait, 64))
+        : [],
+      potentials,
+      awakeningBonus: clampNumber(member?.awakeningBonus, 0, 24, 0),
+      carriedItemId: limitedString(member?.carriedItemId),
+      runes,
+    };
+  });
+  if (!members.length) return null;
+  const scenarioToggles = value.scenarioToggles && typeof value.scenarioToggles === "object"
+    && !Array.isArray(value.scenarioToggles)
+    ? Object.fromEntries(Object.entries(value.scenarioToggles)
+      .slice(0, 500)
+      .map(([key, enabled]) => [limitedString(key, 256), Boolean(enabled)]))
+    : {};
+  return {
+    t: "team",
+    v: 1,
+    mode: value.mode === "coop" ? "coop" : "standard",
+    activeSlot: clampNumber(value.activeSlot, 0, 3, 0),
+    members,
+    scenarioToggles,
+  };
+}
+
+function normalizeSelection(value) {
+  return value?.t === "team" ? normalizeTeamSelection(value) : normalizeMapSelection(value);
 }
 
 function randomShareCode() {
@@ -106,19 +173,20 @@ async function createShare(request, env) {
   }
   const selection = normalizeSelection(body.selection);
   if (!selection) {
-    return jsonResponse({ error: "Pin selection is invalid" }, 400, cors);
+    return jsonResponse({ error: "Shared selection is invalid" }, 400, cors);
   }
 
   const payload = JSON.stringify(selection);
   const now = Math.floor(Date.now() / 1000);
-  const expiresAt = now + SHARE_LIFETIME_SECONDS;
+  const permanent = selection.t === "team";
+  const expiresAt = permanent ? 0 : now + SHARE_LIFETIME_SECONDS;
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const id = randomShareCode();
     try {
       await env.DB.prepare(
         "INSERT INTO pin_shares (id, payload, created_at, expires_at) VALUES (?, ?, ?, ?)",
       ).bind(id, payload, now, expiresAt).run();
-      return jsonResponse({ id, expiresAt }, 201, cors);
+      return jsonResponse({ id, expiresAt: permanent ? null : expiresAt }, 201, cors);
     } catch (error) {
       if (!String(error?.message || error).toLowerCase().includes("unique")) throw error;
     }
@@ -135,7 +203,7 @@ async function readShare(request, env, id) {
   if (!row) return jsonResponse({ error: "Share not found" }, 404, cors);
 
   const now = Math.floor(Date.now() / 1000);
-  if (Number(row.expiresAt) <= now) {
+  if (Number(row.expiresAt) > 0 && Number(row.expiresAt) <= now) {
     await env.DB.prepare("DELETE FROM pin_shares WHERE id = ?").bind(id).run();
     return jsonResponse({ error: "Share expired" }, 410, cors);
   }
@@ -146,7 +214,7 @@ async function readShare(request, env, id) {
   } catch {
     return jsonResponse({ error: "Share data is invalid" }, 500, cors);
   }
-  return jsonResponse({ selection, expiresAt: Number(row.expiresAt) }, 200, cors);
+  return jsonResponse({ selection, expiresAt: Number(row.expiresAt) || null }, 200, cors);
 }
 
 async function handleRequest(request, env) {
@@ -154,7 +222,11 @@ async function handleRequest(request, env) {
   const cors = corsHeaders(request, env);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (url.pathname === "/health" && request.method === "GET") {
-    return jsonResponse({ ok: true, lifetimeSeconds: SHARE_LIFETIME_SECONDS }, 200, cors);
+    return jsonResponse({
+      ok: true,
+      mapLifetimeSeconds: SHARE_LIFETIME_SECONDS,
+      teamLifetimeSeconds: null,
+    }, 200, cors);
   }
   if (url.pathname === "/v1/shares" && request.method === "POST") return createShare(request, env);
   const shareMatch = url.pathname.match(/^\/v1\/shares\/([^/]+)$/);
@@ -173,7 +245,7 @@ export default {
   async scheduled(_controller, env) {
     const now = Math.floor(Date.now() / 1000);
     await env.DB.prepare(
-      "DELETE FROM pin_shares WHERE id IN (SELECT id FROM pin_shares WHERE expires_at <= ? LIMIT 5000)",
+      "DELETE FROM pin_shares WHERE id IN (SELECT id FROM pin_shares WHERE expires_at > 0 AND expires_at <= ? LIMIT 5000)",
     ).bind(now).run();
   },
 };

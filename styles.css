@@ -469,6 +469,97 @@ button[aria-pressed="true"] {
   gap: 10px;
 }
 
+.team-share-wrap {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.team-share-button {
+  width: 100%;
+  border-color: rgba(var(--accent-rgb), 0.72);
+  background: rgba(var(--accent-rgb), 0.16);
+  font-weight: 850;
+}
+
+.team-share-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.team-progression-config {
+  display: grid;
+  gap: 12px;
+}
+
+.team-potential-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.team-number-input {
+  width: 100%;
+}
+
+.team-awakening-field {
+  width: min(100%, 360px);
+}
+
+.team-subsection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.team-subsection-heading small {
+  color: var(--muted);
+}
+
+.team-personality-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.team-personality-option {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(var(--background-rgb), 0.3);
+  padding: 9px 10px;
+  cursor: pointer;
+}
+
+.team-personality-option.is-selected {
+  border-color: rgba(var(--accent-rgb), 0.72);
+  background: rgba(var(--accent-rgb), 0.12);
+}
+
+.team-personality-option input {
+  margin-top: 2px;
+}
+
+.team-personality-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.team-personality-copy small {
+  color: var(--muted);
+  line-height: 1.3;
+}
+
 .team-level-field,
 .team-stage-field {
   width: 100%;
@@ -555,6 +646,73 @@ button[aria-pressed="true"] {
   color: color-mix(in srgb, var(--accent) 42%, var(--text));
   font-weight: 750;
   line-height: 1.3;
+}
+
+.team-skill-mechanics {
+  display: grid;
+  gap: 7px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.team-skill-mechanics-tags,
+.team-skill-operations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.team-skill-mechanics-summary {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.team-skill-operations > strong {
+  width: 100%;
+  font-size: 11px;
+}
+
+.team-skill-operation {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(var(--background-rgb), 0.36);
+  padding: 3px 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.team-skill-coefficients {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 11px;
+}
+
+.team-skill-coefficients dt {
+  color: var(--muted);
+}
+
+.team-skill-coefficients dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.team-skill-caveat,
+.team-skill-variant-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .team-pill {
@@ -645,6 +803,14 @@ button[aria-pressed="true"] {
 
 .team-stage-bonuses {
   align-items: center;
+}
+
+.team-potential-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
 }
 
 .team-data-note {
@@ -837,7 +1003,9 @@ button[aria-pressed="true"] {
   .team-sidebar-slots,
   .team-overview-grid,
   .team-field-grid,
-  .team-rune-sockets {
+  .team-rune-sockets,
+  .team-potential-grid,
+  .team-personality-grid {
     grid-template-columns: 1fr;
   }
 

@@ -3,11 +3,24 @@
 
   const ANIILOG_URL = "./data/aniilog_data.json?v=20260721-skill-behavior-v001";
   const ITEMLOG_URL = "./data/itemlog_data.json?v=20260721-item-enrichment-v001";
+  const MECHANICS_URL = "./data/team_builder_mechanics.json?v=20260723-reviewed-v001";
   const STORAGE_KEY = "minmax-aniipedia:team-builder:v1";
+  const TEAM_SHARE_PARAM = "team";
+  const TEAM_SHARE_VERSION = 1;
+  const SHORT_SHARE_CODE_PATTERN = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8}$/;
+  const SHARE_API_URL = String(window.ANIIPEDIA_CONFIG?.shareApiUrl || "").replace(/\/+$/, "");
+  const INITIAL_URL_PARAMS = new URLSearchParams(window.location.search);
+  const REQUESTED_TEAM_SHARE_ID = SHORT_SHARE_CODE_PATTERN.test(INITIAL_URL_PARAMS.get(TEAM_SHARE_PARAM) || "")
+    ? INITIAL_URL_PARAMS.get(TEAM_SHARE_PARAM)
+    : "";
   const TEAM_SIZE = 4;
   const MAX_ACTIVE_SKILLS = 2;
   const MIN_ANIIMO_LEVEL = 1;
   const MAX_ANIIMO_LEVEL = 60;
+  const MAX_POTENTIAL_PER_STAT = 24;
+  const MAX_AWAKENING_BONUS = 24;
+  const POTENTIAL_MILESTONE_SIZE = 5;
+  const POTENTIAL_MILESTONE_BONUS = 0.06;
   const BUFF_PATTERN = /\b(increas|boost|amplif|bonus|restore|shield|resist|siphon|damage dealt|critical|break efficiency|invincible)/i;
   const STAT_ORDER = ["HP", "Attack", "Magic Attack", "Break", "Defense", "Magic Defense", "EP Regen"];
   const STAT_ALIASES = Object.freeze({
@@ -34,13 +47,71 @@
     "Magic Defense": Object.freeze({ offset: 0, divisor: 120, scale: 1.02 }),
     "EP Regen": Object.freeze({ offset: 0, divisor: 50, scale: 0.51 }),
   });
+  const POTENTIAL_STATS = Object.freeze([
+    Object.freeze({ key: "HP", label: "HP" }),
+    Object.freeze({ key: "Attack", label: "ATK" }),
+    Object.freeze({ key: "Defense", label: "P.DEF" }),
+    Object.freeze({ key: "EP Regen", label: "REGEN" }),
+    Object.freeze({ key: "Magic Defense", label: "M.DEF" }),
+    Object.freeze({ key: "Break", label: "BREAK" }),
+  ]);
+  const PERSONALITY_OPTIONS = Object.freeze([
+    Object.freeze({
+      id: "clingy",
+      label: "Clingy",
+      effects: Object.freeze([
+        Object.freeze({ label: "Attack", value: 0.02 }),
+        Object.freeze({ label: "Break", value: 0.05 }),
+      ]),
+    }),
+    Object.freeze({
+      id: "instinctive",
+      label: "Instinctive",
+      effects: Object.freeze([Object.freeze({ label: "EP Regen", value: 0.05 })]),
+    }),
+    Object.freeze({
+      id: "practical",
+      label: "Practical",
+      effects: Object.freeze([Object.freeze({ label: "Damage Amp", value: 0.04 })]),
+    }),
+    Object.freeze({
+      id: "perspicacious",
+      label: "Perspicacious",
+      effects: Object.freeze([Object.freeze({ label: "Critical Rate", value: 0.04 })]),
+    }),
+    Object.freeze({
+      id: "aloof",
+      label: "Aloof",
+      effects: Object.freeze([Object.freeze({ label: "Defense", value: 0.06 })]),
+    }),
+    Object.freeze({
+      id: "faithful",
+      label: "Faithful",
+      effects: Object.freeze([Object.freeze({ label: "Magic Defense", value: 0.06 })]),
+    }),
+    Object.freeze({
+      id: "obedient",
+      label: "Obedient",
+      effects: Object.freeze([Object.freeze({ label: "HP", value: 0.04 })]),
+    }),
+    Object.freeze({
+      id: "spontaneous",
+      label: "Spontaneous",
+      effects: Object.freeze([Object.freeze({ label: "Damage Reduction", value: 0.04 })]),
+    }),
+  ]);
+  const MAX_PERSONALITY_TRAITS = 4;
 
   let sidebar = null;
   let panel = null;
   let aniilog = null;
   let itemlog = null;
+  let mechanics = null;
   let loadPromise = null;
   let loadError = "";
+  let requestedTeamShareLoaded = false;
+  let shareBusy = false;
+  let shareStatus = "";
   let model = loadModel();
 
   function defaultMember() {
@@ -50,6 +121,9 @@
       stage: 7,
       activeSkills: ["", ""],
       switchSkill: "",
+      personalities: [],
+      potentials: Object.fromEntries(POTENTIAL_STATS.map((stat) => [stat.key, 0])),
+      awakeningBonus: 0,
       carriedItemId: "",
       runes: {},
     };
@@ -70,6 +144,15 @@
       ? value.activeSkills.slice(0, MAX_ACTIVE_SKILLS).map((skill) => String(skill || ""))
       : base.activeSkills;
     while (activeSkills.length < MAX_ACTIVE_SKILLS) activeSkills.push("");
+    const personalities = Array.isArray(value?.personalities)
+      ? [...new Set(value.personalities.map((trait) => String(trait || "")).filter(Boolean))]
+        .filter((trait) => PERSONALITY_OPTIONS.some((option) => option.id === trait))
+        .slice(0, MAX_PERSONALITY_TRAITS)
+      : [];
+    const potentials = Object.fromEntries(POTENTIAL_STATS.map((stat) => {
+      const amount = Number(value?.potentials?.[stat.key]);
+      return [stat.key, Math.min(MAX_POTENTIAL_PER_STAT, Math.max(0, Number.isFinite(amount) ? Math.round(amount) : 0))];
+    }));
     return {
       ...base,
       aniimoId: String(value?.aniimoId || ""),
@@ -77,6 +160,12 @@
       stage: Math.min(7, Math.max(1, Number(value?.stage) || 7)),
       activeSkills,
       switchSkill: String(value?.switchSkill || ""),
+      personalities,
+      potentials,
+      awakeningBonus: Math.min(
+        MAX_AWAKENING_BONUS,
+        Math.max(0, Math.round(Number(value?.awakeningBonus) || 0)),
+      ),
       carriedItemId: String(value?.carriedItemId || ""),
       runes: value?.runes && typeof value.runes === "object" ? value.runes : {},
     };
@@ -85,20 +174,52 @@
   function loadModel() {
     try {
       const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
-      if (!saved || typeof saved !== "object") return defaultModel();
-      const members = Array.isArray(saved.members) ? saved.members.slice(0, TEAM_SIZE).map(normalizeMember) : [];
-      while (members.length < TEAM_SIZE) members.push(defaultMember());
-      return {
-        mode: saved.mode === "coop" ? "coop" : "standard",
-        activeSlot: Math.min(TEAM_SIZE - 1, Math.max(0, Number(saved.activeSlot) || 0)),
-        members,
-        scenarioToggles: saved.scenarioToggles && typeof saved.scenarioToggles === "object"
-          ? saved.scenarioToggles
-          : {},
-      };
+      return normalizeModel(saved);
     } catch {
       return defaultModel();
     }
+  }
+
+  function normalizeRunes(value) {
+    if (Array.isArray(value)) {
+      return Object.fromEntries(value.slice(0, 6).flatMap((slot) => {
+        const position = String(slot?.position || "");
+        if (!position) return [];
+        return [[position, {
+          itemId: String(slot?.itemId || ""),
+          rolls: Array.isArray(slot?.rolls)
+            ? slot.rolls.slice(0, 3).map((roll) => ({
+              attributeId: String(roll?.attributeId || ""),
+              mode: roll?.mode === "minimum" ? "minimum" : "perfect",
+            }))
+            : [],
+        }]];
+      }));
+    }
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  }
+
+  function normalizeModel(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return defaultModel();
+    const members = Array.isArray(value.members)
+      ? value.members.slice(0, TEAM_SIZE).map((member) => normalizeMember({
+        ...member,
+        runes: normalizeRunes(member?.runes),
+      }))
+      : [];
+    while (members.length < TEAM_SIZE) members.push(defaultMember());
+    const scenarioToggles = value.scenarioToggles && typeof value.scenarioToggles === "object"
+      && !Array.isArray(value.scenarioToggles)
+      ? Object.fromEntries(Object.entries(value.scenarioToggles)
+        .slice(0, 500)
+        .map(([key, enabled]) => [String(key), Boolean(enabled)]))
+      : {};
+    return {
+      mode: value.mode === "coop" ? "coop" : "standard",
+      activeSlot: Math.min(TEAM_SIZE - 1, Math.max(0, Number(value.activeSlot) || 0)),
+      members,
+      scenarioToggles,
+    };
   }
 
   function persist() {
@@ -106,6 +227,110 @@
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(model));
     } catch {
       // The builder remains usable for the current visit if storage is unavailable.
+    }
+  }
+
+  function teamShareSelection() {
+    return {
+      t: "team",
+      v: TEAM_SHARE_VERSION,
+      mode: model.mode,
+      activeSlot: model.activeSlot,
+      members: model.members.map((member) => ({
+        aniimoId: member.aniimoId,
+        level: member.level,
+        stage: member.stage,
+        activeSkills: member.activeSkills,
+        switchSkill: member.switchSkill,
+        personalities: member.personalities,
+        potentials: member.potentials,
+        awakeningBonus: member.awakeningBonus,
+        carriedItemId: member.carriedItemId,
+        runes: Object.entries(member.runes || {}).map(([position, selection]) => ({
+          position,
+          itemId: String(selection?.itemId || ""),
+          rolls: Array.isArray(selection?.rolls)
+            ? selection.rolls.map((roll) => ({
+              attributeId: String(roll?.attributeId || ""),
+              mode: roll?.mode === "minimum" ? "minimum" : "perfect",
+            }))
+            : [],
+        })),
+      })),
+      scenarioToggles: model.scenarioToggles,
+    };
+  }
+
+  async function copyText(value) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.append(input);
+    input.select();
+    document.execCommand("copy");
+    input.remove();
+  }
+
+  async function shareTeam() {
+    if (shareBusy) return;
+    if (!SHARE_API_URL) {
+      shareStatus = "Team sharing is not configured.";
+      render();
+      return;
+    }
+    shareBusy = true;
+    shareStatus = "Creating share link…";
+    render();
+    try {
+      const response = await fetch(`${SHARE_API_URL}/v1/shares`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ version: TEAM_SHARE_VERSION, selection: teamShareSelection() }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !SHORT_SHARE_CODE_PATTERN.test(body?.id || "")) {
+        throw new Error(body?.error || "Could not create the team link");
+      }
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.searchParams.set(TEAM_SHARE_PARAM, body.id);
+      url.hash = "";
+      await copyText(url.toString());
+      shareStatus = "Team link copied.";
+    } catch (error) {
+      shareStatus = error instanceof Error ? error.message : String(error);
+    } finally {
+      shareBusy = false;
+      render();
+    }
+  }
+
+  async function loadRequestedTeamShare() {
+    if (requestedTeamShareLoaded || !REQUESTED_TEAM_SHARE_ID) return;
+    requestedTeamShareLoaded = true;
+    if (!SHARE_API_URL) {
+      shareStatus = "This team link cannot be loaded because sharing is not configured.";
+      return;
+    }
+    try {
+      const response = await fetch(`${SHARE_API_URL}/v1/shares/${REQUESTED_TEAM_SHARE_ID}`, {
+        headers: { accept: "application/json" },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body?.error || "Could not load the shared team");
+      if (body?.selection?.t !== "team" || Number(body.selection.v) !== TEAM_SHARE_VERSION) {
+        throw new Error("Shared team data is invalid");
+      }
+      model = normalizeModel(body.selection);
+      persist();
+      shareStatus = "Shared team loaded.";
+    } catch (error) {
+      shareStatus = error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -141,6 +366,25 @@
     });
     select.addEventListener("change", () => onChange(select.value));
     label.append(caption, select);
+    return label;
+  }
+
+  function numberControl(labelText, value, minimum, maximum, onChange, className = "") {
+    const label = el("label", `team-field ${className}`.trim());
+    const caption = el("span", "team-field-label", labelText);
+    const input = el("input", "team-number-input");
+    input.type = "number";
+    input.min = String(minimum);
+    input.max = String(maximum);
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.value = String(value);
+    input.addEventListener("change", () => {
+      const next = Math.min(maximum, Math.max(minimum, Math.round(Number(input.value) || 0)));
+      input.value = String(next);
+      onChange(next);
+    });
+    label.append(caption, input);
     return label;
   }
 
@@ -194,6 +438,17 @@
     return combatSkills(entry).find((skill) => skillKey(skill) === String(key || "")) || null;
   }
 
+  function mechanicsFor(entry, skill, section = "skills") {
+    const formId = String(entry?.form_id || entry?.id || "").replace(/^aniimo:/, "");
+    const name = String(skill?.name || "");
+    if (!formId || !name) return null;
+    return mechanics?.entries?.[`${formId}|${section}|${name}`] || null;
+  }
+
+  function personalityFor(id) {
+    return PERSONALITY_OPTIONS.find((option) => option.id === String(id || "")) || null;
+  }
+
   function localizedAniimoLabel(entry) {
     if (!entry) return translate("Empty slot");
     const name = translate(entry.name);
@@ -220,6 +475,7 @@
     member.switchSkill = coreSkills(entry)
       .map(skillKey)
       .find((key) => !defaults.includes(key)) || "";
+    member.personalities = [];
     member.level = MAX_ANIIMO_LEVEL;
     member.stage = 7;
     member.carriedItemId = "";
@@ -250,7 +506,7 @@
   }
 
   async function ensureData() {
-    if (aniilog && itemlog) return;
+    if (aniilog && itemlog && mechanics) return;
     if (loadPromise) return loadPromise;
     loadPromise = Promise.all([
       fetch(ANIILOG_URL).then((response) => {
@@ -261,12 +517,22 @@
         if (!response.ok) throw new Error("Could not load item data");
         return response.json();
       }),
-    ]).then(([aniimoPayload, itemPayload]) => {
-      if (!Array.isArray(aniimoPayload?.entries) || !Array.isArray(itemPayload?.entries)) {
+      fetch(MECHANICS_URL).then((response) => {
+        if (!response.ok) throw new Error("Could not load reviewed skill mechanics");
+        return response.json();
+      }),
+    ]).then(([aniimoPayload, itemPayload, mechanicsPayload]) => {
+      if (
+        !Array.isArray(aniimoPayload?.entries)
+        || !Array.isArray(itemPayload?.entries)
+        || !mechanicsPayload?.entries
+        || typeof mechanicsPayload.entries !== "object"
+      ) {
         throw new Error("Team Builder data has an invalid format");
       }
       aniilog = aniimoPayload;
       itemlog = itemPayload;
+      mechanics = mechanicsPayload;
       window.AniipediaI18n?.registerDisplay(aniilog.localizations);
       model.members.forEach(validateMember);
       loadError = "";
@@ -392,7 +658,12 @@
     sidebar.append(description);
     const slots = el("div", "team-sidebar-slots");
     model.members.forEach((member, index) => slots.append(renderSidebarSlot(member, index)));
-    sidebar.append(slots);
+    const shareWrap = el("div", "team-share-wrap");
+    const shareButton = button(shareBusy ? "Creating share link…" : "Share team", "team-share-button", shareTeam);
+    shareButton.disabled = shareBusy;
+    shareWrap.append(shareButton);
+    if (shareStatus) shareWrap.append(el("p", "team-share-status", shareStatus));
+    sidebar.append(slots, shareWrap);
   }
 
   function renderTeamOverview() {
@@ -443,7 +714,7 @@
         section.append(el("p", "team-empty-copy", "This Aniimo has no Core skill in the current data."));
         return section;
       }
-      cores.forEach((skill) => section.append(renderSkillSummary(skill, "Core skill")));
+      cores.forEach((skill) => section.append(renderSkillSummary(skill, "Core skill", entry)));
       return section;
     }
 
@@ -485,13 +756,83 @@
       .filter(Boolean);
     if (selected.length) {
       const cards = el("div", "team-skill-cards");
-      selected.forEach((skill) => cards.append(renderSkillSummary(skill, member.switchSkill === skillKey(skill) ? "Switch-skill" : "Active")));
+      selected.forEach((skill) => cards.append(renderSkillSummary(
+        skill,
+        member.switchSkill === skillKey(skill) ? "Switch-skill" : "Active",
+        entry,
+      )));
       section.append(cards);
     }
     return section;
   }
 
-  function renderSkillSummary(skill, slotLabel) {
+  function coefficientDisplay(coefficient) {
+    const values = Array.isArray(coefficient?.values)
+      ? coefficient.values.map(Number).filter(Number.isFinite)
+      : [];
+    if (!values.length) return "";
+    const format = (value) => coefficient.display === "percent"
+      ? formatValue(value, true)
+      : `${formatValue(value, false)}x`;
+    return [...new Set(values)].map(format).join(" / ");
+  }
+
+  function renderReviewedMechanics(entry, skill) {
+    const reviewed = mechanicsFor(entry, skill);
+    const section = el("div", "team-skill-mechanics");
+    if (!reviewed) {
+      section.append(el(
+        "p",
+        "team-skill-caveat",
+        "No reviewed execution record is linked to this skill yet. The game description remains available below.",
+      ));
+      return section;
+    }
+
+    const tags = el("div", "team-skill-mechanics-tags");
+    (reviewed.roles || []).forEach((role) => tags.append(el("span", "team-pill", role)));
+    (reviewed.targets || []).forEach((target) => tags.append(el("span", "team-pill team-pill--scope", target)));
+    if (tags.childElementCount) section.append(tags);
+
+    const summaries = el("ul", "team-skill-mechanics-summary");
+    (reviewed.summaries || []).forEach((summary) => summaries.append(el("li", "", summary)));
+    if (summaries.childElementCount) section.append(summaries);
+
+    if ((reviewed.operations || []).length) {
+      const operations = el("div", "team-skill-operations");
+      operations.append(el("strong", "", "Execution operations"));
+      (reviewed.operations || []).forEach((operation) => {
+        const counts = [...new Set(operation.counts || [])].join(" / ");
+        operations.append(el(
+          "span",
+          "team-skill-operation",
+          counts ? `${operation.label}: ${counts}` : operation.label,
+        ));
+      });
+      section.append(operations);
+    }
+
+    if ((reviewed.coefficients || []).length) {
+      const coefficients = el("dl", "team-skill-coefficients");
+      (reviewed.coefficients || []).forEach((coefficient) => {
+        const value = coefficientDisplay(coefficient);
+        if (!value) return;
+        coefficients.append(el("dt", "", coefficient.label), el("dd", "", value));
+      });
+      if (coefficients.childElementCount) section.append(coefficients);
+    }
+
+    if (Number(reviewed.variant_count) > 1) {
+      section.append(el(
+        "p",
+        "team-skill-variant-note",
+        `${reviewed.variant_count} execution variants are linked to this display skill. Values above include every confirmed variant.`,
+      ));
+    }
+    return section;
+  }
+
+  function renderSkillSummary(skill, slotLabel, entry) {
     const card = el("article", "team-skill-summary");
     if (skill?.icon) {
       const icon = el("img", "team-skill-icon");
@@ -518,6 +859,15 @@
         "team-skill-behavior",
         [skill.behavior.team_role, scope].filter(Boolean).join(" · "),
       ));
+    }
+    copy.append(renderReviewedMechanics(entry, skill));
+    if (skill?.description) {
+      const description = el("details", "team-skill-description");
+      description.append(
+        el("summary", "", "Game description"),
+        el("p", "", translate(skill.description)),
+      );
+      copy.append(description);
     }
     card.append(copy);
     return card;
@@ -564,6 +914,80 @@
       render();
     }, "team-stage-field"));
     section.append(controls);
+    return section;
+  }
+
+  function renderProgressionConfiguration(member) {
+    const section = el("section", "team-config-section team-progression-config");
+    const heading = el("div", "team-section-heading");
+    heading.append(
+      el("div", "", "Potential & personality"),
+      el("small", "", "Enter the values shown around the Aniimo stat card"),
+    );
+    section.append(heading);
+
+    const potentialGrid = el("div", "team-potential-grid");
+    POTENTIAL_STATS.forEach((stat) => {
+      potentialGrid.append(numberControl(
+        stat.label,
+        member.potentials?.[stat.key] || 0,
+        0,
+        MAX_POTENTIAL_PER_STAT,
+        (value) => {
+          member.potentials[stat.key] = value;
+          persist();
+          render();
+        },
+        "team-potential-field",
+      ));
+    });
+    section.append(potentialGrid);
+    section.append(numberControl(
+      "Awakening bonus to all Potentials",
+      member.awakeningBonus || 0,
+      0,
+      MAX_AWAKENING_BONUS,
+      (value) => {
+        member.awakeningBonus = value;
+        persist();
+        render();
+      },
+      "team-awakening-field",
+    ));
+
+    const personalityHeading = el("div", "team-subsection-heading");
+    personalityHeading.append(
+      el("strong", "", "Personality combat bonuses"),
+      el("small", "", `${member.personalities.length} / ${MAX_PERSONALITY_TRAITS}`),
+    );
+    section.append(personalityHeading);
+    const personalityGrid = el("div", "team-personality-grid");
+    PERSONALITY_OPTIONS.forEach((option) => {
+      const selected = member.personalities.includes(option.id);
+      const choice = el("label", "team-personality-option");
+      if (selected) choice.classList.add("is-selected");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = selected;
+      input.disabled = !selected && member.personalities.length >= MAX_PERSONALITY_TRAITS;
+      input.addEventListener("change", () => {
+        if (input.checked) {
+          member.personalities = [...member.personalities, option.id].slice(0, MAX_PERSONALITY_TRAITS);
+        } else {
+          member.personalities = member.personalities.filter((trait) => trait !== option.id);
+        }
+        persist();
+        render();
+      });
+      const effects = option.effects.map((effect) => (
+        `${translate(effect.label)} +${formatValue(effect.value, true)}`
+      )).join(", ");
+      const copy = el("span", "team-personality-copy");
+      copy.append(el("strong", "", option.label), el("small", "", effects));
+      choice.append(input, copy);
+      personalityGrid.append(choice);
+    });
+    section.append(personalityGrid);
     return section;
   }
 
@@ -711,18 +1135,35 @@
     const number = Number(value);
     if (!stat || !Number.isFinite(number)) return false;
     target.flat[stat] = (target.flat[stat] || 0) + number;
-    target.sources.push({ stat, value: number, source });
+    target.sources.push({ stat, value: number, source, layer: "flat" });
+    return true;
+  }
+
+  function addPostFlat(target, label, value, source) {
+    const stat = STAT_ALIASES[label];
+    const number = Number(value);
+    if (!stat || !Number.isFinite(number)) return false;
+    target.postFlat[stat] = (target.postFlat[stat] || 0) + number;
+    target.sources.push({ stat, value: number, source, layer: "post-flat" });
     return true;
   }
 
   function addModifier(target, label, value, isPercent, source) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return;
     if (label === "Six Aptitude Stats") {
-      ["HP", "Attack", "Break", "Defense", "Magic Defense", "EP Regen"].forEach((stat) => addFlat(target, stat, value, source));
+      target.advanced[label] = (target.advanced[label] || 0) + number;
       return;
     }
     if (!isPercent && addFlat(target, label, value, source)) return;
+    const stat = STAT_ALIASES[label];
+    if (isPercent && stat) {
+      target.percent[stat] = (target.percent[stat] || 0) + number;
+      target.sources.push({ stat, value: number, source, layer: "percent" });
+      return;
+    }
     const key = String(label || "Modifier");
-    target.percent[key] = (target.percent[key] || 0) + Number(value || 0);
+    target.advanced[key] = (target.advanced[key] || 0) + number;
   }
 
   function projectLevelStat(label, listedValue, level) {
@@ -738,12 +1179,64 @@
     (carried?.carried_effects?.core_effects || []).forEach((effect) => {
       const match = String(effect).match(/additional\s+(\d+(?:\.\d+)?)\s+(.+?)\s+for each\s+Level\b/i);
       if (!match) return;
-      addFlat(result, match[2].trim(), Number(match[1]) * member.level, `${translate(carried.name)} · ${translate("Level scaling")}`);
+      addPostFlat(result, match[2].trim(), Number(match[1]) * member.level, `${translate(carried.name)} · ${translate("Level scaling")}`);
+    });
+  }
+
+  function applyTierBonuses(result, bonuses) {
+    const groups = [
+      { pattern: /^ATK\/BREAK\/HP\s*\+([0-9.]+)(%)?$/i, stats: ["Attack", "Break", "HP"] },
+      { pattern: /^REGEN\/P\.?DEF\/M\.?DEF\s*\+([0-9.]+)(%)?$/i, stats: ["EP Regen", "Defense", "Magic Defense"] },
+    ];
+    bonuses.forEach((bonus) => {
+      const potential = String(bonus).match(/^Six Potentials\s*\+([0-9.]+)$/i);
+      if (potential) {
+        addModifier(result, "Six Aptitude Stats", Number(potential[1]), false, "Tier bonus");
+        return;
+      }
+      for (const group of groups) {
+        const match = String(bonus).match(group.pattern);
+        if (!match) continue;
+        const isPercent = Boolean(match[2]);
+        const value = Number(match[1]) / (isPercent ? 100 : 1);
+        group.stats.forEach((stat) => addModifier(result, stat, value, isPercent, "Tier bonus"));
+        break;
+      }
+    });
+  }
+
+  function applyPotentialBonuses(result, member) {
+    const globalBonus = Number(member.awakeningBonus || 0)
+      + Number(result.advanced["Six Aptitude Stats"] || 0);
+    POTENTIAL_STATS.forEach((stat) => {
+      const effective = Number(member.potentials?.[stat.key] || 0) + globalBonus;
+      result.effectivePotentials[stat.key] = effective;
+      const percent = Math.floor(effective / POTENTIAL_MILESTONE_SIZE) * POTENTIAL_MILESTONE_BONUS;
+      if (percent) addModifier(result, stat.key, percent, true, "Potential");
+    });
+  }
+
+  function applyPersonalityBonuses(result, member) {
+    (member.personalities || []).forEach((id) => {
+      const option = PERSONALITY_OPTIONS.find((candidate) => candidate.id === id);
+      option?.effects.forEach((effect) => {
+        addModifier(result, effect.label, effect.value, true, `Personality: ${option.label}`);
+      });
     });
   }
 
   function memberStats(member, entry) {
-    const result = { listed: {}, base: {}, flat: {}, percent: {}, sources: [], bonuses: [] };
+    const result = {
+      listed: {},
+      base: {},
+      flat: {},
+      postFlat: {},
+      percent: {},
+      advanced: {},
+      effectivePotentials: {},
+      sources: [],
+      bonuses: [],
+    };
     (entry?.stats || []).forEach((stat) => {
       result.listed[stat.label] = Number(stat.value || 0);
       result.base[stat.label] = projectLevelStat(stat.label, stat.value, member.level);
@@ -753,6 +1246,7 @@
       (step.stat_gains || []).forEach((gain) => addFlat(result, gain.label, gain.value, `${translate("Training level")} ${step.level}`));
     });
     result.bonuses = progression.bonuses;
+    applyTierBonuses(result, result.bonuses);
 
     const carried = carriedItemFor(member);
     (carried?.carried_effects?.base_attributes || []).forEach((effect) => {
@@ -775,6 +1269,8 @@
         addModifier(result, roll.label, value, roll.is_percent, `${translate(rune.name)} · ${translate("Secondary roll")}`);
       });
     });
+    applyPotentialBonuses(result, member);
+    applyPersonalityBonuses(result, member);
     return result;
   }
 
@@ -792,11 +1288,20 @@
       if (!Object.hasOwn(stats.base, label)) return;
       const base = Number(stats.base[label] || 0);
       const added = Number(stats.flat[label] || 0);
+      const percent = Number(stats.percent[label] || 0);
+      const post = Number(stats.postFlat[label] || 0);
+      const total = (base + added) * (1 + percent) + post;
+      const breakdown = [
+        formatValue(base, false),
+        added ? `+ ${formatValue(added, false)}` : "",
+        percent ? `× ${formatValue(1 + percent, false)}` : "",
+        post ? `+ ${formatValue(post, false)}` : "",
+      ].filter(Boolean).join(" ");
       const card = el("article", "team-stat-card");
       card.append(
         el("span", "team-stat-label", translate(label === "EP Regen" ? "Regen" : label)),
-        el("strong", "", formatValue(base + added, false)),
-        el("small", "", added ? `${formatValue(base, false)} + ${formatValue(added, false)}` : translate("Base value")),
+        el("strong", "", formatValue(total, false)),
+        el("small", "", added || percent || post ? breakdown : translate("Base value")),
       );
       grid.append(card);
     });
@@ -814,10 +1319,20 @@
       stats.bonuses.forEach((bonus) => bonuses.append(el("span", "team-pill", bonus)));
       section.append(bonuses);
     }
+    const potentials = el("div", "team-potential-summary");
+    potentials.append(el("strong", "", "Effective Potentials"));
+    POTENTIAL_STATS.forEach((stat) => {
+      potentials.append(el(
+        "span",
+        "team-pill",
+        `${stat.label} ${formatValue(stats.effectivePotentials[stat.key], false)}`,
+      ));
+    });
+    section.append(potentials);
     section.append(el(
       "p",
       "team-data-note",
-      translate("Level scaling uses the listed Aniimo template as a neutral reference. Personal Potential (its own progression caps at 24, while carried-item effects can raise effective Potential higher), Personality, Awakening, percentage tier bonuses, carried-item enhancement, and conditional effects remain separate until configured, so these totals are projections rather than an exact personal stat sheet."),
+      translate("Projected totals use the verified layer order: level-scaled base and flat training or rune values, additive tier, Potential, and Personality percentages, then per-level carried-item additions. Conditional combat effects and unsupported modifiers remain separate."),
     ));
     return section;
   }
@@ -949,7 +1464,7 @@
     const columns = el("div", "team-builder-columns");
     const config = el("div", "team-builder-main-column");
     const supportOnly = model.mode === "coop" && index > 0;
-    config.append(renderSkillLoadout(member, entry, supportOnly));
+    config.append(renderSkillLoadout(member, entry, supportOnly), renderProgressionConfiguration(member));
     if (!supportOnly) config.append(renderEquipment(member));
     config.append(renderStats(member, entry));
     columns.append(config, renderScenario());
@@ -1001,6 +1516,7 @@
   async function show() {
     renderLoading();
     await ensureData();
+    await loadRequestedTeamShare();
     render();
   }
 
